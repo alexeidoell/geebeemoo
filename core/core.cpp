@@ -58,7 +58,7 @@ u8 Core::op_tree() {
         else {
             ticks = 8;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-            operandValue = memory[hl];
+            operandValue = mem->read(hl);
         }
         u16 result;
 

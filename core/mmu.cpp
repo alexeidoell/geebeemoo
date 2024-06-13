@@ -18,6 +18,8 @@ u8 MMU::load_cart(std::string filename) {
     }
 }
 u8 MMU::read(u16 address) {
+    if (address < 0x8000) return mem[address];
+
 }
 u8 MMU::write(u16 address, u8 word) {
 }

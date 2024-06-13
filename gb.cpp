@@ -6,7 +6,13 @@
 #include <string>
 #include <memory>
 
-int main(int argv, char** args) {
+
+class GB {
+public:
+    void runEmu();
+};
+
+void GB::runEmu() {
     const int FPS = 60;
     const int frameDelay = 1000 / 60;
     u32 frameStart;
@@ -28,6 +34,4 @@ int main(int argv, char** args) {
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
                   
     }
-
-    return 0;
 }
