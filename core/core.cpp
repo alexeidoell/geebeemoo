@@ -52,22 +52,24 @@ u8 Core::op_tree() {
         }
         u16 result;
 
-        if (byte1 < 0x88) { // addition
+        if (byte1 < 0x90) { // addition
             registers.flags &=  0b11111101; // subtraction bit
             result = registers.gpr.n.a + operandValue;
+            if (byte1 > 0x88) { // carry add
+                result += 1;
+                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF) + 1) > 0xF)) registers.flags |= 0b00000100; // half carry bit
+                else registers.flags &= 0b11111011;
+            } else {
+                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00000100; // half carry bit
+                else registers.flags &= 0b11111011;
+            }
 
             if (result > 0xFF) registers.flags |= 0b00001000; // carry bit
             else registers.flags &= 0b11110111;
             if (result == 0) registers.flags |= 0b00000001; // zero bit
             else registers.flags &= 0b11111110;
-            if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF)) & 0x10) == 0x10) registers.flags |= 0b00000100; // half carry bit
-            else registers.flags &= 0b11111011;
 
             registers.gpr.n.a = result & 0xFF;
-        }
-        else if (byte1 < 0x90) { // conditional add
-
-
         }
     }
     return cycles;
