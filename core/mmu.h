@@ -6,7 +6,7 @@
 
 class MMU {
 private:
-    std::array<u8, 65536> mem{{0}};
+    std::array<u8, 65536> mem{{0}}; // placeholder length for testing purposes
     Joypad joypad;
 public:
     u8 load_cart(std::string filename);

@@ -102,6 +102,12 @@ u8 Core::op_tree() {
             if (result == 0) registers.flags |= 0b10000000; // zero flag
             else registers.flags &= 0b01111111;
             registers.gpr.n.a = result & 0xFF;
+        } else if (byte1 < 0xB8) { // or
+            registers.flags &= 0b10001111; // set subtraction, hc and carry flag
+            result = registers.gpr.n.a | operandValue;
+            if (result == 0) registers.flags |= 0b10000000; // zero flag
+            else registers.flags &= 0b01111111;
+            registers.gpr.n.a = result & 0xFF;
         }
     } 
 
