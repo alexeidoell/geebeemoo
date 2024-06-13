@@ -9,13 +9,19 @@ private:
                            // implementations access memory
                            // maybe a shared pointer ?
     std::array<u8, 16384> memory = { 0 };
-    u8 op_tree();
 public:
+    u8 bootup();
+    u8 op_tree();
     Core() {
         
     }
     ~Core();
 };
+
+u8 Core::bootup() {
+    // set registers and memory to 0x100 state
+    return 0;
+}
 
 u8 Core::op_tree() {
     u8 byte1 = memory[registers.pc]; 
@@ -99,8 +105,13 @@ u8 Core::op_tree() {
             result = registers.gpr.n.a & operandValue;
             if (result == 0) registers.flags |= 0b00001000; // zero flag
             else registers.flags &= 0b11110111;
+            registers.gpr.n.a = result & 0xFF;
         } else if (byte1 < 0xB0) { // exclusive or
-
+            registers.flags &= 0b11111000; // set subtraction, hc and carry flag
+            result = registers.gpr.n.a ^ operandValue;
+            if (result == 0) registers.flags |= 0b00001000; // zero flag
+            else registers.flags &= 0b11110111;
+            registers.gpr.n.a = result & 0xFF;
         }
     } 
 
