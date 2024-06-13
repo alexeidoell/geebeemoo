@@ -54,7 +54,7 @@ u8 Core::op_tree() {
         if (byte1 < 0x90) { // addition
             registers.flags &=  0b10111111; // subtraction bit
             result = registers.gpr.n.a + operandValue;
-            if (byte1 >= 0x88 && (registers.flags & 0b10000000) > 0) { // carry add
+            if (byte1 >= 0x88 && (registers.flags & 0b00010000) > 0) { // carry add
                 result += 1;
                 if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF) + 1) > 0xF)) registers.flags |= 0b00100000; // half carry bit
                 else registers.flags &= 0b11011111;
@@ -63,44 +63,44 @@ u8 Core::op_tree() {
                 else registers.flags &= 0b11011111;
             }
 
-            if (result > 0xFF) registers.flags |= 0b10000000; // carry bit
-            else registers.flags &= 0b01111111;
-            if (result == 0) registers.flags |= 0b00010000; // zero bit
+            if (result > 0xFF) registers.flags |= 0b00010000; // carry bit
             else registers.flags &= 0b11101111;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+            else registers.flags &= 0b01111111;
 
             registers.gpr.n.a = result & 0xFF;
         } else if (byte1 < 0xA0) { // subtraction (there's no way its this simple)
             registers.flags |= 0b01000000; // subtraction bit
             result = registers.gpr.n.a - operandValue;
-            if (byte1 >= 0x98 && (registers.flags & 0b10000000) > 0) { // carry subtraction
+            if (byte1 >= 0x98 && (registers.flags & 0b00010000) > 0) { // carry subtraction
                 result -= 1;
-                if ((((registers.gpr.n.a & 0xF) - (operandValue & 0xF) - 1) > 0xF)) registers.flags |= 0b00100000; // half carry bit
+                if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF) + 1))) registers.flags |= 0b00100000; // half carry bit
                 else registers.flags &= 0b11011111;
             } else {
-                if ((((registers.gpr.n.a & 0xF) - (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+                if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF)))) registers.flags |= 0b00100000;
                 else registers.flags &= 0b11011111;
             }
 
-            if (result > 0xFF) registers.flags |= 0b10000000; // carry bit
-            else registers.flags &= 0b01111111;
-            if (result == 0) registers.flags |= 0b00010000; // zero bit
+            if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
             else registers.flags &= 0b11101111;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+            else registers.flags &= 0b01111111;
 
             registers.gpr.n.a = result & 0xFF;
 
 
         } else if (byte1 < 0xA8) { // logical AND
-            registers.flags &= 0b01011111; // set subtraction and carry flag
-            registers.flags |= 0b01000000; // set half carry flag
+            registers.flags &= 0b10101111; // set subtraction and carry flag
+            registers.flags |= 0b00100000; // set half carry flag
             result = registers.gpr.n.a & operandValue;
-            if (result == 0) registers.flags |= 0b00010000; // zero flag
-            else registers.flags &= 0b11101111;
+            if (result == 0) registers.flags |= 0b10000000; // zero flag
+            else registers.flags &= 0b01111111;
             registers.gpr.n.a = result & 0xFF;
         } else if (byte1 < 0xB0) { // exclusive or
-            registers.flags &= 0b00011111; // set subtraction, hc and carry flag
+            registers.flags &= 0b10001111; // set subtraction, hc and carry flag
             result = registers.gpr.n.a ^ operandValue;
-            if (result == 0) registers.flags |= 0b00010000; // zero flag
-            else registers.flags &= 0b11101111;
+            if (result == 0) registers.flags |= 0b10000000; // zero flag
+            else registers.flags &= 0b01111111;
             registers.gpr.n.a = result & 0xFF;
         }
     } 
