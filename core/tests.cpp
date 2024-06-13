@@ -37,16 +37,16 @@ for (const auto& element : test_data) {
     testcore->op_tree();
 
     final = element.at("final");
-    if (testcore->registers.pc != final.at("pc")) std::cout << "mismatch in pc\n";
-    if (testcore->registers.sp != final.at("sp")) std::cout << "mismatch in sp\n";
-    if (testcore->registers.gpr.n.a != final.at("a")) std::cout << "mismatch in a register\n";
-    if (testcore->registers.gpr.n.b != final.at("b")) std::cout << "mismatch in b register\n";
-    if (testcore->registers.gpr.n.c != final.at("c")) std::cout << "mismatch in c register\n";
-    if (testcore->registers.gpr.n.d != final.at("d")) std::cout << "mismatch in d register\n";
-    if (testcore->registers.gpr.n.e != final.at("e")) std::cout << "mismatch in e register\n";
+    if (testcore->registers.pc != final.at("pc")) std::cout << "mismatch in pc got:" << (int) testcore->registers.pc << " expected: " << final.at("pc") << "\n";
+    if (testcore->registers.sp != final.at("sp")) std::cout << "mismatch in sp got:" << (int) testcore->registers.sp << " expected: " << final.at("sp") << "\n";
+    if (testcore->registers.gpr.n.a != final.at("a")) std::cout << "mismatch in register a got:" << (int) testcore->registers.gpr.n.a << " expected: " << final.at("a") << "\n";
+    if (testcore->registers.gpr.n.b != final.at("b")) std::cout << "mismatch in register b got:" << (int) testcore->registers.gpr.n.b << " expected: " << final.at("b") << "\n";
+    if (testcore->registers.gpr.n.c != final.at("c")) std::cout << "mismatch in register c got:" << (int) testcore->registers.gpr.n.c << " expected: " << final.at("c") << "\n";
+    if (testcore->registers.gpr.n.d != final.at("d")) std::cout << "mismatch in register d got:" << (int) testcore->registers.gpr.n.d << " expected: " << final.at("d") << "\n";
+    if (testcore->registers.gpr.n.e != final.at("e")) std::cout << "mismatch in register e got:" << (int) testcore->registers.gpr.n.e << " expected: " << final.at("e") << "\n";
     if (testcore->registers.flags != final.at("f")) std::cout << "mismatch in flags got:" << (int) testcore->registers.flags << " expected: " << final.at("f") << "\n";
-    if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "mismatch in h register\n";
-    if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "mismatch in l register\n";
+    if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "mismatch in register h got:" << (int) testcore->registers.gpr.n.h << " expected: " << final.at("h") << "\n";
+    if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "mismatch in register l got:" << (int) testcore->registers.gpr.n.l << " expected: " << final.at("l") << "\n";
 }
 
     std::cout << "tests finished\n";

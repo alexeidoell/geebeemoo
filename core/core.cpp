@@ -1,4 +1,5 @@
 #include <memory>
+#include <iostream>
 #include "mmu.h"
 #include "../lib/types.h"
 #include "core.h"
@@ -15,12 +16,31 @@ u8 Core::bootup() {
 u8 Core::op_tree() {
     u8 byte1 = mem->read(registers.pc); 
     registers.pc++;
-    u8 ticks = 4;
+    u8 ticks = 8; // 4 to fetch instruction + initial 4
+                  // will probably change how timing works later
 
     if (byte1 == 0) { // nop
         // gotta implement nop
     }
-    else if (byte1 >= 0x40 && byte1 < 0x80) { // load op
+    else if (byte1 == 0x10) { // STOP instruction
+
+    }
+    else if (byte1 < 0x40) { // operations 0x01 to 0x3F
+        if ((byte1 & 0b11) == 0b10) { // load ops
+            if ((byte1 & 0b111) == 0b110) { // load immediate
+                ticks += 4;
+                u8 dst = (byte1 >> 3) & 0b111;
+                if (dst == 6) { // load into HL
+                    ticks += 4;
+                    u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                    mem->write(hl, mem->read(registers.pc++));
+                } else {
+                    registers.gpr.r[dst] = mem->read(registers.pc++);
+                }
+            }
+        }
+    }
+    else if (byte1 < 0x80) { // load op
         u8 src = byte1 & 0b111;
         u8 dst = (byte1 >> 3) & 0b111;
 
