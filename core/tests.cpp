@@ -3,17 +3,21 @@
 #include "mmu.h"
 #include "core.h"
 #include <iostream>
+#include <filesystem>
 
 using json = nlohmann::json;
 
 int main(void) {
-std::ifstream f("80.json");
-json test_data = json::parse(f);
 json initial;
 json final;
 
 Core* testcore = new Core(std::make_shared<MMU>());
 
+std::string path = "./tests/";
+for (const auto& file : std::filesystem::directory_iterator(path)) {
+std::ifstream f(file.path());
+json test_data = json::parse(f);
+std::cout << "running tests for opcode: " << file.path().string().substr(8,2) << "\n";
 for (const auto& element : test_data) {
     initial = element.at("initial");
     testcore->registers.pc = initial.at("pc");
@@ -40,10 +44,11 @@ for (const auto& element : test_data) {
     if (testcore->registers.gpr.n.c != final.at("c")) std::cout << "mismatch in c register\n";
     if (testcore->registers.gpr.n.d != final.at("d")) std::cout << "mismatch in d register\n";
     if (testcore->registers.gpr.n.e != final.at("e")) std::cout << "mismatch in e register\n";
-    if (testcore->registers.flags != final.at("f")) std::cout << "mismatch in flags got:" << testcore->registers.flags << "expected: " << final.at("f") << "\n";
+    if (testcore->registers.flags != final.at("f")) std::cout << "mismatch in flags got:" << (int) testcore->registers.flags << " expected: " << final.at("f") << "\n";
     if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "mismatch in h register\n";
     if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "mismatch in l register\n";
 }
 
     std::cout << "tests finished\n";
+    }
 }
