@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../lib/types.h"
+#include "mmu.h"
+#include <memory>
 
 union GPRRegs {
     struct {
@@ -15,3 +17,17 @@ struct gbRegisters {
     u16 sp;
     u16 pc;
 };
+
+class Core {
+    public:
+    gbRegisters registers; // need to figure out a good way
+                           // of letting future video and audio
+                           // implementations access memory
+                           // maybe a shared pointer ?
+    std::shared_ptr<MMU> mem;
+    u8 bootup();
+    u8 op_tree();
+    Core(std::shared_ptr<MMU> memPtr);
+    ~Core();
+};
+

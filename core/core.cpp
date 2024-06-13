@@ -3,21 +3,9 @@
 #include "../lib/types.h"
 #include "core.h"
 
-class Core {
-private:
-    gbRegisters registers; // need to figure out a good way
-                           // of letting future video and audio
-                           // implementations access memory
-                           // maybe a shared pointer ?
-    std::shared_ptr<MMU> mem;
-public:
-    u8 bootup();
-    u8 op_tree();
-    Core(std::shared_ptr<MMU> memPtr) {
-        mem = memPtr;
-    }
-    ~Core();
-};
+Core::Core(std::shared_ptr<MMU> memPtr) {
+    mem = memPtr;
+}
 
 u8 Core::bootup() {
     // set registers and memory to 0x100 state
@@ -26,6 +14,7 @@ u8 Core::bootup() {
 
 u8 Core::op_tree() {
     u8 byte1 = mem->read(registers.pc); 
+    registers.pc++;
     u8 ticks = 4;
 
     if (byte1 == 0) { // nop
@@ -63,55 +52,55 @@ u8 Core::op_tree() {
         u16 result;
 
         if (byte1 < 0x90) { // addition
-            registers.flags &=  0b11111101; // subtraction bit
+            registers.flags &=  0b10111111; // subtraction bit
             result = registers.gpr.n.a + operandValue;
-            if (byte1 >= 0x88 && (registers.flags & 0b00000001) > 0) { // carry add
+            if (byte1 >= 0x88 && (registers.flags & 0b10000000) > 0) { // carry add
                 result += 1;
-                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF) + 1) > 0xF)) registers.flags |= 0b00000100; // half carry bit
-                else registers.flags &= 0b11111011;
+                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF) + 1) > 0xF)) registers.flags |= 0b00100000; // half carry bit
+                else registers.flags &= 0b11011111;
             } else {
-                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00000100;
-                else registers.flags &= 0b11111011;
+                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+                else registers.flags &= 0b11011111;
             }
 
-            if (result > 0xFF) registers.flags |= 0b00000001; // carry bit
-            else registers.flags &= 0b11111110;
-            if (result == 0) registers.flags |= 0b00001000; // zero bit
-            else registers.flags &= 0b11110111;
+            if (result > 0xFF) registers.flags |= 0b10000000; // carry bit
+            else registers.flags &= 0b01111111;
+            if (result == 0) registers.flags |= 0b00010000; // zero bit
+            else registers.flags &= 0b11101111;
 
             registers.gpr.n.a = result & 0xFF;
         } else if (byte1 < 0xA0) { // subtraction (there's no way its this simple)
-            registers.flags |= 0b00000010; // subtraction bit
+            registers.flags |= 0b01000000; // subtraction bit
             result = registers.gpr.n.a - operandValue;
-            if (byte1 >= 0x98 && (registers.flags & 0b00000001) > 0) { // carry subtraction
+            if (byte1 >= 0x98 && (registers.flags & 0b10000000) > 0) { // carry subtraction
                 result -= 1;
-                if ((((registers.gpr.n.a & 0xF) - (operandValue & 0xF) - 1) > 0xF)) registers.flags |= 0b00000100; // half carry bit
-                else registers.flags &= 0b11111011;
+                if ((((registers.gpr.n.a & 0xF) - (operandValue & 0xF) - 1) > 0xF)) registers.flags |= 0b00100000; // half carry bit
+                else registers.flags &= 0b11011111;
             } else {
-                if ((((registers.gpr.n.a & 0xF) - (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00000100;
-                else registers.flags &= 0b11111011;
+                if ((((registers.gpr.n.a & 0xF) - (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+                else registers.flags &= 0b11011111;
             }
 
-            if (result > 0xFF) registers.flags |= 0b00000001; // carry bit
-            else registers.flags &= 0b11111110;
-            if (result == 0) registers.flags |= 0b00001000; // zero bit
-            else registers.flags &= 0b11110111;
+            if (result > 0xFF) registers.flags |= 0b10000000; // carry bit
+            else registers.flags &= 0b01111111;
+            if (result == 0) registers.flags |= 0b00010000; // zero bit
+            else registers.flags &= 0b11101111;
 
             registers.gpr.n.a = result & 0xFF;
 
 
         } else if (byte1 < 0xA8) { // logical AND
-            registers.flags &= 0b11111010; // set subtraction and carry flag
-            registers.flags |= 0b00000010; // set half carry flag
+            registers.flags &= 0b01011111; // set subtraction and carry flag
+            registers.flags |= 0b01000000; // set half carry flag
             result = registers.gpr.n.a & operandValue;
-            if (result == 0) registers.flags |= 0b00001000; // zero flag
-            else registers.flags &= 0b11110111;
+            if (result == 0) registers.flags |= 0b00010000; // zero flag
+            else registers.flags &= 0b11101111;
             registers.gpr.n.a = result & 0xFF;
         } else if (byte1 < 0xB0) { // exclusive or
-            registers.flags &= 0b11111000; // set subtraction, hc and carry flag
+            registers.flags &= 0b00011111; // set subtraction, hc and carry flag
             result = registers.gpr.n.a ^ operandValue;
-            if (result == 0) registers.flags |= 0b00001000; // zero flag
-            else registers.flags &= 0b11110111;
+            if (result == 0) registers.flags |= 0b00010000; // zero flag
+            else registers.flags &= 0b11101111;
             registers.gpr.n.a = result & 0xFF;
         }
     } 

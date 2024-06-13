@@ -1,3 +1,4 @@
+#pragma once
 #include <array>
 #include <string>
 #include "../lib/types.h"
@@ -5,7 +6,7 @@
 
 class MMU {
 private:
-    std::array<u8, 16384> mem{{0}};
+    std::array<u8, 65536> mem{{0}};
     Joypad joypad;
 public:
     u8 load_cart(std::string filename);
