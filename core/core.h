@@ -10,8 +10,8 @@ union GPRRegs {
 };
 
 struct gbRegisters {
-    GPRRegs gpr;
-    u8 flags;
+    GPRRegs gpr = { 0 };
+    u8 flags = 0;
     u16 sp;
     u16 pc;
 };
