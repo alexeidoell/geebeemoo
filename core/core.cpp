@@ -108,6 +108,18 @@ u8 Core::op_tree() {
             if (result == 0) registers.flags |= 0b10000000; // zero flag
             else registers.flags &= 0b01111111;
             registers.gpr.n.a = result & 0xFF;
+        } else if (byte1 < 0xC0) { // compare operation
+            registers.flags |= 0b01000000; // subtraction bit
+            result = registers.gpr.n.a - operandValue;
+                if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF)))) registers.flags |= 0b00100000;
+                else registers.flags &= 0b11011111;
+
+            if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+            else registers.flags &= 0b11101111;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+            else registers.flags &= 0b01111111;
+
+ 
         }
     } 
 
