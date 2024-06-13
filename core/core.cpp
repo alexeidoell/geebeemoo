@@ -1,4 +1,5 @@
 #include <memory>
+#include "mmu.h"
 #include "../lib/types.h"
 #include "core.h"
 
@@ -8,12 +9,12 @@ private:
                            // of letting future video and audio
                            // implementations access memory
                            // maybe a shared pointer ?
-    std::array<u8, 16384> memory = { 0 };
+    std::shared_ptr<MMU> mem;
 public:
     u8 bootup();
     u8 op_tree();
-    Core() {
-        
+    Core(std::shared_ptr<MMU> memPtr) {
+        mem = memPtr;
     }
     ~Core();
 };
@@ -24,7 +25,7 @@ u8 Core::bootup() {
 }
 
 u8 Core::op_tree() {
-    u8 byte1 = memory[registers.pc]; 
+    u8 byte1 = mem->read(registers.pc); 
     u8 ticks = 4;
 
     if (byte1 == 0) { // nop
@@ -40,11 +41,11 @@ u8 Core::op_tree() {
         }
         else if (src == 6) {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-            registers.gpr.r[dst] = memory[hl];
+            registers.gpr.r[dst] = mem->read(hl);
         } else if (dst == 6) {
             ticks = 8;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-            memory[hl] = registers.gpr.r[src];
+            mem->write(hl, registers.gpr.r[src]);
         } else {
             ticks = 8;
             registers.gpr.r[dst] = registers.gpr.r[src];
