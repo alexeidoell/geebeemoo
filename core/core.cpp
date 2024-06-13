@@ -3,8 +3,8 @@
 #include "../lib/types.h"
 #include "core.h"
 
-Core::Core(std::shared_ptr<MMU> memPtr) {
-    mem = memPtr;
+Core::Core(std::unique_ptr<MMU> memPtr) {
+    mem = std::move(memPtr);
 }
 
 u8 Core::bootup() {

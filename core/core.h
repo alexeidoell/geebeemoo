@@ -24,10 +24,10 @@ class Core {
                            // of letting future video and audio
                            // implementations access memory
                            // maybe a shared pointer ?
-    std::shared_ptr<MMU> mem;
+    std::unique_ptr<MMU> mem;
     u8 bootup();
     u8 op_tree();
-    Core(std::shared_ptr<MMU> memPtr);
+    Core(std::unique_ptr<MMU> memPtr);
     ~Core();
 };
 

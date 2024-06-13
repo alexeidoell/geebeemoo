@@ -11,7 +11,7 @@ int main(void) {
 json initial;
 json final;
 
-Core* testcore = new Core(std::make_shared<MMU>());
+Core* testcore = new Core(std::make_unique<MMU>());
 
 std::string path = "./tests/";
 for (const auto& file : std::filesystem::directory_iterator(path)) {
