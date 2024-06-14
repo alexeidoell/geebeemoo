@@ -24,16 +24,20 @@ u8 Core::op_tree() {
     }
     else if (byte1 == 0x10) { // STOP instruction
 
-    }
-    else if (byte1 < 0x40) { // operations 0x01 to 0x3F
+    } else if (byte1 == 0xD3 || byte1 == 0xDB || byte1 == 0xDD ||
+            byte1 == 0xE3 || byte1 == 0xE4 || byte1 == 0xEB ||
+            byte1 == 0xEC || byte1 == 0xED || byte1 == 0xF4 ||
+            byte1 == 0xFC || byte1 == 0xFD) {
+        // lock up system
+    } else if (byte1 < 0x40) { // operations 0x01 to 0x3F
         if (byte1 == 0x08) { // store sp at imm
             ticks += 16;
             u16 address = mem->read(registers.pc++);
             address = address + (mem->read(registers.pc++) << 8);
             mem->write(address, registers.sp);
         } else if ((byte1 & 0b111) == 0) { // relative jumps
-                ticks += 4;
-                s8 offset = mem->read(registers.pc++);
+            ticks += 4;
+            s8 offset = mem->read(registers.pc++);
             if ((byte1 >> 3) == 0b11) { // unconditional jump
                 ticks += 4;
                 registers.pc += offset;
@@ -415,10 +419,30 @@ u8 Core::op_tree() {
     } else if ((byte1 & 0b11001011) == 0b11000001) { // pop and push
         ticks += 8;
         u8 dst = (byte1 >> 4) & 0b11;
-        u16 regValue;
         if ((byte1 & 0b111) == 0b1) { // pop
-
+            u8 lowReg = mem->read(registers.sp++);
+            u8 highReg = mem->read(registers.sp++);
+            switch (dst) {
+                case 0:
+                    registers.gpr.n.c = lowReg;
+                    registers.gpr.n.b = highReg;
+                    break;
+                case 1:
+                    registers.gpr.n.e = lowReg;
+                    registers.gpr.n.d = highReg;
+                    break;
+                case 2:
+                    registers.gpr.n.l = lowReg;
+                    registers.gpr.n.h = highReg;
+                    break;
+                case 3:
+                    registers.flags = lowReg;
+                    registers.gpr.n.a = highReg;
+                    break;
+            }
+ 
         } else { // push
+            u16 regValue;
             ticks += 4;
             switch (dst) {
                 case 0:
@@ -438,7 +462,64 @@ u8 Core::op_tree() {
             mem->write(registers.sp, regValue);
         }
 
+    } else if ((byte1 >> 5) == 0b110) { // jumps and returns
+        if ((byte1 & 0b111) < 0b10) { // returns
+            ticks += 4;
+            u16 address = mem->read(registers.sp++);
+            address = address + (mem->read(registers.sp++) << 8);
+            if (byte1 == 0xC9) { // unconditional return
+                ticks += 8;
+                registers.pc = address;
+            } else if (byte1 == 0xD9) { // reti
+
+            } else if ((byte1 & 0b111) == 0) { // conditional return
+                u8 condition = (byte1 >> 3) & 0b11;
+                bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+                bool zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+                if ((condition == 0 && !zero_flag) || (condition == 1 && zero_flag) ||
+                    (condition == 2 && !carry_flag) || (condition == 3 && carry_flag)) {
+                    ticks += 12;
+                    registers.pc = address;
+                } else {
+                    registers.sp -= 2;
+                }
+
+
+            }
+
+        } else if ((byte1 & 0b110) == 0b100) { // calls
+            ticks += 8;
+            u16 address = mem->read(registers.pc++);
+            address = address + (mem->read(registers.pc++) << 8);
+            if ((byte1 & 0b1) == 0b1) { // unconditional call
+                ticks += 12;
+                registers.sp -= 2;
+                mem->write(registers.sp, registers.pc);
+                registers.pc = address;
+            } else if ((byte1 >> 5) == 1) { // conditional calls
+                u8 condition = (byte1 >> 3) & 0b11;
+                bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+                bool zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+                if ((condition == 0 && !zero_flag) || (condition == 1 && zero_flag) ||
+                    (condition == 2 && !carry_flag) || (condition == 3 && carry_flag)) {
+                    registers.sp -= 2;
+                    mem->write(registers.sp, registers.pc);
+                    registers.pc = address;
+                    ticks += 12;
+                }
+
+
+            }
+
+        }
     }
+    return ticks;
+}
+
+u8 Core::cb_op() {
+    u8 ticks = 4;
+    u8 byte2 = mem->read(registers.pc);
+    u8 dst = byte2 & 0b111;
 
     return ticks;
 }
