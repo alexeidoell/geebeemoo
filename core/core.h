@@ -27,6 +27,7 @@ class Core {
     std::unique_ptr<MMU> mem;
     u8 bootup();
     u8 op_tree();
+    u8 cb_op();
     Core(std::unique_ptr<MMU> memPtr);
     ~Core();
 };

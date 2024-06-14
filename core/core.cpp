@@ -45,8 +45,8 @@ u8 Core::op_tree() {
             }
         }
         else if ((byte1 & 0b11) == 0b10) { // one byte load ops
+            ticks += 4;
             if ((byte1 & 0b111) == 0b110) { // load immediate
-                ticks += 4;
                 u8 dst = (byte1 >> 3) & 0b111;
                 if (dst == 6) { // load into HL
                     ticks += 4;
@@ -79,6 +79,32 @@ u8 Core::op_tree() {
                     mem->write(address, registers.gpr.n.a);
                 }
 
+            } 
+        } else if ((byte1 & 0b111) == 0b11) { // 2 byte increment/decrement
+            ticks += 4;
+            s8 operand;
+            u16 reg;
+            if ((byte1 & 0b1000) == 0b1000) { //decrement
+                operand = -1;
+            } else operand = 1; // increment
+            u8 dst = byte1 >> 4;
+            if (dst == 0) { 
+                reg = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+                reg += operand;
+                registers.gpr.n.b = reg >> 8;
+                registers.gpr.n.c = reg & 0xFF;
+            } else if (dst == 1) {
+                reg = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+                reg += operand;
+                registers.gpr.n.d = reg >> 8;
+                registers.gpr.n.e = reg & 0xFF;
+            } else if (dst == 2) {
+                reg = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                reg += operand;
+                registers.gpr.n.h = reg >> 8;
+                registers.gpr.n.l = reg & 0xFF;
+            } else if (dst == 3) {
+                registers.sp += operand;
             }
         }
     }
