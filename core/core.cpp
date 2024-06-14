@@ -25,7 +25,28 @@ u8 Core::op_tree() {
 
     }
     else if (byte1 < 0x40) { // operations 0x01 to 0x3F
-        if ((byte1 & 0b11) == 0b01) { // two byte load ops
+        if (byte1 == 0x08) { // store sp at imm
+            ticks += 16;
+            u16 address = mem->read(registers.pc++);
+            address = address + (mem->read(registers.pc++) << 8);
+            mem->write(address, registers.sp);
+        } else if ((byte1 & 0b111) == 0) { // relative jumps
+                ticks += 4;
+                s8 offset = mem->read(registers.pc++);
+            if ((byte1 >> 3) == 0b11) { // unconditional jump
+                ticks += 4;
+                registers.pc += offset;
+            } else if ((byte1 >> 5) == 1) { // conditional jumps
+                u8 condition = (byte1 >> 3) & 0b11;
+                bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+                bool zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+                if ((condition == 0 && !zero_flag) || (condition == 1 && zero_flag) ||
+                    (condition == 2 && !carry_flag) || (condition == 3 && carry_flag)) {
+                    registers.pc += offset;
+                    ticks += 4;
+                }
+            }
+        } else if ((byte1 & 0b111) == 0b001) { // two byte imm load ops
             ticks += 8;
             u8 imm_byte1 = mem->read(registers.pc++);
             u8 imm_byte2 = mem->read(registers.pc++);
@@ -106,6 +127,53 @@ u8 Core::op_tree() {
             } else if (dst == 3) {
                 registers.sp += operand;
             }
+        } else if ((byte1 & 0b111) == 0b100) { // one byte increments
+            u8 dst = (byte1 >> 3) & 0b111;
+            registers.flags &= 0b10111111; // set subtraction flag
+            u8 operand;
+            u16 hl;
+            if (dst != 6) {
+                operand = registers.gpr.r[dst];
+            } else {
+                ticks += 4;
+                hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                operand = mem->read(hl);
+            }
+            if ((operand & 0xF) == 0xF) registers.flags |= 0b00100000;
+            else registers.flags &= 0b11011111;
+            u16 result = operand + 1;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+            result = result & 0xFF;
+            if (dst != 6) {
+                registers.gpr.r[dst] = result;
+            } else {
+                mem->write(hl, (u8) result);
+            }
+        } else if ((byte1 & 0b111) == 0b101) { // one byte decrement
+            u8 dst = (byte1 >> 3) & 0b111;
+            registers.flags |= 0b01000000; // set subtraction flag
+            u8 operand;
+            u16 hl;
+            if (dst != 6) {
+                operand = registers.gpr.r[dst];
+            } else {
+                ticks += 4;
+                hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                operand = mem->read(hl);
+            }
+            if ((operand & 0xF) == 0) registers.flags |= 0b00100000;
+            else registers.flags &= 0b11011111;
+            u16 result = operand - 1;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+            result = result & 0xFF;
+            if (dst != 6) {
+                registers.gpr.r[dst] = result;
+            } else {
+                mem->write(hl, (u8) result);
+            }
+
         }
     }
     else if (byte1 < 0x80) { // load op
@@ -120,11 +188,11 @@ u8 Core::op_tree() {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             registers.gpr.r[dst] = mem->read(hl);
         } else if (dst == 6) {
-            ticks = 8;
+            ticks += 4;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             mem->write(hl, registers.gpr.r[src]);
         } else {
-            ticks = 8;
+            ticks += 4;
             registers.gpr.r[dst] = registers.gpr.r[src];
         }
     } else if (byte1 >= 0x80 && byte1 < 0xC0) { // arithmetic
@@ -133,7 +201,7 @@ u8 Core::op_tree() {
         operand = byte1 & 0b111;
         if (operand != 6) operandValue = registers.gpr.r[operand];
         else {
-            ticks = 8;
+            ticks += 4;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             operandValue = mem->read(hl);
         }
