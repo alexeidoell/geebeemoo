@@ -19,11 +19,10 @@ struct gbRegisters {
 };
 
 class Core {
-    public:
-    gbRegisters registers; // need to figure out a good way
-                           // of letting future video and audio
-                           // implementations access memory
-                           // maybe a shared pointer ?
+public: // need to change a lot of these to private when I start using rom tests
+    bool ei_set = false;
+    bool ime = false;
+    gbRegisters registers; 
     std::unique_ptr<MMU> mem;
     u8 bootup();
     u8 op_tree();

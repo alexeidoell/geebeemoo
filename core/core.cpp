@@ -19,6 +19,8 @@ u8 Core::op_tree() {
     u8 ticks = 8; // 4 to fetch instruction + initial 4
                   // will probably change how timing works later
 
+    if (ei_set) ime = true;
+
     if (byte1 == 0) { // nop
         // gotta implement nop
     }
@@ -338,6 +340,10 @@ u8 Core::op_tree() {
         }
     } else if (byte1 == 0xCB) { //  cb instructions
 
+    } else if (byte1 == 0xF3) { // di
+        ime = false;
+    } else if (byte1 == 0xFB) { // ei
+        ei_set = true;
     } else if ((byte1 & 0b111) == 0b110) { // arithmetic on A register with immediate
         ticks += 4;
         u8 operandValue = mem->read(registers.pc++);
@@ -461,7 +467,13 @@ u8 Core::op_tree() {
             registers.sp -= 2;
             mem->write(registers.sp, regValue);
         }
+    } else if ((byte1 & 0b111) == 0b111 ) { // vector calls
+        u16 address = (byte1 & 0b00111000);
+        registers.sp -= 2;
+        mem->write(registers.sp, registers.pc);
+        registers.pc = address;
 
+ 
     } else if ((byte1 >> 5) == 0b110) { // jumps and returns
         if ((byte1 & 0b111) < 0b10) { // returns
             ticks += 4;
@@ -471,7 +483,9 @@ u8 Core::op_tree() {
                 ticks += 8;
                 registers.pc = address;
             } else if (byte1 == 0xD9) { // reti
-
+                ei_set = true;
+                ticks += 8;
+                registers.pc = address;
             } else if ((byte1 & 0b111) == 0) { // conditional return
                 u8 condition = (byte1 >> 3) & 0b11;
                 bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
@@ -530,7 +544,7 @@ u8 Core::op_tree() {
             }
 
         }
-    }
+   }
     return ticks;
 }
 
