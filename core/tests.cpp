@@ -52,6 +52,6 @@ for (const auto& element : test_data) {
         if (testcore->mem->read(address_pair.at(0)) != address_pair.at(1)) std::cout << "mismatch in memory address: " << address_pair.at(0) << " got: " << (int) testcore->mem->read(address_pair.at(0)) << " expected: " << address_pair.at(1) << "\n";
     }
 
-    std::cout << "tests finished\n";
     }
+    std::cout << "tests finished\n";
 }
