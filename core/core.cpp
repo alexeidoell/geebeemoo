@@ -37,6 +37,30 @@ u8 Core::op_tree() {
                 } else {
                     registers.gpr.r[dst] = mem->read(registers.pc++);
                 }
+            } else if ((byte1 & 0b111) == 0b010) { // loading memory to/from A
+                u8 dst = (byte1) >> 4;
+                u16 address;
+                if (dst == 0) address = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+                else if (dst == 1) address = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+                else if (dst == 2) {
+                    u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                    address = hl;
+                    hl += 1;
+                    registers.gpr.n.h = hl >> 8;
+                    registers.gpr.n.l = hl & 0xFF;
+                } else if (dst == 3) {
+                    u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                    address = hl;
+                    hl -= 1;
+                    registers.gpr.n.h = hl >> 8;
+                    registers.gpr.n.l = hl & 0xFF;
+                }
+                if ((byte1 & 0b1000) == 0b1000) {
+                    registers.gpr.n.a = mem->read(address);
+                } else {
+                    mem->write(address, registers.gpr.n.a);
+                }
+
             }
         }
     }

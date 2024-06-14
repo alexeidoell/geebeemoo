@@ -48,6 +48,9 @@ for (const auto& element : test_data) {
     if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "mismatch in register h got:" << (int) testcore->registers.gpr.n.h << " expected: " << final.at("h") << "\n";
     if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "mismatch in register l got:" << (int) testcore->registers.gpr.n.l << " expected: " << final.at("l") << "\n";
 }
+    for (const auto address_pair : final.at("ram")) {
+        if (testcore->mem->read(address_pair.at(0)) != address_pair.at(1)) std::cout << "mismatch in memory address: " << address_pair.at(0) << " got: " << (int) testcore->mem->read(address_pair.at(0)) << " expected: " << address_pair.at(1) << "\n";
+    }
 
     std::cout << "tests finished\n";
     }
