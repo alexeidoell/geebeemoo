@@ -1,5 +1,6 @@
 #include <memory>
 #include <iostream>
+#include <bit>
 #include "mmu.h"
 #include "../lib/types.h"
 #include "core.h"
@@ -172,6 +173,23 @@ u8 Core::op_tree() {
                 registers.gpr.r[dst] = result;
             } else {
                 mem->write(hl, (u8) result);
+            }
+
+        } else if ((byte1 & 0b111) == 0b111) { // rotates and weird transformations
+            if (byte1 < 0x20) { // rotates
+                registers.flags &= 0b00011111; // set all except carry to 0
+                if (((byte1 >> 3) & 0b1) == 0) { // left rotate
+                    u8 msb = (registers.gpr.n.a >> 7) & 0b1;
+                    u8 carry_flag = (registers.flags >> 4) & 0b1;
+                        if (msb == 1) registers.flags |= 0b00010000;
+                        else registers.flags &= 0b11101111;
+                    if ((byte1 >> 4) == 1) { // non carry rotate
+                        msb = carry_flag;
+                    }
+                    registers.gpr.n.a = (registers.gpr.n.a << 1) + msb;
+                }
+                
+
             }
 
         }
