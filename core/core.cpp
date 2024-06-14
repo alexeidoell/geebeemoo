@@ -14,8 +14,7 @@ u8 Core::bootup() {
 }
 
 u8 Core::op_tree() {
-    u8 byte1 = mem->read(registers.pc); 
-    registers.pc++;
+    u8 byte1 = mem->read(registers.pc++); 
     u8 ticks = 8; // 4 to fetch instruction + initial 4
                   // will probably change how timing works later
 
@@ -26,7 +25,26 @@ u8 Core::op_tree() {
 
     }
     else if (byte1 < 0x40) { // operations 0x01 to 0x3F
-        if ((byte1 & 0b11) == 0b10) { // load ops
+        if ((byte1 & 0b11) == 0b01) { // two byte load ops
+            ticks += 8;
+            u8 imm_byte1 = mem->read(registers.pc++);
+            u8 imm_byte2 = mem->read(registers.pc++);
+            u8 dst = byte1 >> 4;
+            if (dst == 0x00) {
+                registers.gpr.n.c = imm_byte1;
+                registers.gpr.n.b = imm_byte2;
+            } else if (dst == 0x01) {
+                registers.gpr.n.e = imm_byte1;
+                registers.gpr.n.d = imm_byte2;
+            } else if (dst == 0x02) {
+                registers.gpr.n.l = imm_byte1;
+                registers.gpr.n.h = imm_byte2;
+            } else if (dst == 0x03) {
+                u16 imm = (imm_byte2 << 8) + imm_byte1;
+                registers.sp = imm;
+            }
+        }
+        else if ((byte1 & 0b11) == 0b10) { // one byte load ops
             if ((byte1 & 0b111) == 0b110) { // load immediate
                 ticks += 4;
                 u8 dst = (byte1 >> 3) & 0b111;
