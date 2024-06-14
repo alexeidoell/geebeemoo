@@ -544,7 +544,23 @@ u8 Core::op_tree() {
             }
 
         }
-   }
+    } else if ((byte1 >> 5) == 0b111) { // stack and heap operations
+        u16 address;
+        if ((byte1 & 0b1111) == 0b0000) { // load to and from imm8
+            ticks += 8;
+            address = 0xFF00 + (mem->read(registers.pc++));
+        } else if ((byte1 & 0b1111) == 0b0010) { // c register
+            address = 0xFF00 + (registers.gpr.n.c);
+            ticks += 4;
+        } else if ((byte1 & 0b1111) == 0b1010) {
+            address = mem->read(registers.pc++);
+            address = address + (mem->read(registers.pc++) << 8);
+        }
+        if ((byte1 >> 4) == 0xE) {
+            mem->write(address, registers.gpr.n.a);
+        } else registers.gpr.n.a = mem->read(address);
+
+    }
     return ticks;
 }
 
