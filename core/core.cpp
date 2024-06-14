@@ -187,9 +187,46 @@ u8 Core::op_tree() {
                         msb = carry_flag;
                     }
                     registers.gpr.n.a = (registers.gpr.n.a << 1) + msb;
+                } else { // right rotate
+                    u8 lsb = registers.gpr.n.a & 0b1;
+                    u8 carry_flag = (registers.flags >> 4) & 0b1;
+                        if (lsb == 1) registers.flags |= 0b00010000;
+                        else registers.flags &= 0b11101111;
+                    if ((byte1 >> 4) == 1) { // non carry rotate
+                        lsb = carry_flag;
+                    }
+                    registers.gpr.n.a = (registers.gpr.n.a >> 1) + (lsb << 7);
                 }
-                
+            } else if (byte1 == 0x27) {
+                bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+                bool half_carry_flag = ((registers.flags >> 5) & 0b1) == 1;
+                bool subtraction_flag = ((registers.flags >> 6) & 0b1) == 1;
+                if (!subtraction_flag) { // addition adjust
+                    if (carry_flag || registers.gpr.n.a > 0x99) { 
+                        registers.flags |= 0b00010000;
+                        registers.gpr.n.a += 0x60;
+                    } 
+                    if (half_carry_flag || (registers.gpr.n.a & 0x0F) > 0x9) registers.gpr.n.a += 0x6;
+                } else { // subtraction adjust
+                    if (carry_flag) registers.gpr.n.a -= 0x60;
+                    if (half_carry_flag) registers.gpr.n.a -= 0x6;
 
+                }
+                if (registers.gpr.n.a == 0) registers.flags |= 0b1000000;
+                else registers.flags &= 0b01111111;
+                registers.flags &= 0b11011111; 
+
+            } else if (byte1 == 0x37) { // set carry flag
+                registers.flags &= 0b10011111;
+                registers.flags |= 0b00010000;
+            } else if (byte1 == 0x2f) { // compliment accumulator
+                registers.gpr.n.a = ~registers.gpr.n.a; 
+                registers.flags |= 0b01100000;
+            } else if (byte1 == 0x3f) { // compliment carry flag
+                bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+                registers.flags &= 0b10011111;
+                if (carry_flag) registers.flags &= 0b11101111;
+                else registers.flags |= 0b00010000;
             }
 
         }
