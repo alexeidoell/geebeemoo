@@ -483,9 +483,27 @@ u8 Core::op_tree() {
                 } else {
                     registers.sp -= 2;
                 }
-
-
             }
+        } else if (byte1 == 0xE9) { // jp hl
+            registers.pc = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        } else if ((byte1 & 0b111) < 4) { // jp instructions
+            ticks += 4;
+            u16 address = mem->read(registers.pc++);
+            address = address + (mem->read(registers.pc++) << 8);
+            if (byte1 == 0xC3) { // unconditional jump
+                ticks += 4;
+                registers.pc = address;
+            } else if ((byte1 & 0b111) == 2) { // conditional jump
+                u8 condition = (byte1 >> 3) & 0b11;
+                bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+                bool zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+                if ((condition == 0 && !zero_flag) || (condition == 1 && zero_flag) ||
+                    (condition == 2 && !carry_flag) || (condition == 3 && carry_flag)) {
+                    ticks += 4;
+                    registers.pc = address;
+                }
+            }
+ 
 
         } else if ((byte1 & 0b110) == 0b100) { // calls
             ticks += 8;
