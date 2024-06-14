@@ -332,7 +332,113 @@ u8 Core::op_tree() {
 
  
         }
-    } 
+    } else if (byte1 == 0xCB) { //  cb instructions
+
+    } else if ((byte1 & 0b111) == 0b110) { // arithmetic on A register with immediate
+        ticks += 4;
+        u8 operandValue = mem->read(registers.pc++);
+        u8 operation = (byte1 >> 4) & 0b11;
+        u16 result;
+        switch (operation) {
+        case 0:
+            registers.flags &=  0b10111111; // subtraction bit
+            result = registers.gpr.n.a + operandValue;
+            if (byte1 >= 0xC8 && (registers.flags & 0b00010000) > 0) { // carry add
+                result += 1;
+                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF) + 1) > 0xF)) registers.flags |= 0b00100000; // half carry bit
+                else registers.flags &= 0b11011111;
+            } else {
+                if ((((registers.gpr.n.a & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+                else registers.flags &= 0b11011111;
+            }
+
+            if (result > 0xFF) registers.flags |= 0b00010000; // carry bit
+            else registers.flags &= 0b11101111;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+            else registers.flags &= 0b01111111;
+            registers.gpr.n.a = result & 0xFF;
+            break;
+        case 1:
+            registers.flags |= 0b01000000; // subtraction bit
+            result = registers.gpr.n.a - operandValue;
+            if (byte1 >= 0xC8 && (registers.flags & 0b00010000) > 0) { // carry subtraction
+                result -= 1;
+                if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF) + 1))) registers.flags |= 0b00100000; // half carry bit
+                else registers.flags &= 0b11011111;
+            } else {
+                if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF)))) registers.flags |= 0b00100000;
+                else registers.flags &= 0b11011111;
+            }
+
+            if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+            else registers.flags &= 0b11101111;
+            if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+            else registers.flags &= 0b01111111;
+
+            registers.gpr.n.a = result & 0xFF;
+            break;
+        case 2:
+            if (byte1 >= 0xE8) { // xor
+                registers.flags &= 0b10001111; // set subtraction, hc and carry flag
+                result = registers.gpr.n.a ^ operandValue;
+                if (result == 0) registers.flags |= 0b10000000; // zero flag
+                else registers.flags &= 0b01111111;
+                registers.gpr.n.a = result & 0xFF;
+            } else { // and
+                registers.flags &= 0b10101111; // set subtraction and carry flag
+                registers.flags |= 0b00100000; // set half carry flag
+                result = registers.gpr.n.a & operandValue;
+                if (result == 0) registers.flags |= 0b10000000; // zero flag
+                else registers.flags &= 0b01111111;
+                registers.gpr.n.a = result & 0xFF;
+            }
+            break;
+        case 3:
+            if (byte1 >= 0xF8) { // cp
+                registers.flags |= 0b01000000; // subtraction bit
+                result = registers.gpr.n.a - operandValue;
+                if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF)))) registers.flags |= 0b00100000;
+                else registers.flags &= 0b11011111;
+                if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+                else registers.flags &= 0b11101111;
+                if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+                else registers.flags &= 0b01111111;
+            } else { // or
+                registers.flags &= 0b10001111; // set subtraction, hc and carry flag
+                result = registers.gpr.n.a | operandValue;
+                if (result == 0) registers.flags |= 0b10000000; // zero flag
+                else registers.flags &= 0b01111111;
+                registers.gpr.n.a = result & 0xFF;
+            }
+            break;
+        }
+    } else if ((byte1 & 0b11001011) == 0b11000001) { // pop and push
+        ticks += 8;
+        u8 dst = (byte1 >> 4) & 0b11;
+        u16 regValue;
+        if ((byte1 & 0b111) == 0b1) { // pop
+
+        } else { // push
+            ticks += 4;
+            switch (dst) {
+                case 0:
+                    regValue = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+                    break;
+                case 1:
+                    regValue = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+                    break;
+                case 2:
+                    regValue = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+                    break;
+                case 3:
+                    regValue = (registers.gpr.n.a << 8) + registers.flags;
+                    break;
+            }
+            registers.sp -= 2;
+            mem->write(registers.sp, regValue);
+        }
+
+    }
 
     return ticks;
 }
