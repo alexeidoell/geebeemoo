@@ -19,7 +19,10 @@ u8 Core::op_tree() {
     u8 ticks = 8; // 4 to fetch instruction + initial 4
                   // will probably change how timing works later
 
-    if (ei_set) ime = true;
+    if (ei_set) {
+        ime = true;
+        ei_set = false;
+    }
 
     if (byte1 == 0) { // nop
         // gotta implement nop
