@@ -23,11 +23,11 @@ public: // need to change a lot of these to private when I start using rom tests
     bool ei_set = false;
     bool ime = false;
     gbRegisters registers; 
-    std::unique_ptr<MMU> mem;
+    std::shared_ptr<MMU> mem;
     u8 bootup();
     u8 op_tree();
     u8 cb_op();
-    Core(std::unique_ptr<MMU> memPtr);
+    Core(std::shared_ptr<MMU> memPtr);
     ~Core();
 };
 

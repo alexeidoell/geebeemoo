@@ -1,17 +1,16 @@
 #include "../lib/types.h"
 #include "mmu.h"
 #include <array>
-#include <string>
 #include <cstdio>
 #include <iostream>
 
-u8 MMU::load_cart(std::string filename) {
+u8 MMU::load_cart(char* filename) {
     FILE* f;
     u32 read_chars;
-    f = fopen(filename.c_str(), "rb");
+    f = fopen(filename, "rb");
     if (f) {
         read_chars = fread(mem.data(), sizeof(u8), mem.size(), f);
-        return 0;
+        return read_chars;
     } else {
         std::cout << "opening cartridge failed";
         return -1;
@@ -22,6 +21,11 @@ u8 MMU::read(u16 address) {
 
 }
 u8 MMU::write(u16 address, u8 word) {
+    if (address == 0xFF02) {
+        if (word == 0x81) {
+            std::cout << std::hex << (char) read(0xFF01);
+        }
+    }
     mem[address] = word;
     return 0;
 }

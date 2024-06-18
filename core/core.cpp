@@ -5,12 +5,27 @@
 #include "../lib/types.h"
 #include "core.h"
 
-Core::Core(std::unique_ptr<MMU> memPtr) {
-    mem = std::move(memPtr);
+
+Core::Core(std::shared_ptr<MMU> memPtr) {
+    mem = memPtr;
+}
+
+Core::~Core() {
 }
 
 u8 Core::bootup() {
     // set registers and memory to 0x100 state
+    registers.gpr.n.a = 0x01;
+    registers.flags = 0;
+    registers.gpr.n.b = 0xFF;
+    registers.gpr.n.c = 0x13;
+    registers.gpr.n.d = 0x00;
+    registers.gpr.n.e = 0xC1;
+    registers.gpr.n.h = 0x84;
+    registers.gpr.n.l = 0x03;
+    registers.pc  = 0x0100;
+    registers.sp  = 0xFFFE;
+
     return 0;
 }
 
@@ -28,7 +43,6 @@ u8 Core::op_tree() {
         // gotta implement nop
     }
     else if (byte1 == 0x10) { // STOP instruction
-
     } else if (byte1 == 0xD3 || byte1 == 0xDB || byte1 == 0xDD ||
             byte1 == 0xE3 || byte1 == 0xE4 || byte1 == 0xEB ||
             byte1 == 0xEC || byte1 == 0xED || byte1 == 0xF4 ||
