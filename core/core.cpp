@@ -553,40 +553,44 @@ u8 Core::op_tree() {
     } else if (byte1 == 0xE9) { // jp hl
         registers.pc = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     } else if ((byte1 >> 5) == 0b111) { // stack and heap operations
-        u16 address;
-        if ((byte1 & 0b1111) == 0b0000) { // load to and from imm8
+        if (((byte1 & 0b1111) == 0b1000)) { // both instructions add an immediate to sp
             ticks += 8;
-            address = 0xFF00 + (mem->read(registers.pc++));
-        } else if ((byte1 & 0b1111) == 0b0010) { // c register
-            address = 0xFF00 + (registers.gpr.n.c);
-            ticks += 4;
-        } else if ((byte1 & 0b1111) == 0b1010) {
-            address = mem->read(registers.pc++);
-            address = address + (mem->read(registers.pc++) << 8);
+            registers.flags &= 0b00111111; // set zero and subtraction flags
+            s8 operandValue = mem->read(registers.pc++);
+            s16 result = registers.sp + operandValue;
+            if ((((registers.sp & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+            else registers.flags &= 0b11011111;
+
+            if (operandValue >= 0) {
+                if (((registers.sp & 0xFF) + operandValue) > 0xFF) registers.flags |= 0b00010000;
+                else registers.flags &= 0b11101111;
+            } else { // negative operand I HATE THIS
+                if (((registers.sp & 0xFF) + (u8)operandValue) > 0xFF) registers.flags |= 0b00010000;
+                else registers.flags &= 0b11101111;
+            }
+
+
+            if (byte1 == 0xF8) { // load into hl 
+                ticks -= 4;
+                registers.gpr.n.l = result & 0xFF;
+                registers.gpr.n.h = result >> 8;
+            } else registers.sp = result;
+        } else {
+            u16 address;
+            if ((byte1 & 0b1111) == 0b0000) { // load to and from imm8
+                ticks += 8;
+                address = 0xFF00 + (mem->read(registers.pc++));
+            } else if ((byte1 & 0b1111) == 0b0010) { // c register
+                address = 0xFF00 + (registers.gpr.n.c);
+                ticks += 4;
+            } else if ((byte1 & 0b1111) == 0b1010) {
+                address = mem->read(registers.pc++);
+                address = address + (mem->read(registers.pc++) << 8);
+            }
+            if ((byte1 >> 4) == 0xE) {
+                mem->write(address, registers.gpr.n.a);
+            } else registers.gpr.n.a = mem->read(address);
         }
-        if ((byte1 >> 4) == 0xE) {
-            mem->write(address, registers.gpr.n.a);
-        } else registers.gpr.n.a = mem->read(address);
-    } else if ((byte1 > 0xE7) && (byte1 & 0b111) == 0) { // both instructions add an immediate to sp
-        ticks += 8;
-        registers.flags &= 0b00111111; // set zero and subtraction flags
-        s8 operandValue = mem->read(registers.pc++);
-        s16 result = registers.sp + operandValue;
-        if ((((registers.sp & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
-        else registers.flags &= 0b11011111;
-
-        if ((((registers.sp & 0xFF) + (operandValue & 0xFF)) > 0xFF)) registers.flags |= 0b00010000; // carry bit
-        else registers.flags &= 0b11101111;
-
-
-        if ((byte1 & 0b00010000) > 0) { // load into hl 
-            ticks -= 4;
-            registers.gpr.n.l = result & 0xFF;
-            registers.gpr.n.h = result >> 8;
-
-        } else registers.sp = result;
-
-
     }
     return ticks;
 }
