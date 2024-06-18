@@ -56,6 +56,35 @@ u8 Core::op_tree() {
                     ticks += 4;
                 }
             }
+        } else if ((byte1 & 0b1111) == 0b1001) { // two byte addition to hl
+            ticks += 4;
+            registers.flags &= 0b10111111; // set subtraction flag
+            u8 operand = (byte1 >> 4) & 0b111;
+            u16 operandValue;
+            u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+            switch (operand) {
+            case 0:
+                operandValue = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+                break;
+            case 1:
+                operandValue = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+                break;
+            case 2:
+                operandValue = hl;
+                break;
+            case 3:
+                operandValue = registers.sp;
+                break;
+            }
+            u16 result = hl + operandValue;
+            if ((((hl & 0x0FFF) + (operandValue & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
+            else registers.flags &= 0b11011111;
+            if ((hl + operandValue) > 0xFFFF) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            registers.gpr.n.l = result & 0xFF;
+            registers.gpr.n.h = result >> 8;
+
+
         } else if ((byte1 & 0b111) == 0b001) { // two byte imm load ops
             ticks += 8;
             u8 imm_byte1 = mem->read(registers.pc++);
