@@ -534,7 +534,7 @@ u8 Core::op_tree() {
                 registers.sp -= 2;
                 mem->write(registers.sp, registers.pc);
                 registers.pc = address;
-            } else if ((byte1 >> 5) == 1) { // conditional calls
+            } else { // conditional calls
                 u8 condition = (byte1 >> 3) & 0b11;
                 bool carry_flag = ((registers.flags >> 4) & 0b1) == 1;
                 bool zero_flag = ((registers.flags >> 7) & 0b1) == 1;
