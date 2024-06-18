@@ -30,6 +30,7 @@ for (const auto& element : test_data) {
     testcore->registers.flags = initial.at("f");
     testcore->registers.gpr.n.h = initial.at("h");
     testcore->registers.gpr.n.l = initial.at("l");
+    testcore->ime = initial.at("ime") == 1;
     
     for (const auto address_pair : initial.at("ram")) {
         testcore->mem->write(address_pair.at(0), (u8) address_pair.at(1));
@@ -47,11 +48,17 @@ for (const auto& element : test_data) {
     if (testcore->registers.flags != final.at("f")) std::cout << "mismatch in flags got:" << (int) testcore->registers.flags << " expected: " << final.at("f") << "\n";
     if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "mismatch in register h got:" << (int) testcore->registers.gpr.n.h << " expected: " << final.at("h") << "\n";
     if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "mismatch in register l got:" << (int) testcore->registers.gpr.n.l << " expected: " << final.at("l") << "\n";
-}
+    try {
+        if (testcore->ei_set != (final.at("ei") == 1)) std::cout << "mismatch in ei_set got:" << std::boolalpha << testcore->ei_set << " expected: " << (final.at("ei") == 1) << "\n";
+    }
+    catch (json::exception e) {
+    }
+    if (testcore->ime != (final.at("ime") == 1)) std::cout << "mismatch in ime got:" << std::boolalpha << testcore->ime << " expected: " << (final.at("ime") == 1) << "\n";
     for (const auto address_pair : final.at("ram")) {
         if (testcore->mem->read(address_pair.at(0)) != address_pair.at(1)) std::cout << "mismatch in memory address: " << address_pair.at(0) << " got: " << (int) testcore->mem->read(address_pair.at(0)) << " expected: " << address_pair.at(1) << "\n";
     }
 
     }
+}
     std::cout << "tests finished\n";
 }
