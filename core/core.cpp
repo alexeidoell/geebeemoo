@@ -506,8 +506,6 @@ u8 Core::op_tree() {
                     registers.sp -= 2;
                 }
             }
-        } else if (byte1 == 0xE9) { // jp hl
-            registers.pc = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         } else if ((byte1 & 0b111) < 4) { // jp instructions
             ticks += 4;
             u16 address = mem->read(registers.pc++);
@@ -552,6 +550,8 @@ u8 Core::op_tree() {
             }
 
         }
+    } else if (byte1 == 0xE9) { // jp hl
+        registers.pc = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     } else if ((byte1 >> 5) == 0b111) { // stack and heap operations
         u16 address;
         if ((byte1 & 0b1111) == 0b0000) { // load to and from imm8
