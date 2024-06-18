@@ -330,7 +330,7 @@ u8 Core::op_tree() {
                 else registers.flags &= 0b11011111;
             }
 
-            if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+            if (result > 0xFF) registers.flags |= 0b00010000; // carry bit
             else registers.flags &= 0b11101111;
             if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
             else registers.flags &= 0b01111111;
