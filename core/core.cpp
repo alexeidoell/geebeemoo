@@ -408,7 +408,7 @@ u8 Core::op_tree() {
         case 1:
             registers.flags |= 0b01000000; // subtraction bit
             result = registers.gpr.n.a - operandValue;
-            if (byte1 >= 0xC8 && (registers.flags & 0b00010000) > 0) { // carry subtraction
+            if (byte1 >= 0xD8 && (registers.flags & 0b00010000) > 0) { // carry subtraction
                 result -= 1;
                 if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF) + 1))) registers.flags |= 0b00100000; // half carry bit
                 else registers.flags &= 0b11011111;
