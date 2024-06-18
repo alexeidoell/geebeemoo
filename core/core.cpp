@@ -376,7 +376,7 @@ u8 Core::op_tree() {
         ticks += 4;
         registers.sp = (registers.gpr.n.h << 8) + registers.gpr.n.l;
     } else if (byte1 == 0xCB) { //  cb instructions
-
+        cb_op();
     } else if (byte1 == 0xF3) { // di
         ime = false;
     } else if (byte1 == 0xFB) { // ei
@@ -626,8 +626,30 @@ u8 Core::op_tree() {
 
 u8 Core::cb_op() {
     u8 ticks = 4;
-    u8 byte2 = mem->read(registers.pc);
+    u8 byte2 = mem->read(registers.pc++);
     u8 dst = byte2 & 0b111;
+
+    if ((byte2 >> 6) > 0) { // individual bit operations
+        if ((byte2 >> 6) == 1) { // bit test
+            registers.flags |= 0b00100000;
+            registers.flags &= 0b10111111;
+            u8 bit = (byte2 >> 3) & 0b111;
+            u8 check = (registers.gpr.r[dst] >> bit) & 0b1;
+            if (check == 0) {
+                registers.flags |= 0b10000000;
+            } else registers.flags &= 0b01111111;
+        } else if ((byte2 >> 6) == 2) { // reset bit
+            u8 bit = (byte2 >> 3) & 0b111;
+            u8 mask = 0b11111110;
+            for (int i = 0; i < bit; ++i) {
+                mask <<= 1;
+                mask += 1;
+            }
+            registers.gpr.r[dst] &= mask;
+        }
+
+
+    }
 
     return ticks;
 }
