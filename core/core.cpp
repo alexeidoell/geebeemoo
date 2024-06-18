@@ -628,13 +628,22 @@ u8 Core::cb_op() {
     u8 ticks = 4;
     u8 byte2 = mem->read(registers.pc++);
     u8 dst = byte2 & 0b111;
+    u16 hl;
+    if (dst == 6) {
+        hl = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
+    }
 
     if ((byte2 >> 6) > 0) { // individual bit operations
         if ((byte2 >> 6) == 1) { // bit test
             registers.flags |= 0b00100000;
             registers.flags &= 0b10111111;
             u8 bit = (byte2 >> 3) & 0b111;
-            u8 check = (registers.gpr.r[dst] >> bit) & 0b1;
+            u8 check;
+            if (dst != 6) {
+                check = (registers.gpr.r[dst] >> bit) & 0b1;
+            } else {
+                check = (mem->read(hl) >> bit) & 0b1;
+            }
             if (check == 0) {
                 registers.flags |= 0b10000000;
             } else registers.flags &= 0b01111111;
@@ -645,13 +654,26 @@ u8 Core::cb_op() {
                 mask <<= 1;
                 mask += 1;
             }
-            registers.gpr.r[dst] &= mask;
+            if (dst != 6) {
+                registers.gpr.r[dst] &= mask;
+            } else {
+                u8 operand = mem->read(hl);
+                operand &= mask;
+                mem->write(hl, operand);
+            }
         } else { // set bit
             u8 bit = (byte2 >> 3) & 0b111;
             u8 mask = 0b00000001 << bit;
-            registers.gpr.r[dst] |= mask;
-
+            if (dst != 6) {
+                registers.gpr.r[dst] |= mask;
+            } else {
+                u8 operand = mem->read(hl);
+                operand |= mask;
+                mem->write(hl, operand);
+            }
         }
+    } else if ((byte2 >> 5) == 0) { // rotates
+
 
 
     }
