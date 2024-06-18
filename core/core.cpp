@@ -491,7 +491,7 @@ u8 Core::op_tree() {
                 ticks += 8;
                 registers.pc = address;
             } else if (byte1 == 0xD9) { // reti
-                ei_set = true;
+                ime = true;
                 ticks += 8;
                 registers.pc = address;
             } else if ((byte1 & 0b111) == 0) { // conditional return
