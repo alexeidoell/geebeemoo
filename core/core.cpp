@@ -673,6 +673,42 @@ u8 Core::cb_op() {
             }
         }
     } else if ((byte2 >> 5) == 0) { // rotates
+            registers.flags &= 0b10011111; // set subtraction and half carry
+            u8 operand;
+            if (dst == 6) {
+                operand = mem->read(hl);
+            } else operand = registers.gpr.r[dst];
+        if (((byte2 >> 3) & 0b1) == 0) { // left rotate
+            u8 msb = (operand >> 7) & 0b1;
+            u8 carry_flag = (registers.flags >> 4) & 0b1;
+            if (msb == 1) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            if ((byte2 >> 4) == 1) { // non carry rotate
+                msb = carry_flag;
+            }
+            if (dst == 6) {
+                mem->write(hl, (u8)((operand << 1) + msb));
+            } else {
+                registers.gpr.r[dst] = (operand << 1) + msb;
+            }
+            if ((operand << 1) + msb == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+        } else { // right rotate
+            u8 lsb = operand & 0b1;
+            u8 carry_flag = (registers.flags >> 4) & 0b1;
+            if (lsb == 1) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            if ((byte2 >> 4) == 1) { // non carry rotate
+                lsb = carry_flag;
+            }
+            if (dst == 6) {
+                mem->write(hl, (u8)((operand >> 1) + (lsb << 7)));
+            } else {
+                registers.gpr.r[dst] = (operand >> 1) + (lsb << 7);
+            }
+            if ((operand >> 1) + (lsb << 7) == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+        }
 
 
 
