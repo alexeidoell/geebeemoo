@@ -16,8 +16,8 @@ u8 Core::bootup() {
 
 u8 Core::op_tree() {
     u8 byte1 = mem->read(registers.pc++); 
-    u8 ticks = 8; // 4 to fetch instruction + initial 4
-                  // will probably change how timing works later
+    u8 ticks = 4; // it seems that instructions are pre fetched
+                  // so there is no extra 4 ticks for fetching
 
     if (ei_set) {
         ime = true;
@@ -341,6 +341,11 @@ u8 Core::op_tree() {
 
  
         }
+    } else if (byte1 == 0xF9) { // ld sp, hl
+                                // terrible organization of my if statements
+                                // made me move this here
+        ticks += 4;
+        registers.sp = (registers.gpr.n.h << 8) + registers.gpr.n.l;
     } else if (byte1 == 0xCB) { //  cb instructions
 
     } else if (byte1 == 0xF3) { // di
@@ -562,6 +567,25 @@ u8 Core::op_tree() {
         if ((byte1 >> 4) == 0xE) {
             mem->write(address, registers.gpr.n.a);
         } else registers.gpr.n.a = mem->read(address);
+    } else if ((byte1 > 0xE7) && (byte1 & 0b111) == 0) { // both instructions add an immediate to sp
+        ticks += 8;
+        registers.flags &= 0b00111111; // set zero and subtraction flags
+        s8 operandValue = mem->read(registers.pc++);
+        s16 result = registers.sp + operandValue;
+        if ((((registers.sp & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+
+        if ((((registers.sp & 0xFF) + (operandValue & 0xFF)) > 0xFF)) registers.flags |= 0b00010000; // carry bit
+        else registers.flags &= 0b11101111;
+
+
+        if ((byte1 & 0b00010000) > 0) { // load into hl 
+            ticks -= 4;
+            registers.gpr.n.l = result & 0xFF;
+            registers.gpr.n.h = result >> 8;
+
+        } else registers.sp = result;
+
 
     }
     return ticks;

@@ -17,7 +17,6 @@ std::string path = "./tests/";
 for (const auto& file : std::filesystem::directory_iterator(path)) {
 std::ifstream f(file.path());
 json test_data = json::parse(f);
-std::cout << "running tests for opcode: " << file.path().string().substr(8,2) << "\n";
 for (const auto& element : test_data) {
     std::string name = element.at("name");
     initial = element.at("initial");
@@ -40,25 +39,25 @@ for (const auto& element : test_data) {
     testcore->op_tree();
 
     final = element.at("final");
-    if (testcore->registers.pc != final.at("pc")) std::cout << "mismatch in pc got:" << (int) testcore->registers.pc << " expected: " << final.at("pc") << "\n";
-    if (testcore->registers.sp != final.at("sp")) std::cout << "mismatch in sp got:" << (int) testcore->registers.sp << " expected: " << final.at("sp") << "\n";
-    if (testcore->registers.gpr.n.a != final.at("a")) std::cout << "mismatch in register a got:" << (int) testcore->registers.gpr.n.a << " expected: " << final.at("a") << "\n";
-    if (testcore->registers.gpr.n.b != final.at("b")) std::cout << "mismatch in register b got:" << (int) testcore->registers.gpr.n.b << " expected: " << final.at("b") << "\n";
-    if (testcore->registers.gpr.n.c != final.at("c")) std::cout << "mismatch in register c got:" << (int) testcore->registers.gpr.n.c << " expected: " << final.at("c") << "\n";
-    if (testcore->registers.gpr.n.d != final.at("d")) std::cout << "mismatch in register d got:" << (int) testcore->registers.gpr.n.d << " expected: " << final.at("d") << "\n";
-    if (testcore->registers.gpr.n.e != final.at("e")) std::cout << "mismatch in register e got:" << (int) testcore->registers.gpr.n.e << " expected: " << final.at("e") << "\n";
-    if (testcore->registers.flags != final.at("f")) std::cout << "mismatch in flags got:" << (int) testcore->registers.flags << " expected: " << final.at("f") << "\n";
-    if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "mismatch in register h got:" << (int) testcore->registers.gpr.n.h << " expected: " << final.at("h") << "\n";
-    if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "mismatch in register l got:" << (int) testcore->registers.gpr.n.l << " expected: " << final.at("l") << "\n";
+    if (testcore->registers.pc != final.at("pc")) std::cout << "test: " << name << "mismatch in pc got:" << (int) testcore->registers.pc << " expected: " << final.at("pc") << "\n";
+    if (testcore->registers.sp != final.at("sp")) std::cout << "test: " << name << "mismatch in sp got:" << (int) testcore->registers.sp << " expected: " << final.at("sp") << "\n";
+    if (testcore->registers.gpr.n.a != final.at("a")) std::cout << "test: " << name << "mismatch in register a got:" << (int) testcore->registers.gpr.n.a << " expected: " << final.at("a") << "\n";
+    if (testcore->registers.gpr.n.b != final.at("b")) std::cout << "test: " << name << "mismatch in register b got:" << (int) testcore->registers.gpr.n.b << " expected: " << final.at("b") << "\n";
+    if (testcore->registers.gpr.n.c != final.at("c")) std::cout << "test: " << name << "mismatch in register c got:" << (int) testcore->registers.gpr.n.c << " expected: " << final.at("c") << "\n";
+    if (testcore->registers.gpr.n.d != final.at("d")) std::cout << "test: " << name << "mismatch in register d got:" << (int) testcore->registers.gpr.n.d << " expected: " << final.at("d") << "\n";
+    if (testcore->registers.gpr.n.e != final.at("e")) std::cout << "test: " << name << "mismatch in register e got:" << (int) testcore->registers.gpr.n.e << " expected: " << final.at("e") << "\n";
+    if (testcore->registers.flags != final.at("f")) std::cout << "test: " << name << "mismatch in flags got:" << (int) testcore->registers.flags << " expected: " << final.at("f") << "\n";
+    if (testcore->registers.gpr.n.h != final.at("h")) std::cout << "test: " << name << "mismatch in register h got:" << (int) testcore->registers.gpr.n.h << " expected: " << final.at("h") << "\n";
+    if (testcore->registers.gpr.n.l != final.at("l")) std::cout << "test: " << name << "mismatch in register l got:" << (int) testcore->registers.gpr.n.l << " expected: " << final.at("l") << "\n";
     try {
-        if (testcore->ei_set != (final.at("ei") == 1)) std::cout << "mismatch in ei_set got:" << std::boolalpha << testcore->ei_set << " expected: " << (final.at("ei") == 1) << "\n";
+        if (testcore->ei_set != (final.at("ei") == 1)) std::cout << "test: " << name << "mismatch in ei_set got:" << std::boolalpha << testcore->ei_set << " expected: " << (final.at("ei") == 1) << "\n";
     }
     catch (json::exception e) {
 
     }
     if (testcore->ime != (final.at("ime") == 1)) std::cout << "test: " << name <<  " mismatch in ime got:" << std::boolalpha << testcore->ime << " expected: " << (final.at("ime") == 1) << "\n";
     for (const auto address_pair : final.at("ram")) {
-        if (testcore->mem->read(address_pair.at(0)) != address_pair.at(1)) std::cout << "mismatch in memory address: " << address_pair.at(0) << " got: " << (int) testcore->mem->read(address_pair.at(0)) << " expected: " << address_pair.at(1) << "\n";
+        if (testcore->mem->read(address_pair.at(0)) != address_pair.at(1)) std::cout << "test: " << name << "mismatch in memory address: " << address_pair.at(0) << " got: " << (int) testcore->mem->read(address_pair.at(0)) << " expected: " << address_pair.at(1) << "\n";
     }
 
 }
