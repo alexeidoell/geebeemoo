@@ -646,6 +646,11 @@ u8 Core::cb_op() {
                 mask += 1;
             }
             registers.gpr.r[dst] &= mask;
+        } else { // set bit
+            u8 bit = (byte2 >> 3) & 0b111;
+            u8 mask = 0b00000001 << bit;
+            registers.gpr.r[dst] |= mask;
+
         }
 
 
