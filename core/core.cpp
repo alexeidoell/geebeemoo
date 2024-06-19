@@ -16,13 +16,13 @@ Core::~Core() {
 u8 Core::bootup() {
     // set registers and memory to 0x100 state
     registers.gpr.n.a = 0x01;
-    registers.flags = 0;
-    registers.gpr.n.b = 0xFF;
+    registers.flags = 0xB0;
+    registers.gpr.n.b = 0x00;
     registers.gpr.n.c = 0x13;
     registers.gpr.n.d = 0x00;
-    registers.gpr.n.e = 0xC1;
-    registers.gpr.n.h = 0x84;
-    registers.gpr.n.l = 0x03;
+    registers.gpr.n.e = 0xD8;
+    registers.gpr.n.h = 0x01;
+    registers.gpr.n.l = 0x4D;
     registers.pc  = 0x0100;
     registers.sp  = 0xFFFE;
 
@@ -264,7 +264,7 @@ u8 Core::op_tree() {
                     if (half_carry_flag) registers.gpr.n.a -= 0x6;
 
                 }
-                if (registers.gpr.n.a == 0) registers.flags |= 0b1000000;
+                if (registers.gpr.n.a == 0) registers.flags |= 0b10000000;
                 else registers.flags &= 0b01111111;
                 registers.flags &= 0b11011111; 
 
@@ -426,13 +426,15 @@ u8 Core::op_tree() {
                 result -= 1;
                 if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF) + 1))) registers.flags |= 0b00100000; // half carry bit
                 else registers.flags &= 0b11011111;
+                if ((operandValue + 1) > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+                else registers.flags &= 0b11101111;
             } else {
                 if ((((registers.gpr.n.a & 0xF) < (operandValue & 0xF)))) registers.flags |= 0b00100000;
                 else registers.flags &= 0b11011111;
+                if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+                else registers.flags &= 0b11101111;
             }
 
-            if (operandValue > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
-            else registers.flags &= 0b11101111;
             if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
             else registers.flags &= 0b01111111;
 
@@ -633,6 +635,7 @@ u8 Core::op_tree() {
             } else registers.gpr.n.a = mem->read(address);
         }
     }
+    registers.flags &= 0xF0;
     return ticks;
 }
 

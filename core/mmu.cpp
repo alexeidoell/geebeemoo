@@ -17,13 +17,16 @@ u8 MMU::load_cart(char* filename) {
     }
 }
 u8 MMU::read(u16 address) {
+    if (address == 0xFF44) { // ly register
+        return 0x90;
+
+    }
     return mem[address];
 
 }
 u8 MMU::write(u16 address, u8 word) {
     if (address == 0xFF02) {
         if (word == 0x81) {
-            std::cout << std::hex << (char) read(0xFF01);
         }
     }
     mem[address] = word;
