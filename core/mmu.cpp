@@ -20,6 +20,9 @@ u8 MMU::read(u16 address) {
     if (address == 0xFF44) {
         return 0x90;
     }
+    if (address == 0xFF02) {
+        return 0xff;
+    }
     return mem[address];
 
 }
@@ -31,6 +34,9 @@ u8 MMU::write(u16 address, u8 word) {
     }
     if (address == 0xFF04) {
         mem[address] = 0x00;
+    }
+    if (address == 0xFF46) {
+        
     }
     mem[address] = word;
     return 0;

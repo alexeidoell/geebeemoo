@@ -1,63 +1,59 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_timer.h>
+#include "core/timer.h"
 #include "lib/types.h"
 #include "core/mmu.h"
 #include "core/core.h"
-#include <thread>
+#include "gb.h"
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <string>
 #include <memory>
-
-
-class GB {
-public:
-    void runEmu(char* filename);
-    void doctor_log(std::ofstream& log, Core& core, MMU& mem);
-    GB() {
-    }
-    ~GB() {}
-
-};
 
 void GB::runEmu(char* filename) {
     const double FPS = 59.7275;
-    const double frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
-    const double maxTicks = 4194304 / 59.7275; // number of instuctions per frame
+    const u32 frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
+    const u32 maxTicks = 4194304 / FPS; // number of instuctions per frame
     double current_ticks = maxTicks;
     u32 frameStart;
-    s32 frameTime;
-    u32 tima_ticks;
-    u32 div_ticks;
+    u32 frameTime;
+    s32 tima_ticks;
+    s32 div_ticks;
     u32 operation_ticks;
+    bool tima_flag = false;
     
     std::shared_ptr<MMU> mem = std::make_shared<MMU>();
     mem->load_cart(filename);
 
-    std::unique_ptr<Core> core = std::make_unique<Core>(mem);
-    core->bootup();
+    Core& core = *new Core(mem);
+    Timer& timer = *new Timer(mem);
+    core.bootup();
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     
-    u16 tima_freq[] = { 1024, 16, 64, 256 };
+    const static u16 tima_freq[] = { 8, 2, 4, 6 };
     while(true) { // idk how to make an actual sdl main loop
         frameStart = SDL_GetTicks();
         
-        current_ticks = std::trunc(current_ticks - maxTicks);
+        current_ticks = current_ticks - maxTicks;
+        tima_ticks = 0;
+        div_ticks = 0;
         while (current_ticks < maxTicks) {
-            doctor_log(log, *core, *mem);
-            operation_ticks = core->op_tree();
+            doctor_log(log, core, *mem);
+            operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
-            tima_ticks += operation_ticks;
-            if (div_ticks > 256) {
-                mem->div_inc();
-                div_ticks -= 256;
-            }
-            if (mem->read(0xFF07) > 3 && tima_ticks > tima_freq[mem->read(0xFF07) % 0b11]) {
-                mem->tima_inc();
-                tima_ticks -= tima_freq[mem->read(0xFF07) & 0b11];
+            if (mem->read(0xFF07) > 3) tima_ticks += operation_ticks;
+            while (div_ticks >= 4) {
+                u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
+                u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
+                timer.div_inc();
+                div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
+                u8 after_tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1; 
+                if ((mem->read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem->read(0xFF07) > 3)) { // falling edge
+                    tima_flag = (timer.tima_inc() == -1);
+                }
+                div_ticks -= 4;
             }
         }
 
@@ -69,7 +65,6 @@ void GB::runEmu(char* filename) {
 }
 
 void GB::doctor_log(std::ofstream& log, Core& core, MMU& mem) {
-
     log << std::hex << std::setfill('0') << "A:" << std::setw(2) << (int) core.registers.gpr.n.a;
     log << " F:" << std::setw(2) << (int) core.registers.flags;
     log << " B:" <<  std::setw(2) << (int) core.registers.gpr.n.b;
@@ -87,10 +82,3 @@ void GB::doctor_log(std::ofstream& log, Core& core, MMU& mem) {
     log << "\n";
 }
 
-
-int main(int argc, char* argv[]) {
-    std::unique_ptr<GB> testGB = std::make_unique<GB>();
-    testGB->runEmu(argv[1]);
-
-
-}

@@ -25,6 +25,7 @@ u8 Core::bootup() {
     registers.gpr.n.l = 0x4D;
     registers.pc  = 0x0100;
     registers.sp  = 0xFFFE;
+    mem->write(0xFF03, (u16)0xABCC);
 
     return 0;
 }
@@ -32,8 +33,12 @@ u8 Core::bootup() {
 u8 Core::op_tree() {
     u8 ticks = 4; // it seems that instructions are pre fetched
                   // so there is no extra 4 ticks for fetching
-    if (halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) == 0) { // halt
+    if (ime && halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) {
+        registers.pc += 1;
+    } else if (halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) == 0) { // halt
         return ticks;
+    } else if (!ime && halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { 
+
     }
     halt_flag = false;
 
@@ -44,31 +49,26 @@ u8 Core::op_tree() {
             registers.sp -= 2;
             mem->write(registers.sp, registers.pc);
             registers.pc = 0x40;
-            ticks += op_tree();
         } else if (((mem->read(0xFF0F) & 0b10) & (mem->read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
             mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111101));
             registers.sp -= 2;
             mem->write(registers.sp, registers.pc);
             registers.pc = 0x48;
-            ticks += op_tree();
         } else if (((mem->read(0xFF0F) & 0b100) & (mem->read(0xFFFF) & 0b100)) != 0) { // timer interrupt
             mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111011));
             registers.sp -= 2;
             mem->write(registers.sp, registers.pc);
             registers.pc = 0x50;
-            ticks += op_tree();
         } else if (((mem->read(0xFF0F) & 0b1000) & (mem->read(0xFFFF) & 0b1000)) != 0) { // serial interrupt
             mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11110111));
             registers.sp -= 2;
             mem->write(registers.sp, registers.pc);
             registers.pc = 0x58;
-            ticks += op_tree();
         } else if (((mem->read(0xFF0F) & 0b10000) & (mem->read(0xFFFF) & 0b10000)) != 0) { // joypad interrupt
             mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11101111));
             registers.sp -= 2;
             mem->write(registers.sp, registers.pc);
             registers.pc = 0x60;
-            ticks += op_tree();
         }
         return ticks;
     }
@@ -77,7 +77,7 @@ u8 Core::op_tree() {
 
 
     if (byte1 == 0) { // nop
-        // gotta implement nop
+        return ticks;
     }
     else if (byte1 == 0x10) { // STOP instruction
     } else if (byte1 == 0xD3 || byte1 == 0xDB || byte1 == 0xDD ||
@@ -225,7 +225,7 @@ u8 Core::op_tree() {
             if (dst != 6) {
                 operand = registers.gpr.r[dst];
             } else {
-                ticks += 4;
+                ticks += 8;
                 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
                 operand = mem->read(hl);
             }
@@ -248,7 +248,7 @@ u8 Core::op_tree() {
             if (dst != 6) {
                 operand = registers.gpr.r[dst];
             } else {
-                ticks += 4;
+                ticks += 8;
                 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
                 operand = mem->read(hl);
             }
@@ -330,6 +330,7 @@ u8 Core::op_tree() {
             halt_flag = true;
         }
         else if (src == 6) {
+            ticks += 4;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             registers.gpr.r[dst] = mem->read(hl);
         } else if (dst == 6) {
@@ -337,7 +338,6 @@ u8 Core::op_tree() {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             mem->write(hl, registers.gpr.r[src]);
         } else {
-            ticks += 4;
             registers.gpr.r[dst] = registers.gpr.r[src];
         }
     } else if (byte1 >= 0x80 && byte1 < 0xC0) { // arithmetic
@@ -560,12 +560,11 @@ u8 Core::op_tree() {
             mem->write(registers.sp, regValue);
         }
     } else if ((byte1 & 0b111) == 0b111 ) { // vector calls
+        ticks += 12;
         u16 address = (byte1 & 0b00111000);
         registers.sp -= 2;
         mem->write(registers.sp, registers.pc);
         registers.pc = address;
-
- 
     } else if ((byte1 >> 5) == 0b110) { // jumps and returns
         if ((byte1 & 0b111) < 0b10) { // returns
             ticks += 4;
@@ -591,7 +590,7 @@ u8 Core::op_tree() {
                 }
             }
         } else if ((byte1 & 0b111) < 4) { // jp instructions
-            ticks += 4;
+            ticks += 8;
             u16 address = mem->read(registers.pc++);
             address = address + (mem->read(registers.pc++) << 8);
             if (byte1 == 0xC3) { // unconditional jump
@@ -638,7 +637,7 @@ u8 Core::op_tree() {
         registers.pc = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     } else if ((byte1 >> 5) == 0b111) { // stack and heap operations
         if (((byte1 & 0b1111) == 0b1000)) { // both instructions add an immediate to sp
-            ticks += 8;
+            ticks += 12;
             registers.flags &= 0b00111111; // set zero and subtraction flags
             s8 operandValue = mem->read(registers.pc++);
             s16 result = registers.sp + operandValue;
@@ -666,6 +665,7 @@ u8 Core::op_tree() {
                 address = 0xFF00 + (registers.gpr.n.c);
                 ticks += 4;
             } else if ((byte1 & 0b1111) == 0b1010) {
+                ticks += 12;
                 address = mem->read(registers.pc++);
                 address = address + (mem->read(registers.pc++) << 8);
             }
@@ -679,16 +679,17 @@ u8 Core::op_tree() {
         ime = true;
         ei_set = false;
     }
+    //std::cout << (int)ticks << "\n";
     return ticks;
 }
 
 u8 Core::cb_op() {
-    u8 ticks = 4;
+    u8 ticks = 8;
     u8 byte2 = mem->read(registers.pc++);
     u8 dst = byte2 & 0b111;
     u16 hl;
     if (dst == 6) {
-        ticks += 8;
+        ticks += 4;
         hl = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     }
 

@@ -1,0 +1,74 @@
+; this file was created with wlalink by ville helin <ville.helin@iki.fi>.
+; wla symbolic information for "/home/runner/work/mooneye-test-suite/mooneye-test-suite/build/utils/bootrom_dumper.gb".
+
+[information]
+version 3
+wlasymbol true
+
+[labels]
+01:7d01 enable_cartridge_ram
+01:7d06 copy_to_cartridge_ram
+01:7d28 disable_cartridge_ram
+01:7d2c compare_data
+01:7d38 finish
+01:7d49 finish@choose_tilemap
+01:7d56 finish@setup_tilemap
+01:7d6e finish@setup_tile
+01:7d7e finish@setup_audio
+01:7d99 failure
+01:7d9f success
+01:7dbd end
+01:7dc1 end@halt_execution_0
+01:7dc3 copy_to_serial
+01:7de7 tilemap_happyface
+01:7eaf tilemap_sadface
+01:7f77 clear_vram
+01:7f81 disable_ppu_safe
+01:7f87 disable_ppu_safe@wait_ly_0
+01:7f90 is_serial_broken
+01:7f9a memcpy
+01:7fa3 memset
+01:7fac reset_screen
+01:7fcd serial_memcpy
+01:7fd8 serial_send_byte
+01:ff80 hram.serial_timeout
+01:ff81 hram.is_success
+01:ff80 RAM_USAGE_SLOT_4_BANK_1_START
+01:ff81 RAM_USAGE_SLOT_4_BANK_1_END
+
+[definitions]
+0000000a _sizeof_clear_vram
+0000000f _sizeof_disable_ppu_safe
+0000000a _sizeof_is_serial_broken
+00000009 _sizeof_memcpy
+00000009 _sizeof_memset
+00000021 _sizeof_reset_screen
+0000000b _sizeof_serial_memcpy
+00000014 _sizeof_serial_send_byte
+00000001 _sizeof_hram.serial_timeout
+00000001 _sizeof_hram.is_success
+00000001 _sizeof_RAM_USAGE_SLOT_4_BANK_1_START
+00000005 _sizeof_enable_cartridge_ram
+00000022 _sizeof_copy_to_cartridge_ram
+00000004 _sizeof_disable_cartridge_ram
+0000000c _sizeof_compare_data
+00000061 _sizeof_finish
+00000006 _sizeof_failure
+0000001e _sizeof_success
+00000006 _sizeof_end
+00000024 _sizeof_copy_to_serial
+000000c8 _sizeof_tilemap_happyface
+
+[sections]
+00007fac 01:3fac 7fac 00000021 reset_screen
+00007fd8 01:3fd8 7fd8 00000014 serial_send_byte
+00007f81 01:3f81 7f81 0000000f disable_ppu_safe
+00007fcd 01:3fcd 7fcd 0000000b serial_memcpy
+00007f77 01:3f77 7f77 0000000a clear_vram
+00007f90 01:3f90 7f90 0000000a is_serial_broken
+00007f9a 01:3f9a 7f9a 00000009 memcpy
+00007fa3 01:3fa3 7fa3 00000009 memset
+
+[ramsections]
+01:0000 ff80 00000001 Runtime-Serial
+01:0001 ff81 00000001 HRAM
