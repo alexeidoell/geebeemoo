@@ -77,9 +77,9 @@ u8 Core::op_tree() {
 
 
     if (byte1 == 0) { // nop
-        return ticks;
     }
     else if (byte1 == 0x10) { // STOP instruction
+        registers.pc++;
     } else if (byte1 == 0xD3 || byte1 == 0xDB || byte1 == 0xDD ||
             byte1 == 0xE3 || byte1 == 0xE4 || byte1 == 0xEB ||
             byte1 == 0xEC || byte1 == 0xED || byte1 == 0xF4 ||
@@ -328,8 +328,7 @@ u8 Core::op_tree() {
         if (src == 6 && dst == 6) {
             // halt op
             halt_flag = true;
-        }
-        else if (src == 6) {
+        } else if (src == 6) {
             ticks += 4;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             registers.gpr.r[dst] = mem->read(hl);
@@ -428,7 +427,7 @@ u8 Core::op_tree() {
         ticks += 4;
         registers.sp = (registers.gpr.n.h << 8) + registers.gpr.n.l;
     } else if (byte1 == 0xCB) { //  cb instructions
-        cb_op();
+        ticks += cb_op();
     } else if (byte1 == 0xF3) { // di
         ime = false;
     } else if (byte1 == 0xFB) { // ei
@@ -628,10 +627,7 @@ u8 Core::op_tree() {
                     registers.pc = address;
                     ticks += 12;
                 }
-
-
             }
-
         }
     } else if (byte1 == 0xE9) { // jp hl
         registers.pc = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
@@ -689,7 +685,7 @@ u8 Core::cb_op() {
     u8 dst = byte2 & 0b111;
     u16 hl;
     if (dst == 6) {
-        ticks += 4;
+        ticks += 8;
         hl = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     }
 
@@ -702,6 +698,7 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 check = (registers.gpr.r[dst] >> bit) & 0b1;
             } else {
+                ticks -= 4;
                 check = (mem->read(hl) >> bit) & 0b1;
             }
             if (check == 0) {
@@ -717,6 +714,7 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] &= mask;
             } else {
+                ticks -= 4;
                 u8 operand = mem->read(hl);
                 operand &= mask;
                 mem->write(hl, operand);
@@ -727,6 +725,7 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] |= mask;
             } else {
+                ticks -= 4;
                 u8 operand = mem->read(hl);
                 operand |= mask;
                 mem->write(hl, operand);
