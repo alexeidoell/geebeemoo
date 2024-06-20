@@ -11,3 +11,5 @@ fighting for my life in an attempt to simulate a gaming boy
 [JSMoo tests](https://github.com/raddad772/jsmoo)
 
 [Blargg test roms](https://github.com/retrio/gb-test-roms)
+
+[Gameboy Doctor](https://github.com/robert/gameboy-doctor)
