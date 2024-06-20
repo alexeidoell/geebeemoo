@@ -32,6 +32,10 @@ u8 Core::bootup() {
 u8 Core::op_tree() {
     u8 ticks = 4; // it seems that instructions are pre fetched
                   // so there is no extra 4 ticks for fetching
+    if (halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) == 0) { // halt
+        return ticks;
+    }
+    halt_flag = false;
 
     if (ime && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { // interrupt handling
         ticks += 16;
@@ -323,6 +327,7 @@ u8 Core::op_tree() {
         // HL in src or dst
         if (src == 6 && dst == 6) {
             // halt op
+            halt_flag = true;
         }
         else if (src == 6) {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
