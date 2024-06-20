@@ -30,14 +30,47 @@ u8 Core::bootup() {
 }
 
 u8 Core::op_tree() {
-    u8 byte1 = mem->read(registers.pc++); 
     u8 ticks = 4; // it seems that instructions are pre fetched
                   // so there is no extra 4 ticks for fetching
 
-    if (ei_set) {
-        ime = true;
-        ei_set = false;
+    if (ime && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { // interrupt handling
+        ticks += 16;
+        if (((mem->read(0xFF0F) & 0b1) & (mem->read(0xFFFF) & 0b1)) != 0) { // vblank interrupt
+            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111110));
+            registers.sp -= 2;
+            mem->write(registers.sp, registers.pc);
+            registers.pc = 0x40;
+            ticks += op_tree();
+        } else if (((mem->read(0xFF0F) & 0b10) & (mem->read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
+            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111101));
+            registers.sp -= 2;
+            mem->write(registers.sp, registers.pc);
+            registers.pc = 0x48;
+            ticks += op_tree();
+        } else if (((mem->read(0xFF0F) & 0b100) & (mem->read(0xFFFF) & 0b100)) != 0) { // timer interrupt
+            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111011));
+            registers.sp -= 2;
+            mem->write(registers.sp, registers.pc);
+            registers.pc = 0x50;
+            ticks += op_tree();
+        } else if (((mem->read(0xFF0F) & 0b1000) & (mem->read(0xFFFF) & 0b1000)) != 0) { // serial interrupt
+            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11110111));
+            registers.sp -= 2;
+            mem->write(registers.sp, registers.pc);
+            registers.pc = 0x58;
+            ticks += op_tree();
+        } else if (((mem->read(0xFF0F) & 0b10000) & (mem->read(0xFFFF) & 0b10000)) != 0) { // joypad interrupt
+            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11101111));
+            registers.sp -= 2;
+            mem->write(registers.sp, registers.pc);
+            registers.pc = 0x60;
+            ticks += op_tree();
+        }
+        return ticks;
     }
+    u8 byte1 = mem->read(registers.pc++); 
+    bool ei_op = false;
+
 
     if (byte1 == 0) { // nop
         // gotta implement nop
@@ -394,6 +427,7 @@ u8 Core::op_tree() {
     } else if (byte1 == 0xF3) { // di
         ime = false;
     } else if (byte1 == 0xFB) { // ei
+        ei_op = true;
         ei_set = true;
     } else if ((byte1 & 0b111) == 0b110) { // arithmetic on A register with immediate
         ticks += 4;
@@ -636,6 +670,10 @@ u8 Core::op_tree() {
         }
     }
     registers.flags &= 0xF0;
+    if (ei_set && !ei_op) {
+        ime = true;
+        ei_set = false;
+    }
     return ticks;
 }
 
@@ -768,7 +806,6 @@ u8 Core::cb_op() {
                 operand = mem->read(hl);
             } else operand = registers.gpr.r[dst];
             u8 lsb = operand & 0b1;
-            u8 carry_flag = (registers.flags >> 4) & 0b1;
             if (lsb == 1) registers.flags |= 0b00010000;
             else registers.flags &= 0b11101111;
             
