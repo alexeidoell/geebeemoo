@@ -1,5 +1,6 @@
 #include "timer.h"
 #include "mmu.h"
+#include <iostream>
 
 
 u8 Timer::div_inc() {
@@ -10,12 +11,15 @@ u8 Timer::div_inc() {
     return 0;
 }
 s8 Timer::tima_inc() {
-    if (mem->read(0xFF05) == 255) {
+    u16 div = mem->read(0xFF03);
+    div = (mem->read(0xFF04) << 8) + div;
+    std::cout << std::hex << (int)div << " " << (int)mem->read(0xff05) << " " << (int)mem->read(0xFF06) << "\n";
+    if (mem->read(0xFF05) == 0xFF) {
         tima_flag = true;
         mem->write(0xFF05, (u8)0x00);
         tima_val = mem->read(0xFF06);
         return -1;
-    } else if (tima_flag) {
+    } else if ((mem->read(0xFF05) == 0) && tima_flag) {
         tima_flag = false;
         mem->write(0xFF05, (u8)(tima_val));
         mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b100));

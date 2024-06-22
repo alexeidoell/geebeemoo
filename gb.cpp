@@ -17,7 +17,6 @@ void GB::runEmu(char* filename) {
     double current_ticks = maxTicks;
     u32 frameStart;
     u32 frameTime;
-    s32 tima_ticks;
     s32 div_ticks;
     u32 operation_ticks;
     bool tima_flag = false;
@@ -31,22 +30,20 @@ void GB::runEmu(char* filename) {
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     
-    const static u16 tima_freq[] = { 8, 2, 4, 6 };
+    const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(true) { // idk how to make an actual sdl main loop
         frameStart = SDL_GetTicks();
         
         current_ticks = current_ticks - maxTicks;
-        tima_ticks = 0;
         div_ticks = 0;
         while (current_ticks < maxTicks) {
+            u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
+            u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
-            if (mem->read(0xFF07) > 3) tima_ticks += operation_ticks;
             while (div_ticks >= 4) {
-                u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
-                u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
                 timer.div_inc();
                 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
                 u8 after_tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1; 
@@ -54,6 +51,8 @@ void GB::runEmu(char* filename) {
                     tima_flag = (timer.tima_inc() == -1);
                 }
                 div_ticks -= 4;
+                div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
+                tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             }
         }
 
