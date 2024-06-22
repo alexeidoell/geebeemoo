@@ -7,8 +7,12 @@
 class PPU {
     private:
         std::shared_ptr<MMU> mem;
-        u8 xCoord;
-        u8 yCoord;
+        u16 currentLineDots; // need to keep track of state between
+                             // calls so that the ppu can tell the
+                             // memory or cpu what not to do before
+                             // the next call of the ppu loop that will
+                             // resume the state it was at in the current
+                             // line
     public:
         PPU(std::shared_ptr<MMU> memPtr) 
             :mem(memPtr) {}
