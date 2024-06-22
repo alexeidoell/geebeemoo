@@ -15,5 +15,6 @@ public:
     u8 write(u16 address, u16 dword);
     u8 div_inc();
     u8 tima_inc();
+    bool tima_tick = false;
 };
 

@@ -18,10 +18,9 @@ u8 MMU::load_cart(char* filename) {
 }
 u8 MMU::read(u16 address) {
     if (address == 0xFF44) {
-        return 0x90;
+        return 0xff;
     }
     if (address == 0xFF02) {
-        return 0xff;
     }
     return mem[address];
 
@@ -32,8 +31,17 @@ u8 MMU::write(u16 address, u8 word) {
            std::cout << std::hex << read(0xFF01);
         }
     }
-    if (address == 0xFF04) {
-        mem[address] = 0x00;
+    if (address == 0xFF04) { // div register
+        u16 div = mem[0xFF03];
+        div = (mem[0xFF04] << 8) + div;
+        div += 4;
+        write(0xFF03, div);
+    }
+    if (address == 0xFF05) { // tima register
+
+    }
+    if (address == 0xFF07) { // check for extra ticks
+
     }
     if (address == 0xFF46) {
         
