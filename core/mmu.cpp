@@ -31,22 +31,13 @@ u8 MMU::write(u16 address, u8 word) {
            std::cout << std::hex << read(0xFF01);
         }
     }
-    if (address == 0xFF04) { // div register
-        u16 div = mem[0xFF03];
-        div = (mem[0xFF04] << 8) + div;
-        div += 4;
-        write(0xFF03, div);
+    else if (address == 0xFF04) { // div register
+        write(0xFF03, (u16)0x00);
     }
-    if (address == 0xFF05) { // tima register
-
-    }
-    if (address == 0xFF07) { // check for extra ticks
-
-    }
-    if (address == 0xFF46) {
+    else if (address == 0xFF46) {
         
     }
-    mem[address] = word;
+    else mem[address] = word;
     return 0;
 }
 u8 MMU::write(u16 address, u16 dword) {
