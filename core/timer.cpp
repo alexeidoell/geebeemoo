@@ -13,7 +13,6 @@ u8 Timer::div_inc() {
 s8 Timer::tima_inc() {
     u16 div = mem->read(0xFF03);
     div = (mem->read(0xFF04) << 8) + div;
-    std::cout << std::hex << (int)div << " " << (int)mem->read(0xff05) << " " << (int)mem->read(0xFF06) << "\n";
     if (mem->read(0xFF05) == 0xFF) {
         tima_flag = true;
         mem->write(0xFF05, (u8)0x00);

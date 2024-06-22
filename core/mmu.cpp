@@ -32,6 +32,9 @@ u8 MMU::write(u16 address, u8 word) {
         }
     }
     else if (address == 0xFF04) { // div register
+                                  // this prevents normal writes
+                                  // but the timer uses double writes 
+                                  // so still has permission
         write(0xFF03, (u16)0x00);
     }
     else if (address == 0xFF46) {
@@ -40,6 +43,7 @@ u8 MMU::write(u16 address, u8 word) {
     else mem[address] = word;
     return 0;
 }
+
 u8 MMU::write(u16 address, u16 dword) {
     mem[address] = (u8) (dword & 0xFF);
     mem[address + 1] = (u8) (dword >> 8);
