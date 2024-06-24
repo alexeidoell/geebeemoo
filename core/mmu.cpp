@@ -18,7 +18,6 @@ u8 MMU::load_cart(char* filename) {
 }
 u8 MMU::read(u16 address) {
     if (address == 0xFF44) {
-        return 0xff;
     }
     if (address == 0xFF02) {
     }
@@ -28,7 +27,7 @@ u8 MMU::read(u16 address) {
 u8 MMU::write(u16 address, u8 word) {
     if (address == 0xFF02) {
         if (word == 0x81) {
-           std::cout << std::hex << read(0xFF01);
+           //std::cout << std::hex << read(0xFF01);
         }
     }
     else if (address == 0xFF04) { // div register

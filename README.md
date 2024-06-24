@@ -12,4 +12,6 @@ fighting for my life in an attempt to simulate a gaming boy
 
 [Blargg test roms](https://github.com/retrio/gb-test-roms)
 
+[Gekkio test roms](https://github.com/Gekkio/mooneye-test-suite)
+
 [Gameboy Doctor](https://github.com/robert/gameboy-doctor)

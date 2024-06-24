@@ -11,5 +11,5 @@ all: $(EXECUTABLES)
 clean:
 	rm -rf $(EXECUTABLES) log.txt
 
-$(EXECUTABLES) : % : main.cpp gb.cpp core/core.cpp core/mmu.cpp core/timer.cpp
+$(EXECUTABLES) : % : main.cpp gb.cpp core/core.cpp core/mmu.cpp core/timer.cpp core/ppu.cpp
 	$(CC) $(CFLAGS) $^ -lSDL2main -lSDL2 -o $@

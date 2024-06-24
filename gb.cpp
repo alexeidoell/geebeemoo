@@ -4,6 +4,7 @@
 #include "lib/types.h"
 #include "core/mmu.h"
 #include "core/core.h"
+#include "core/ppu.h"
 #include "gb.h"
 #include <iostream>
 #include <iomanip>
@@ -26,14 +27,17 @@ void GB::runEmu(char* filename) {
 
     Core& core = *new Core(mem);
     Timer& timer = *new Timer(mem);
+    PPU& ppu = *new PPU(mem);
     core.bootup();
+    int i = 1;
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(true) { // idk how to make an actual sdl main loop
         frameStart = SDL_GetTicks();
-        
+        mem->ppuState = mode2;
+        mem->write(0xFF44, (u8)0);
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
         while (current_ticks < maxTicks) {
@@ -58,7 +62,6 @@ void GB::runEmu(char* filename) {
 
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
-
 
     } 
 }

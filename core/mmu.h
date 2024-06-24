@@ -4,7 +4,7 @@
 #include "../lib/types.h"
 #include "joypad.h"
 
-enum PPUState { mode2, mode3, mode0, mode1 };
+enum PPUState { mode0, mode1, mode2, mode3 };
 
 class MMU {
 private:
