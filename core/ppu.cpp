@@ -1,5 +1,6 @@
 #include "ppu.h"
 #include "mmu.h"
+#include <ios>
 #include <iostream>
 
 u16 PPU::getTile(u16 index) {
@@ -49,6 +50,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             oamScan(address);
             finishedLineDots += 2;
         }
+    } else {
     }
     if (ppuState == mode2 && currentLineDots > 80) {
         ppuState = mode3;
@@ -61,17 +63,23 @@ std::array<u8, 23040>& PPU::getBuffer() {
     return frameBuffer;
 }
 
-u8 PPU::oamScan(u8 address) {
+u8 PPU::oamScan(u16 address) {
     u8 currentLine = mem->read(0xFF44); // ly register    
     u8 objY_pos = mem->read(address);
-    Object obj = *new Object(objY_pos, mem->read(address + 1), mem->read(address + 2), mem->read(address + 3));
+    Object obj = Object(objY_pos, mem->read(address + 1), mem->read(address + 2), mem->read(address + 3));
     if ((mem->read(0xFF40) & 0b100) > 0) { // 8x16 tiles
         if (((objY_pos + 16) - currentLine) > 16) {
-            if (objList.size() < 10) objList.insert(objList.end(), obj);
+            if (objFetchIdx < 10) {
+                objArr[objFetchIdx] = obj;
+                objFetchIdx += 1;
+            }
         }
     } else { // 8x8 tiles
         if (((objY_pos + 8) - currentLine) > 16) {
-            if (objList.size() < 10) objList.insert(objList.end(), obj);
+            if (objFetchIdx < 10) {
+                objArr[objFetchIdx] = obj;
+                objFetchIdx += 1;
+            }
         }
     }
     return 0;

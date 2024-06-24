@@ -2,6 +2,7 @@
 #include "../lib/types.h"
 #include "mmu.h"
 #include <array>
+#include <iostream>
 #include <memory>
 #include <queue>
 
@@ -25,6 +26,7 @@ struct Object {
     u8 xPos;
     u8 tileIndex;
     u8 flags;
+    Object() = default;
     Object(u8 yPos, u8 xPos, u8 tileIndex, u8 flags) : yPos(yPos), xPos(xPos), tileIndex(tileIndex), flags(flags) {}
 };
 
@@ -34,16 +36,16 @@ class PPU {
        void pixelFetcher();
         u16 getTile(u16 index); // only gets tile data for a single line
         PPUState& ppuState;
-        std::vector<Object> objList;
+        std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
-        bool objFetch;
+        u8 objFetchIdx;
         u8 xCoord = 0;
         u8 yCoord = 0;
         Window window;
         std::array<u8, 23040> frameBuffer;
         u8 printedPixels = 0;
-        u8 oamScan(u8 address);
+        u8 oamScan(u16 address);
     public:
         u16 currentLineDots; // need to keep track of state between
                              // calls so that the ppu can tell the
@@ -53,7 +55,6 @@ class PPU {
                              // line
         PPU(std::shared_ptr<MMU> memPtr) 
         :mem(memPtr), ppuState(mem->ppuState) {
-            objList.resize(10);
         } // this feels gross
         ~PPU();
         u8 ppuLoop(u8 ticks);
