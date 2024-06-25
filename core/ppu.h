@@ -30,21 +30,32 @@ struct Object {
     Object(u8 yPos, u8 xPos, u8 tileIndex, u8 flags) : yPos(yPos), xPos(xPos), tileIndex(tileIndex), flags(flags) {}
 };
 
+struct FIFO {
+    bool fetchTileID = false;
+    bool fetchLowByte = false;
+    bool fetchHighByte = false;
+    bool awaitingPush = false;
+    u16 tileAddress;
+    u8 highByte;
+    u8 lowByte;
+};
+
 class PPU {
     private:
         std::shared_ptr<MMU> mem;
-       void pixelFetcher();
-        u16 getTile(u16 index); // only gets tile data for a single line
+        u16 pixelFetcher();
+        u8 getTileByte(u16 index);
+        u16 combineTile(u8 tileHigh, u8 tileLow);
         PPUState& ppuState;
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
         u8 objFetchIdx;
-        u8 xCoord = 0;
-        u8 yCoord = 0;
+        u8 xCoord;
+        u8 mode3_delay = 0;
+        FIFO fifoFlags;
         Window window;
-        std::array<u8, 23040> frameBuffer;
-        u8 printedPixels = 0;
+        std::array<u8, 23040> frameBuffer = { 0 };
         u8 oamScan(u16 address);
     public:
         u16 currentLineDots; // need to keep track of state between

@@ -17,8 +17,6 @@ u8 MMU::load_cart(char* filename) {
     }
 }
 u8 MMU::read(u16 address) {
-    if (address == 0xFF44) {
-    }
     if (address == 0xFF02) {
     }
     return mem[address];
