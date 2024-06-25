@@ -57,8 +57,10 @@ u8 PPU::ppuLoop(u8 ticks) {
         ppuState = mode3;
     } else if (ppuState == mode3 && currentLineDots >= 172 + mode3_delay) {
         // not yet implemented
-    } else if (ppuState == mode0 && currentLineDots >= 456) {
+        // ppuState = mode0;
+    } else if (ppuState == mode0 && currentLineDots == 456) {
         // not yet implemented
+        // ppuState = mode2;
     } 
     currentLine = mem->read(0xFF44);
     if (currentLine >= 143 && currentLineDots >= 456) {
@@ -128,8 +130,20 @@ u8 PPU::ppuLoop(u8 ticks) {
             finishedLineDots += 1;
         }
     }
-   mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState)); // set ppu mode bits
-   return 0;
+    if (finishedLineDots > 172 + mode3_delay && finishedLineDots < currentLineDots) { // hblank
+        while (finishedLineDots < currentLineDots) {
+            finishedLineDots += 2;
+        }
+    }
+    if (currentLineDots == 456) {
+        // implement moving down to next scan line
+    }
+    mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState)); // set ppu mode bits
+    /*if (finishedLineDots != currentLineDots) {
+        std::cout << "finishedLineDots != currentLineDots at end of ppuLoop call\n";
+        throw new std::exception();
+    }*/
+    return 0;
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {
