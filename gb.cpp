@@ -6,6 +6,7 @@
 #include "core/core.h"
 #include "core/ppu.h"
 #include "gb.h"
+#include <exception>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -14,7 +15,7 @@
 void GB::runEmu(char* filename) {
     const double FPS = 59.7275;
     const u32 frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
-    const u32 maxTicks = 4194304 / FPS; // number of instuctions per frame
+    const u32 maxTicks = 70224; // number of instuctions per frame
     double current_ticks = maxTicks;
     u32 frameStart;
     u32 frameTime;
@@ -29,7 +30,6 @@ void GB::runEmu(char* filename) {
     Timer& timer = *new Timer(mem);
     PPU& ppu = *new PPU(mem);
     core.bootup();
-    int i = 1;
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     
@@ -43,8 +43,9 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            doctor_log(log, core, *mem);
+            //doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
+            ppu.ppuLoop(operation_ticks);
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
@@ -59,7 +60,6 @@ void GB::runEmu(char* filename) {
                 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             }
         }
-
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
 

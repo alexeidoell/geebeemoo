@@ -60,6 +60,7 @@ u8 PPU::ppuLoop(u8 ticks) {
         xCoord = 0;
     } else if (ppuState == mode0 && currentLineDots >= 456) {
         ppuState = mode2;
+        mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b1));
         mem->write(0xFF44, (u8)(currentLine + 1));
         finishedLineDots -= 456;
         currentLineDots -= 456;
@@ -67,6 +68,7 @@ u8 PPU::ppuLoop(u8 ticks) {
     currentLine = mem->read(0xFF44);
     if (currentLine > 143) {
         ppuState = mode1;
+
         if (currentLine < 154) {
             mem->write(0xFF44, (u8)(currentLine + 1));
         } else {
