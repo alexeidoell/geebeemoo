@@ -56,27 +56,13 @@ u8 PPU::ppuLoop(u8 ticks) {
     if (ppuState == mode2 && currentLineDots >= 80) {
         ppuState = mode3;
     } else if (ppuState == mode3 && currentLineDots >= 172 + mode3_delay) {
-        ppuState = mode0;
-        xCoord = 0;
+        // not yet implemented
     } else if (ppuState == mode0 && currentLineDots >= 456) {
-        ppuState = mode2;
-        mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b1));
-        mem->write(0xFF44, (u8)(currentLine + 1));
-        finishedLineDots -= 456;
-        currentLineDots -= 456;
+        // not yet implemented
     } 
     currentLine = mem->read(0xFF44);
-    if (currentLine > 143) {
-        ppuState = mode1;
-
-        if (currentLine < 154) {
-            mem->write(0xFF44, (u8)(currentLine + 1));
-        } else {
-            mem->write(0xFF44, (u8)0);
-            currentLineDots = 0;
-            finishedLineDots = 0;
-        }
-        return 0;
+    if (currentLine >= 143 && currentLineDots >= 456) {
+        // not yet implemented
     }
     if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
         while (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
@@ -131,6 +117,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 fifoFlags.fetchTileID = false;
             } else if (!fifoFlags.awaitingPush) { // get next push ready
                 fifoFlags.tileAddress = pixelFetcher(); // can i be this lazy ???
+                                                        // PROBABLY NOT !!!!!
                 fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
                 fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
                 fifoFlags.awaitingPush = true;

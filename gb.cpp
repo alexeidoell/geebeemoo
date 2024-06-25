@@ -43,7 +43,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            //doctor_log(log, core, *mem);
+            doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
             ppu.ppuLoop(operation_ticks);
             current_ticks += operation_ticks;
