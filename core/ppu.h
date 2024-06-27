@@ -46,6 +46,7 @@ class PPU {
         u16 pixelFetcher();
         u8 getTileByte(u16 index);
         u16 combineTile(u8 tileHigh, u8 tileLow);
+        u8 modeSwitch();
         PPUState& ppuState;
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;

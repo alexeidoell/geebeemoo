@@ -54,7 +54,17 @@ u8 PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
     while (finishedLineDots < currentLineDots) {
         u8 currentLine = mem->read(0xFF44); // ly register    
+        mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState));
+        if (currentLine == mem->read(0xFF45)) { // ly = lyc
+            mem->write(0xFF41, (u8)(mem->read(0xFF41) | 0b100));
+            if ((mem->read(0xFF41) & 0b1000000) > 0) {
+                mem->write(0xFFFF, (u8)(mem->read(0xFFFF) | 0b10));
+
+            }
+            
+        } else mem->write(0xFF41, (u8)(mem->read(0xFF41) & 0b11111011));
         if (ppuState == mode1) {
+            currentLineDots = 0;
             finishedLineDots = currentLineDots;
             return 0;
         }
@@ -146,14 +156,17 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
     }
-    mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState)); // set ppu mode bits
-    std::cout << (int)finishedLineDots << " " << (int)currentLineDots << '\n';
     assert(finishedLineDots == currentLineDots);
     return 0;
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {
     return frameBuffer;
+}
+
+u8 PPU::modeSwitch() {
+
+    return 0;
 }
 
 u8 PPU::oamScan(u16 address) { // 2 dots
