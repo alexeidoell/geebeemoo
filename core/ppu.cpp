@@ -25,7 +25,7 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
 }
 
 u8 PPU::getTileByte(u16 index) { // 2 dots
-   return mem->read(index); 
+    return mem->read(index); 
 }
 
 u16 PPU::pixelFetcher() { //  2 dots
@@ -49,99 +49,108 @@ u16 PPU::pixelFetcher() { //  2 dots
 }
 
 u8 PPU::ppuLoop(u8 ticks) {
-    u8 currentLine = mem->read(0xFF44); // ly register    
-    u16 finishedLineDots = currentLineDots;
+    if (mem->read(0xFF44) >= 154) return 0;
+    s16 finishedLineDots = (s16)currentLineDots;
     currentLineDots += ticks;
-    if (ppuState == mode2 && currentLineDots >= 80) {
-        ppuState = mode3;
-    } else if (ppuState == mode3 && currentLineDots >= 172 + mode3_delay) {
-        // not yet implemented
-        // ppuState = mode0;
-    } else if (ppuState == mode0 && currentLineDots == 456) {
-        // not yet implemented
-        // ppuState = mode2;
-    } 
-    currentLine = mem->read(0xFF44);
-    if (currentLine >= 143 && currentLineDots >= 456) {
-        // not yet implemented
-    }
-    if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
-        while (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
-            u16 address = 0xFEA0 - 2 * (80 - finishedLineDots);
-            oamScan(address);
-            finishedLineDots += 2;
-        }
-    } 
-    if (finishedLineDots >= 80 && finishedLineDots < 172 + mode3_delay && finishedLineDots < currentLineDots) {
-        if (finishedLineDots == 80) { // setting up mode3
-            while(!bgQueue.empty()) bgQueue.pop();
-            while(!objQueue.empty()) objQueue.pop();
-        }
-        while (finishedLineDots < 86 && finishedLineDots < currentLineDots) { // do nothing to simulate discarded tile
-                finishedLineDots += 2;
-        }
-        while (finishedLineDots >= 86 && finishedLineDots < 92 && finishedLineDots < currentLineDots) { // initial fetches
-            if (!fifoFlags.fetchTileID) {
-                fifoFlags.tileAddress = pixelFetcher();
-                fifoFlags.fetchTileID = true;
-                finishedLineDots += 2;
-            } else if (!fifoFlags.fetchHighByte) {
-                fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
-                fifoFlags.fetchHighByte = true;
-                finishedLineDots += 2;
-            } else if (!fifoFlags.fetchLowByte) {
-                fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
-                fifoFlags.fetchLowByte = true;
-                fifoFlags.awaitingPush = true;
+    while (finishedLineDots < currentLineDots) {
+        u8 currentLine = mem->read(0xFF44); // ly register    
+        if (ppuState == mode2 && currentLineDots >= 80) {
+            ppuState = mode3;
+        } else if (ppuState == mode3 && currentLineDots >= 172 + mode3_delay) {
+            // not yet implemented
+            // ppuState = mode0;
+        } else if (ppuState == mode0 && currentLineDots == 456) {
+            // not yet implemented
+            // ppuState = mode2;
+        } 
+        if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
+            while (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
+                u16 address = 0xFEA0 - 2 * (80 - finishedLineDots);
+                oamScan(address);
                 finishedLineDots += 2;
             }
-        }
-        if (finishedLineDots == 92) { // first pixel push
-            if (fifoFlags.awaitingPush) {
-                combineTile(fifoFlags.highByte, fifoFlags.lowByte);
-                fifoFlags.awaitingPush = false;
-                fifoFlags.fetchLowByte = false;
-                fifoFlags.fetchHighByte = false;
-                fifoFlags.fetchTileID = false;
+        } 
+        if (finishedLineDots >= 80 && finishedLineDots < 160 + mode3_delay + 80 && finishedLineDots < currentLineDots) {
+            if (finishedLineDots == 80) { // setting up mode3
+                while(!bgQueue.empty()) bgQueue.pop();
+                while(!objQueue.empty()) objQueue.pop();
             }
-            for (auto i = 0; i < (mem->read(0xFF43) & 0b111); ++i) {
+            while (finishedLineDots < 86 && finishedLineDots < currentLineDots) { // do nothing to simulate discarded tile
+                finishedLineDots += 2;
+            }
+            while (finishedLineDots >= 86 && finishedLineDots < 92 && finishedLineDots < currentLineDots) { // initial fetches
+                if (!fifoFlags.fetchTileID) {
+                    fifoFlags.tileAddress = pixelFetcher();
+                    fifoFlags.fetchTileID = true;
+                    finishedLineDots += 2;
+                } else if (!fifoFlags.fetchHighByte) {
+                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
+                    fifoFlags.fetchHighByte = true;
+                    finishedLineDots += 2;
+                } else if (!fifoFlags.fetchLowByte) {
+                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
+                    fifoFlags.fetchLowByte = true;
+                    fifoFlags.awaitingPush = true;
+                    finishedLineDots += 2;
+                }
+            }
+            if (finishedLineDots == 92) { // first pixel push
+                if (fifoFlags.awaitingPush) {
+                    mode3_delay = 12;
+                    combineTile(fifoFlags.highByte, fifoFlags.lowByte);
+                    fifoFlags.awaitingPush = false;
+                    fifoFlags.fetchLowByte = false;
+                    fifoFlags.fetchHighByte = false;
+                    fifoFlags.fetchTileID = false;
+                }
+                for (auto i = 0; i < (mem->read(0xFF43) & 0b111); ++i) {
+                    bgQueue.pop();
+                }
+            }
+            while (finishedLineDots >= 92 && finishedLineDots < 160 + mode3_delay + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
+                if (bgQueue.empty() && fifoFlags.awaitingPush) {
+                    // push new tile row
+                    combineTile(fifoFlags.highByte, fifoFlags.lowByte);
+                    fifoFlags.awaitingPush = false;
+                    fifoFlags.fetchLowByte = false;
+                    fifoFlags.fetchHighByte = false;
+                    fifoFlags.fetchTileID = false;
+                } else if (!fifoFlags.awaitingPush) { // get next push ready
+                    fifoFlags.tileAddress = pixelFetcher(); // can i be this lazy ???
+                                                            // PROBABLY NOT !!!!!
+                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
+                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
+                    fifoFlags.awaitingPush = true;
+                }
+                assert((u8)bgQueue.front().color <= 3 && "pixel color is greater than 3 in dgb mode");
+                if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
                 bgQueue.pop();
+                finishedLineDots += 1;
             }
         }
-        while (finishedLineDots >= 92 && finishedLineDots < 172 + mode3_delay && finishedLineDots < currentLineDots) { // normal mode3 cycle
-            if (bgQueue.empty() && fifoFlags.awaitingPush) {
-                // push new tile row
-                combineTile(fifoFlags.highByte, fifoFlags.lowByte);
-                fifoFlags.awaitingPush = false;
-                fifoFlags.fetchLowByte = false;
-                fifoFlags.fetchHighByte = false;
-                fifoFlags.fetchTileID = false;
-            } else if (!fifoFlags.awaitingPush) { // get next push ready
-                fifoFlags.tileAddress = pixelFetcher(); // can i be this lazy ???
-                                                        // PROBABLY NOT !!!!!
-                fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
-                fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
-                fifoFlags.awaitingPush = true;
+        if (finishedLineDots >= 160 + mode3_delay + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
+            while (finishedLineDots < currentLineDots) {
+                finishedLineDots += 2;
             }
-            assert((u8)bgQueue.front().color <= 3);
-            if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
-            bgQueue.pop();
-            finishedLineDots += 1;
         }
-    }
-    if (finishedLineDots > 172 + mode3_delay && finishedLineDots < currentLineDots) { // hblank
-        while (finishedLineDots < currentLineDots) {
-            finishedLineDots += 2;
+        if (currentLineDots >= 456) {
+            // implement moving down to next scan line
+            mem->write(0xFF44, (u8)(currentLine + 1));
+            currentLineDots -= 456;
+            finishedLineDots -= 456; // idk tbh?
+            if (currentLine >= 154) {
+                // either need it to chill out until the last frame is done rendering
+                // or somehow start the next frame early
+                // former option is probably way better
+                return 0; // ??
+            } else if (currentLine == 144) { // vblank
+                mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b1));
+            }
         }
-    }
-    if (currentLineDots >= 456) {
-        // implement moving down to next scan line
     }
     mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState)); // set ppu mode bits
-    /*if (finishedLineDots != currentLineDots) {
-        std::cout << "finishedLineDots != currentLineDots at end of ppuLoop call\n";
-        throw new std::exception();
-    }*/
+    std::cout << (int)finishedLineDots << " " << (int)currentLineDots << '\n';
+    assert(finishedLineDots == currentLineDots);
     return 0;
 }
 

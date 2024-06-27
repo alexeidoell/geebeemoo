@@ -7,12 +7,12 @@
 u8 MMU::load_cart(char* filename) {
     FILE* f;
     u32 read_chars;
-    f = fopen(filename, "rb");
+    f = fopen(filename, "rb"); // maybe i should replace this with more c++ type file handling
     if (f) {
         read_chars = fread(mem.data(), sizeof(u8), mem.size(), f);
         return read_chars;
     } else {
-        std::cout << "opening cartridge failed\n";
+        std::cout << "opening cartridge failed\n"; 
         return -1;
     }
 }
