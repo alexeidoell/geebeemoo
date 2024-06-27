@@ -8,6 +8,9 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
     u16 line;
     u8 mask;
     line = 0;
+
+
+
     for (auto j = 0; j < 8; ++j) {
         mask = 0b1 << j;
         line += (((u16)tileHigh & mask) << (j + 1)) + (((u16)tileLow & mask) << j);
@@ -41,7 +44,7 @@ u16 PPU::pixelFetcher() { //  2 dots
     tileAddress += ((mem->read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
     tileAddress += 0b1 << 15;
     u8 addressing_method = mem->read(0xFF40) & 0b10000;
-    if (addressing_method || ((tileID & 0x80) > 0)) {
+    if (!addressing_method && ((tileID & 0x80) > 0)) {
         tileAddress += (0b1 << 12);
     }
 
@@ -52,7 +55,10 @@ u8 PPU::ppuLoop(u8 ticks) {
     if (mem->read(0xFF44) >= 154) return 0;
     s16 finishedLineDots = (s16)currentLineDots;
     currentLineDots += ticks;
-    while (finishedLineDots < currentLineDots) {
+    if (mem->read(0xFF44) >= 144) {
+        finishedLineDots = currentLineDots;
+    }
+    while (mem->read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
         u8 currentLine = mem->read(0xFF44); // ly register    
         mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState));
         if (currentLine == mem->read(0xFF45)) { // ly = lyc
@@ -155,7 +161,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
     }
-    std::cout << (int)finishedLineDots << " " << (int)currentLineDots << "\n";
+    //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->read(0xFF44) << "\n";
     assert(finishedLineDots == currentLineDots);
     return 0;
 }

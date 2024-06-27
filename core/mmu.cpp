@@ -17,9 +17,6 @@ u8 MMU::load_cart(char* filename) {
     }
 }
 u8 MMU::read(u16 address) {
-    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
-        return 0xFF;
-    }
     if (address == 0xFF4D) {
         return 0xFF;
     }
@@ -32,9 +29,6 @@ u8 MMU::read(u16 address) {
 
 }
 u8 MMU::write(u16 address, u8 word) {
-    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
-        return 0;
-    }
     if (address == 0xFF02) {
         if (word == 0x81) {
            std::cout << std::hex << read(0xFF01);

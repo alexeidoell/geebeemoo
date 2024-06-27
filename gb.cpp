@@ -31,11 +31,14 @@ void GB::runEmu(char* filename) {
     PPU& ppu = *new PPU(mem);
     core.bootup();
 
+
     std::ofstream log("log.txt", std::ofstream::trunc);
+    bool frameDrawn;
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(true) { // idk how to make an actual sdl main loop
         frameStart = SDL_GetTicks();
+        frameDrawn = false;
         mem->ppuState = mode2;
         mem->write(0xFF44, (u8)0);
         current_ticks = current_ticks - maxTicks;
@@ -46,6 +49,20 @@ void GB::runEmu(char* filename) {
             doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
             ppu.ppuLoop(operation_ticks);
+            /*if (mem->ppuState == mode1 && frameDrawn == false) {
+                std::array<u8, 23040>& buffer = ppu.getBuffer();
+                for (auto i = 0; i < 144; ++i) {
+                    for (auto j = 0; j < 160; ++j) {
+                        u8 pixel = buffer[i * 160 + j];
+                        if (pixel == 0) {
+                            std::cout << '.';
+                        } else std::cout << '@';
+
+                    }
+                    std::cout << '\n';
+                }
+
+            } */
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
@@ -63,6 +80,11 @@ void GB::runEmu(char* filename) {
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
 
+    for (auto i = 0; i < 0x800; ++i) {
+        std::cout << std::hex << "mem at: " << (int)0x8000 + i << " ";
+        std::cout << (int)mem->read(0x8000 + i) << '\n';
+
+    }
     } 
 }
 

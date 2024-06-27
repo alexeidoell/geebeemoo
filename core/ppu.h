@@ -59,7 +59,7 @@ class PPU {
         std::array<u8, 23040> frameBuffer = { 0 };
         u8 oamScan(u16 address);
     public:
-        u16 currentLineDots; // need to keep track of state between
+        s16 currentLineDots; // need to keep track of state between
                              // calls so that the ppu can tell the
                              // memory or cpu what not to do before
                              // the next call of the ppu loop that will
