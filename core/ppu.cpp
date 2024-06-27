@@ -54,15 +54,10 @@ u8 PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
     while (finishedLineDots < currentLineDots) {
         u8 currentLine = mem->read(0xFF44); // ly register    
-        if (ppuState == mode2 && currentLineDots >= 80) {
-            ppuState = mode3;
-        } else if (ppuState == mode3 && currentLineDots >= 172 + mode3_delay) {
-            // not yet implemented
-            // ppuState = mode0;
-        } else if (ppuState == mode0 && currentLineDots == 456) {
-            // not yet implemented
-            // ppuState = mode2;
-        } 
+        if (ppuState == mode1) {
+            finishedLineDots = currentLineDots;
+            return 0;
+        }
         if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
             while (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
                 u16 address = 0xFEA0 - 2 * (80 - finishedLineDots);
@@ -71,6 +66,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         } 
         if (finishedLineDots >= 80 && finishedLineDots < 160 + mode3_delay + 80 && finishedLineDots < currentLineDots) {
+            ppuState = mode3;
             if (finishedLineDots == 80) { // setting up mode3
                 while(!bgQueue.empty()) bgQueue.pop();
                 while(!objQueue.empty()) objQueue.pop();
@@ -129,6 +125,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
         if (finishedLineDots >= 160 + mode3_delay + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
+            ppuState = mode0;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
             }
@@ -144,6 +141,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 // former option is probably way better
                 return 0; // ??
             } else if (currentLine == 144) { // vblank
+                ppuState = mode1;
                 mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b1));
             }
         }
