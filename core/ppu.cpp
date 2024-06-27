@@ -2,6 +2,7 @@
 #include "mmu.h"
 #include <cassert>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 
 u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
@@ -15,6 +16,9 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
         mask = 0b1 << j;
         line += (((u16)tileHigh & mask) << (j + 1)) + (((u16)tileLow & mask) << j);
     }
+
+    //std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)line << '\n';
+
     for (auto i = 0; i < 8; ++i) {
         u16 mask = 0b11 << 14;
         mask >>= (i * 2);
@@ -56,6 +60,7 @@ u8 PPU::ppuLoop(u8 ticks) {
     s16 finishedLineDots = (s16)currentLineDots;
     currentLineDots += ticks;
     if (mem->read(0xFF44) >= 144) {
+        ppuState = mode1;
         finishedLineDots = currentLineDots;
     }
     while (mem->read(0xFF44) < 144 && finishedLineDots < currentLineDots) {

@@ -49,7 +49,7 @@ void GB::runEmu(char* filename) {
             doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
             ppu.ppuLoop(operation_ticks);
-            /*if (mem->ppuState == mode1 && frameDrawn == false) {
+            if (mem->ppuState == mode1 && frameDrawn == false) {
                 std::array<u8, 23040>& buffer = ppu.getBuffer();
                 for (auto i = 0; i < 144; ++i) {
                     for (auto j = 0; j < 160; ++j) {
@@ -62,7 +62,7 @@ void GB::runEmu(char* filename) {
                     std::cout << '\n';
                 }
 
-            } */
+            } 
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
@@ -80,11 +80,6 @@ void GB::runEmu(char* filename) {
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
 
-    for (auto i = 0; i < 0x800; ++i) {
-        std::cout << std::hex << "mem at: " << (int)0x8000 + i << " ";
-        std::cout << (int)mem->read(0x8000 + i) << '\n';
-
-    }
     } 
 }
 
