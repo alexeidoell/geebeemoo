@@ -1,5 +1,6 @@
 #include "ppu.h"
 #include "mmu.h"
+#include <cassert>
 #include <exception>
 #include <iostream>
 
@@ -18,9 +19,7 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
         color >>= (14 - (i * 2));
         Pixel& pixel = *new Pixel(color, 0, 0);
         if (bgQueue.size() < 8) bgQueue.push(pixel);
-        if (bgQueue.size() > 8) {
-            throw new std::exception();
-        }
+        assert(bgQueue.size() <= 8);
     }
     return 0;
 }
@@ -124,8 +123,8 @@ u8 PPU::ppuLoop(u8 ticks) {
                 fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
                 fifoFlags.awaitingPush = true;
             }
+            assert((u8)bgQueue.front().color <= 3);
             if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
-            if ((u8)bgQueue.front().color > 3) throw new std::exception;
             bgQueue.pop();
             finishedLineDots += 1;
         }
@@ -135,7 +134,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             finishedLineDots += 2;
         }
     }
-    if (currentLineDots == 456) {
+    if (currentLineDots >= 456) {
         // implement moving down to next scan line
     }
     mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState)); // set ppu mode bits
