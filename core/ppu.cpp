@@ -64,8 +64,6 @@ u8 PPU::ppuLoop(u8 ticks) {
             
         } else mem->write(0xFF41, (u8)(mem->read(0xFF41) & 0b11111011));
         if (ppuState == mode1) {
-            currentLineDots = 0;
-            finishedLineDots = currentLineDots;
             return 0;
         }
         if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
@@ -75,7 +73,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 2;
             }
         } 
-        if (finishedLineDots >= 80 && finishedLineDots < 160 + mode3_delay + 80 && finishedLineDots < currentLineDots) {
+        if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) {
             ppuState = mode3;
             if (finishedLineDots == 80) { // setting up mode3
                 while(!bgQueue.empty()) bgQueue.pop();
@@ -113,7 +111,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                     bgQueue.pop();
                 }
             }
-            while (finishedLineDots >= 92 && finishedLineDots < 160 + mode3_delay + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
+            while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
                 if (bgQueue.empty() && fifoFlags.awaitingPush) {
                     // push new tile row
                     combineTile(fifoFlags.highByte, fifoFlags.lowByte);
@@ -134,8 +132,9 @@ u8 PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 1;
             }
         }
-        if (finishedLineDots >= 160 + mode3_delay + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
+        if (finishedLineDots >= 172 + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
             ppuState = mode0;
+            xCoord = 0;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
             }
@@ -156,6 +155,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
     }
+    std::cout << (int)finishedLineDots << " " << (int)currentLineDots << "\n";
     assert(finishedLineDots == currentLineDots);
     return 0;
 }
