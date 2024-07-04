@@ -56,15 +56,14 @@ u16 PPU::pixelFetcher() { //  2 dots
 }
 
 u8 PPU::ppuLoop(u8 ticks) {
-    if (mem->read(0xFF44) >= 154) return 0;
+    if (mem->read(0xFF44) == 154) return 0;
     s16 finishedLineDots = (s16)currentLineDots;
     currentLineDots += ticks;
     if (mem->read(0xFF44) >= 144) {
-        ppuState = mode1;
         finishedLineDots = currentLineDots;
     }
+    u8 currentLine = mem->read(0xFF44); // ly register    
     while (mem->read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
-        u8 currentLine = mem->read(0xFF44); // ly register    
         mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState));
         if (currentLine == mem->read(0xFF45)) { // ly = lyc
             mem->write(0xFF41, (u8)(mem->read(0xFF41) | 0b100));
@@ -118,9 +117,6 @@ u8 PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
                 }
-                for (auto i = 0; i < (mem->read(0xFF43) & 0b111); ++i) {
-                    bgQueue.pop();
-                }
             }
             while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
                 if (bgQueue.empty() && fifoFlags.awaitingPush) {
@@ -150,23 +146,27 @@ u8 PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 2;
             }
         }
+    }
         if (currentLineDots >= 456) {
             // implement moving down to next scan line
             mem->write(0xFF44, (u8)(currentLine + 1));
+            currentLine = mem->read(0xFF44);
             currentLineDots -= 456;
             finishedLineDots -= 456; // idk tbh?
+            if (ppuState != mode1) ppuState = mode2;
             if (currentLine >= 154) {
                 // either need it to chill out until the last frame is done rendering
                 // or somehow start the next frame early
                 // former option is probably way better
                 return 0; // ??
             } else if (currentLine == 144) { // vblank
+                //std::cout << "vblank\n";
                 ppuState = mode1;
                 mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b1));
             }
         }
-    }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->read(0xFF44) << "\n";
+    //std::cout << (int)currentLineDots << " " << (int)mem->read(0xFF44) << " " << ppuState << '\n';
     assert(finishedLineDots == currentLineDots);
     return 0;
 }
