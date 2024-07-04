@@ -6,6 +6,7 @@
 #include "core/core.h"
 #include "core/ppu.h"
 #include "gb.h"
+#include <cassert>
 #include <exception>
 #include <iostream>
 #include <iomanip>
@@ -34,9 +35,12 @@ void GB::runEmu(char* filename) {
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     bool frameDrawn;
+
+    auto frame = 0;
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(true) { // idk how to make an actual sdl main loop
+        std::cout << "frame " << ++frame << ": \n";
         frameStart = SDL_GetTicks();
         frameDrawn = false;
         mem->ppuState = mode2;
@@ -49,20 +53,6 @@ void GB::runEmu(char* filename) {
             doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
             ppu.ppuLoop(operation_ticks);
-            if (mem->ppuState == mode1 && frameDrawn == false) {
-                std::array<u8, 23040>& buffer = ppu.getBuffer();
-                for (auto i = 0; i < 144; ++i) {
-                    for (auto j = 0; j < 160; ++j) {
-                        u8 pixel = buffer[i * 160 + j];
-                        if (pixel == 0) {
-                            std::cout << '.';
-                        } else std::cout << '@';
-
-                    }
-                    std::cout << '\n';
-                }
-
-            } 
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
@@ -77,8 +67,20 @@ void GB::runEmu(char* filename) {
                 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             }
         }
+        std::array<u8, 23040>& buffer = ppu.getBuffer();
+        for (auto i = 0; i < 144; ++i) {
+            for (auto j = 0; j < 160; ++j) {
+                u8 pixel = buffer[j + i * 160];
+                if (pixel == 0) std::cout << " ";
+                else if (pixel == 1) std::cout << "u";
+                else if (pixel == 2) std::cout << "O";
+                else std::cout << "@";
+            }
+            std::cout << "\n";
+        }
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
+        assert(mem->read(0xFF44) == 154);
 
     } 
 }
