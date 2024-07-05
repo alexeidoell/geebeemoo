@@ -58,6 +58,7 @@ class PPU {
         Window window;
         std::array<u8, 23040> frameBuffer = { 0 };
         u8 oamScan(u16 address);
+        bool firstTile = true;
     public:
         s16 currentLineDots; // need to keep track of state between
                              // calls so that the ppu can tell the

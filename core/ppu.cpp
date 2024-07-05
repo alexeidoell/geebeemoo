@@ -37,9 +37,12 @@ u16 PPU::pixelFetcher() { //  2 dots
     if ((mem->read(0xFF40) & 0b1000) > 0) { // assumes background not window
         tileMap = 0x9C00;
     }
-    u16 offset = (0xFF & (mem->read(0xFF44) + mem->read(0xFF42))) / 8;
+    u16 offset = 0xFF & ((mem->read(0xFF44) + mem->read(0xFF42)) / 8);
     offset <<= 5;
     offset += 0x1F & ((xCoord + mem->read(0xFF43)) / 8);
+    if (!firstTile) {
+        offset += 1;
+    }
     u8 tileID = mem->read(tileMap + offset);
     u16 tileAddress = ((u16)tileID) << 4;
     tileAddress += ((mem->read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
@@ -108,13 +111,12 @@ u8 PPU::ppuLoop(u8 ticks) {
             if (finishedLineDots == 92) { // first pixel push
                 if (fifoFlags.awaitingPush) {
                     combineTile(fifoFlags.highByte, fifoFlags.lowByte);
-                    fifoFlags.awaitingPush = false;
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
-                }
-                for (auto i = 0; i < mem->read(0xff43) % 8; ++i) {
-                    bgQueue.pop();
+                    while (!bgQueue.empty()) {
+                        bgQueue.pop();
+                    }
                 }
             }
             while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
@@ -134,13 +136,20 @@ u8 PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchTileID = false;
                 }
                 assert((u8)bgQueue.front().color <= 3 && "pixel color is greater than 3 in dgb mode");
+                if (firstTile) {
+                    for (auto i = 0; i < (mem->read(0xff43) % 8); ++i) {
+                        bgQueue.pop();
+                    }
+                }
                 if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
+                if (firstTile) firstTile = false;
                 bgQueue.pop();
                 finishedLineDots += 1;
             }
         }
         if (finishedLineDots >= 172 + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
             ppuState = mode0;
+            firstTile = true;
             xCoord = 0;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;

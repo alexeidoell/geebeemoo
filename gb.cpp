@@ -18,8 +18,12 @@ void setPixel(SDL_Surface* surface, u8 w, u8 h, u8 pixel) {
     u32* pixelAddress = (u32*)surface->pixels;
     pixelAddress += surface->w * h + w;
     if (pixel == 0) {
-        *pixelAddress = 0xFFFFFFFF;
-    } else *pixelAddress = 0x0;
+        *pixelAddress = 0x9bbc0fff;
+    } else if (pixel == 1) {
+        *pixelAddress = 0x8bac0fff;
+    } else if (pixel == 2) {
+        *pixelAddress = 0x306230ff;
+    } else *pixelAddress = 0x0f380fff;
 
 }
 
