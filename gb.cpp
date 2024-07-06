@@ -101,6 +101,7 @@ void GB::runEmu(char* filename) {
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
+        std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
         assert(mem->read(0xFF44) >= 153);
 
     } 
