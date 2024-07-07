@@ -29,25 +29,25 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
 }
 
 u8 PPU::getTileByte(u16 index) { // 2 dots
-    return mem->read(index); 
+    return mem->ppu_read(index); 
 }
 
 u16 PPU::pixelFetcher() { //  2 dots
     u16 tileMap = 0x9800; // need to also implement the 9c00 map
-    if ((mem->read(0xFF40) & 0b1000) > 0) { // assumes background not window
+    if ((mem->ppu_read(0xFF40) & 0b1000) > 0) { // assumes background not window
         tileMap = 0x9C00;
     }
-    u16 offset = 0xFF & ((mem->read(0xFF44) + mem->read(0xFF42)) / 8);
+    u16 offset = 0xFF & ((mem->ppu_read(0xFF44) + mem->ppu_read(0xFF42)) / 8);
     offset <<= 5;
-    offset += 0x1F & ((xCoord + mem->read(0xFF43)) / 8);
+    offset += 0x1F & ((xCoord + mem->ppu_read(0xFF43)) / 8);
     if (!firstTile) {
         offset += 1;
     }
-    u8 tileID = mem->read(tileMap + offset);
+    u8 tileID = mem->ppu_read(tileMap + offset);
     u16 tileAddress = ((u16)tileID) << 4;
-    tileAddress += ((mem->read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
+    tileAddress += ((mem->ppu_read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
     tileAddress += 0b1 << 15;
-    u8 addressing_method = mem->read(0xFF40) & 0b10000;
+    u8 addressing_method = mem->ppu_read(0xFF40) & 0b10000;
     if (!addressing_method && ((tileID & 0x80) > 0)) {
         tileAddress += (0b1 << 12);
     }
@@ -56,23 +56,22 @@ u16 PPU::pixelFetcher() { //  2 dots
 }
 
 u8 PPU::ppuLoop(u8 ticks) {
-    if (mem->read(0xFF44) == 154) return 0;
+    if (mem->ppu_read(0xFF44) == 154) return 0;
     s16 finishedLineDots = (s16)currentLineDots;
     currentLineDots += ticks;
-    if (mem->read(0xFF44) >= 144) {
+    if (mem->ppu_read(0xFF44) >= 144) {
         finishedLineDots = currentLineDots;
     }
-    u8 currentLine = mem->read(0xFF44); // ly register    
-    while (mem->read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
-        mem->write(0xFF41, (u8)(mem->read(0xFF41) | (u8)ppuState));
-        if (currentLine == mem->read(0xFF45)) { // ly = lyc
-            mem->write(0xFF41, (u8)(mem->read(0xFF41) | 0b100));
-            if ((mem->read(0xFF41) & 0b1000000) > 0) {
-                mem->write(0xFFFF, (u8)(mem->read(0xFFFF) | 0b10));
+    u8 currentLine = mem->ppu_read(0xFF44); // ly register    
+    while (mem->ppu_read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
+        if (currentLine == mem->ppu_read(0xFF45)) { // ly = lyc
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+            if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+                mem->ppu_write(0xFFFF, (u8)(mem->ppu_read(0xFFFF) | 0b10));
 
             }
             
-        } else mem->write(0xFF41, (u8)(mem->read(0xFF41) & 0b11111011));
+        } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         if (ppuState == mode1) {
             return 0;
         }
@@ -120,7 +119,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 }
             }
             while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
-                if (!fifoFlags.awaitingPush) { // get next push ready
+                if (!fifoFlags.awaitingPush) { // get next push ppu_ready
                     fifoFlags.tileAddress = pixelFetcher(); // can i be this lazy ???
                                                             // PROBABLY NOT !!!!!
                     fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
@@ -137,7 +136,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 }
                 assert((u8)bgQueue.front().color <= 3 && "pixel color is greater than 3 in dgb mode");
                 if (firstTile) {
-                    for (auto i = 0; i < (mem->read(0xff43) % 8); ++i) {
+                    for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
                         bgQueue.pop();
                     }
                 }
@@ -158,8 +157,8 @@ u8 PPU::ppuLoop(u8 ticks) {
     }
         if (currentLineDots >= 456) {
             // implement moving down to next scan line
-            mem->write(0xFF44, (u8)(currentLine + 1));
-            currentLine = mem->read(0xFF44);
+            mem->ppu_write(0xFF44, (u8)(currentLine + 1));
+            currentLine = mem->ppu_read(0xFF44);
             currentLineDots -= 456;
             finishedLineDots -= 456; // idk tbh?
             if (ppuState != mode1) ppuState = mode2;
@@ -171,11 +170,12 @@ u8 PPU::ppuLoop(u8 ticks) {
             } else if (currentLine == 144) { // vblank
                 //std::cout << "vblank\n";
                 ppuState = mode1;
-                mem->write(0xFF0F, (u8)(mem->read(0xFF0F) | 0b1));
+                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
             }
         }
-    //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->read(0xFF44) << "\n";
-    //std::cout << (int)currentLineDots << " " << (int)mem->read(0xFF44) << " " << ppuState << '\n';
+    //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
+    //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
+        mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | (u8)ppuState));
     assert(finishedLineDots == currentLineDots);
     return 0;
 }
@@ -190,10 +190,10 @@ u8 PPU::modeSwitch() {
 }
 
 u8 PPU::oamScan(u16 address) { // 2 dots
-    u8 currentLine = mem->read(0xFF44); // ly register    
-    u8 objY_pos = mem->read(address);
-    Object obj = Object(objY_pos, mem->read(address + 1), mem->read(address + 2), mem->read(address + 3));
-    if ((mem->read(0xFF40) & 0b100) > 0) { // 8x16 tiles
+    u8 currentLine = mem->ppu_read(0xFF44); // ly register    
+    u8 objY_pos = mem->ppu_read(address);
+    Object obj = Object(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
+    if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
         if (((objY_pos + 16) - currentLine) > 16) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;

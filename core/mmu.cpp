@@ -17,6 +17,12 @@ u8 MMU::load_cart(char* filename) {
     }
 }
 u8 MMU::read(u16 address) {
+    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
+        return 0xFF;
+    }
+    if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
+        return 0xFF;
+    }
     if (address == 0xFF4D) {
         return 0xFF;
     }
@@ -29,6 +35,8 @@ u8 MMU::read(u16 address) {
 
 }
 u8 MMU::write(u16 address, u8 word) {
+    /*if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
+    } else if (address >= 0xFE00 && address < 0xFEA0 && (ppuState == mode2 || ppuState == mode3)) { */
     if (address == 0xFF02) {
         if (word == 0x81) {
            std::cout << std::hex << read(0xFF01);
@@ -45,6 +53,12 @@ u8 MMU::write(u16 address, u8 word) {
 }
 
 u8 MMU::write(u16 address, u16 dword) {
+    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
+        return 0;
+    }
+    if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
+        return 0;
+    }
     if (address == 0xFF46) {
         // start oam transfer process
 
@@ -55,3 +69,16 @@ u8 MMU::write(u16 address, u16 dword) {
     return 0;
 }
 
+u8 MMU::ppu_read(u16 address) {
+    return mem[address];
+}
+u8 MMU::ppu_write(u16 address, u8 word) {
+    mem[address] = word;
+    return 0;
+}
+
+u8 MMU::ppu_write(u16 address, u16 dword) {
+    mem[address] = (u8) (dword & 0xFF);
+    mem[address + 1] = (u8) (dword >> 8);
+    return 0;
+}
