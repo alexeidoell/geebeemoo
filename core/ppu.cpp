@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <iostream>
 
-u16 PPU::combineTile(u8 tileHigh, u8 tileLow) { // 0 dots
+u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype) { // 0 dots
     u16 line;
     u8 mask;
     line = 0;
@@ -33,7 +33,7 @@ u8 PPU::getTileByte(u16 index) { // 2 dots
 }
 
 u16 PPU::pixelFetcher() { //  2 dots
-    u16 tileMap = 0x9800; // need to also implement the 9c00 map
+    u16 tileMap = 0x9800; 
     if ((mem->ppu_read(0xFF40) & 0b1000) > 0) { // assumes background not window
         tileMap = 0x9C00;
     }
@@ -68,7 +68,6 @@ u8 PPU::ppuLoop(u8 ticks) {
             mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
             if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
                 mem->ppu_write(0xFFFF, (u8)(mem->ppu_read(0xFFFF) | 0b10));
-
             }
             
         } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
@@ -109,7 +108,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
             if (finishedLineDots == 92) { // first pixel push
                 if (fifoFlags.awaitingPush) {
-                    combineTile(fifoFlags.highByte, fifoFlags.lowByte);
+                    combineTile(fifoFlags.highByte, fifoFlags.lowByte, background);
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
@@ -128,7 +127,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 }
                 if (bgQueue.empty() && fifoFlags.awaitingPush) {
                     // push new tile row
-                    combineTile(fifoFlags.highByte, fifoFlags.lowByte);
+                    combineTile(fifoFlags.highByte, fifoFlags.lowByte, background);
                     fifoFlags.awaitingPush = false;
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
@@ -137,7 +136,17 @@ u8 PPU::ppuLoop(u8 ticks) {
                 assert((u8)bgQueue.front().color <= 3 && "pixel color is greater than 3 in dgb mode");
                 if (firstTile) {
                     for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
-                        bgQueue.pop();
+                        //bgQueue.pop();
+                    }
+                }
+                for (auto i = 0; i < objArr.size(); ++i) {
+                    if (xCoord == objArr[i].xPos) {
+                        fifoFlags.tileAddress = 0x8000;                       
+                        fifoFlags.tileAddress += ((u16)objArr[i].tileIndex) << 4;
+                        fifoFlags.tileAddress += (currentLine - objArr[i].yPos % 8) << 1;
+                        std::cout << std::hex << (int)fifoFlags.tileAddress << " " << (int) objArr[i].tileIndex << " " << (int)(currentLine - objArr[i].yPos % 8) << '\n';
+
+                        
                     }
                 }
                 if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
@@ -194,14 +203,14 @@ u8 PPU::oamScan(u16 address) { // 2 dots
     u8 objY_pos = mem->ppu_read(address);
     Object obj = Object(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
     if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
-        if (((objY_pos + 16) - currentLine) > 16) {
+        if (((objY_pos) - currentLine) > 0) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
         }
     } else { // 8x8 tiles
-        if (((objY_pos + 8) - currentLine) > 16) {
+        if (((objY_pos) - currentLine) > 0) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
