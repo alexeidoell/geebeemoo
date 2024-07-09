@@ -3,6 +3,7 @@
 #include <cassert>
 #include <exception>
 #include <iomanip>
+#include <ios>
 #include <iostream>
 
 u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype) { // 0 dots
@@ -15,6 +16,7 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype) { // 0 dots
     }
 
     //std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)line << '\n';
+    u8 objQueueSize = objQueue.size();
 
     for (auto i = 0; i < 8; ++i) {
         u16 mask = 0b11 << 14;
@@ -22,8 +24,14 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype) { // 0 dots
         u16 color = line & mask;
         color >>= (14 - (i * 2));
         Pixel& pixel = *new Pixel((u8)color, 0, 0);
-        if (bgQueue.size() < 8) bgQueue.push(pixel);
-        assert(bgQueue.size() <= 8);
+        if (tiletype == background) {
+            if (bgQueue.size() < 8) bgQueue.push(pixel);
+            assert(bgQueue.size() <= 8);
+        } else if (tiletype == obj) {
+            if (i < objQueueSize) {
+                Pixel oldPixel = objQueue.front();
+            }
+        }
     }
     return 0;
 }
@@ -47,11 +55,10 @@ u16 PPU::pixelFetcher() { //  2 dots
     u16 tileAddress = ((u16)tileID) << 4;
     tileAddress += ((mem->ppu_read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
     tileAddress += 0b1 << 15;
-    u8 addressing_method = mem->ppu_read(0xFF40) & 0b10000;
-    if (!addressing_method && ((tileID & 0x80) > 0)) {
+    bool addressing_method = (mem->ppu_read(0xFF40) & 0b10000) == 0b10000;
+    if (!addressing_method && (tileID & 0x80) == 0) {
         tileAddress += (0b1 << 12);
     }
-
     return tileAddress;
 }
 
@@ -142,11 +149,8 @@ u8 PPU::ppuLoop(u8 ticks) {
                 for (auto i = 0; i < objArr.size(); ++i) {
                     if (xCoord == objArr[i].xPos) {
                         fifoFlags.tileAddress = 0x8000;                       
-                        fifoFlags.tileAddress += ((u16)objArr[i].tileIndex) << 4;
+                        fifoFlags.tileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
                         fifoFlags.tileAddress += (currentLine - objArr[i].yPos % 8) << 1;
-                        std::cout << std::hex << (int)fifoFlags.tileAddress << " " << (int) objArr[i].tileIndex << " " << (int)(currentLine - objArr[i].yPos % 8) << '\n';
-
-                        
                     }
                 }
                 if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
@@ -185,8 +189,8 @@ u8 PPU::ppuLoop(u8 ticks) {
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
         mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | (u8)ppuState));
-    assert(finishedLineDots == currentLineDots);
-    return 0;
+        assert(finishedLineDots == currentLineDots);
+        return 0;
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {
@@ -203,14 +207,14 @@ u8 PPU::oamScan(u16 address) { // 2 dots
     u8 objY_pos = mem->ppu_read(address);
     Object obj = Object(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
     if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
-        if (((objY_pos) - currentLine) > 0) {
+        if (((objY_pos + 16) - currentLine) > 0) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
         }
     } else { // 8x8 tiles
-        if (((objY_pos) - currentLine) > 0) {
+        if (((objY_pos + 8) - currentLine) > 0) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
