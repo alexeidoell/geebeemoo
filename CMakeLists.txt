@@ -9,10 +9,13 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("gbemu")
+project (gbemu)
 
 # Add source to this project's executable.
-add_executable (gbemu "main.cpp")
+find_package(SDL2 CONFIG REQUIRED)
+set (PROJECT_SRC "main.cpp" "gb.cpp" "core/core.cpp" "core/mmu.cpp" "core/timer.cpp" "core/ppu.cpp")
+add_executable (gbemu ${PROJECT_SRC})
+target_link_libraries(gbemu PRIVATE SDL2::SDL2 SDL2::SDL2main)
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET gbemu PROPERTY CXX_STANDARD 20)
