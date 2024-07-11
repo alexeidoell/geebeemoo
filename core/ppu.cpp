@@ -1,5 +1,6 @@
 #include "ppu.h"
 #include "mmu.h"
+#include <bitset>
 #include <cassert>
 #include <cstring>
 #include <exception>
@@ -9,11 +10,24 @@
 
 u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * object) {
     u16 line;
-    u8 mask;
+    u16 mask;
     line = 0;
+
+    bool flipCond = false;
+    if (tiletype == obj) flipCond = (object->flags & 0b100000) > 0;
+
     for (auto j = 0; j < 8; ++j) {
         mask = 0b1 << j;
         line += (((u16)tileHigh & mask) << (j + 1)) + (((u16)tileLow & mask) << j);
+    }
+    
+    if (flipCond) {
+        u16 tempLine = line;
+        line = 0;
+        for (auto j = 7; j >= 0; --j) {
+            line = (line << 2) | (tempLine & 0b11);
+            tempLine >>= 2;
+        }
     }
 
     //std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)line << '\n';
@@ -25,9 +39,16 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * 
         u16 color = line & mask;
         color >>= (14 - (i * 2));
         u8 palette;
-        if (tiletype == obj) palette = (object->flags & 0b10000) >> 4;
-        else palette = 0;
-        Pixel& pixel = *new Pixel((u8)color, palette, 0, 0);
+        u8 bgPriority;
+        if (tiletype == obj)  {
+            palette = (object->flags & 0b10000) >> 4;
+            bgPriority = (object->flags & 0b10000000) >> 7;
+        }
+        else {
+            palette = 0;
+            bgPriority = 0;
+        }
+        Pixel& pixel = *new Pixel((u8)color, palette, 0, bgPriority);
         if (tiletype == bg) {
             if (bgQueue.size() < 8) bgQueue.push(pixel);
             assert(bgQueue.size() <= 8);
@@ -174,7 +195,6 @@ u8 PPU::ppuLoop(u8 ticks) {
                         fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
                         bool flipCond = (objArr[i].flags & 0b1000000) > 0;
                         if (flipCond) {
-                            std::cout << (int)xCoord << " " << (int) currentLine << "\n";
                             fifoFlags.objTileAddress += (~(((currentLine - (objArr[i].yPos - 16)) % 8) << 1)) & 0b1110;
                         } else fifoFlags.objTileAddress += ((currentLine - (objArr[i].yPos - 16)) % 8) << 1;
                         if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
@@ -283,13 +303,13 @@ std::array<u8, 23040>& PPU::getBuffer() {
 }
 
 u8 PPU::pixelPicker() {
-    if ((mem->read(0xFF40) & 0b10) == 0 || objQueue.empty() || objQueue.front().color == 0) {
+    if ((objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem->read(0xFF40) & 0b10) == 0 || objQueue.empty() || objQueue.front().color == 0) {
         if ((mem->read(0xFF40) & 0b1) == 0) return 0;
         else return bgQueue.front().color;
     } else {
         if (objQueue.front().palette == 0) {
-            return (mem->read(0xFF48) >> (2 * objQueue.front().color)) & 0b11;
-        } else return (mem->read(0xFF49) >> (2 * objQueue.front().color)) & 0b11;
+            return (mem->ppu_read(0xFF48) >> (2 * objQueue.front().color)) & 0b11;
+        } else return (mem->ppu_read(0xFF49) >> (2 * objQueue.front().color)) & 0b11;
     }
 }
 
