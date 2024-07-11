@@ -220,11 +220,13 @@ u8 PPU::ppuLoop(u8 ticks) {
                     }
                     window.WX_cond = true;
                 }
-                if (xCoord > 7 && xCoord < 168) frameBuffer[(xCoord - 8) + currentLine * 160] = pixelPicker();
+                if (xCoord > 7 && xCoord < 168) {
+                    frameBuffer[(xCoord - 8) + currentLine * 160] = pixelPicker();
+                    finishedLineDots += 1;
+                }
                 if (xCoord < 168) xCoord += 1;
                 if (!objQueue.empty()) objQueue.pop();
                 bgQueue.pop();
-                finishedLineDots += 1;
             }
         }
         if (finishedLineDots >= 172 + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
@@ -305,8 +307,7 @@ u8 PPU::pixelPicker() {
         if (objQueue.front().palette == 0) {
             return (mem->ppu_read(0xFF48) >> (2 * objQueue.front().color)) & 0b11;
         } else {
-            std::cout << std::bitset<8>(mem->read(0xFF49)) << " " << std::bitset<8>(objQueue.front().color) << "\n";
-            return (mem->ppu_read(0xFF49) >> (2 * (3 - objQueue.front().color))) & 0b11;
+            return (mem->ppu_read(0xFF49) >> (2 * objQueue.front().color)) & 0b11;
         }
     }
 }
