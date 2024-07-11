@@ -11,7 +11,7 @@ struct Pixel {
     u8 palette : 3;
     u8 spritePriority : 1; // cgb only
     u8 bgPriority : 1;
-    Pixel(u8 color, u8 palette, u8 bgPriority) : color(color), palette(palette), spritePriority(0), bgPriority(bgPriority) {}
+    Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority) {}
 };
 
 struct Window {
@@ -51,7 +51,7 @@ class PPU {
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
-        u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype);
+        u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * object);
         u8 pixelPicker();
         u8 modeSwitch();
         PPUState& ppuState;
