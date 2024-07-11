@@ -52,6 +52,7 @@ class PPU {
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
         u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype);
+        u8 pixelPicker();
         u8 modeSwitch();
         PPUState& ppuState;
         std::array<Object, 10> objArr;

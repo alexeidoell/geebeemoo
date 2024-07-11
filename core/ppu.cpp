@@ -1,6 +1,7 @@
 #include "ppu.h"
 #include "mmu.h"
 #include <cassert>
+#include <cstring>
 #include <exception>
 #include <iomanip>
 #include <ios>
@@ -159,19 +160,20 @@ u8 PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
                 }
-                assert((u8)bgQueue.front().color <= 3 && "pixel color is greater than 3 in dgb mode");
                 if (firstTile) {
                     for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
                         bgQueue.pop();
                     }
                 }
-                for (auto i = 0; i < objArr.size(); ++i) {
+                for (auto i = 0; i < objFetchIdx; ++i) {
                     if (xCoord + 8 == objArr[i].xPos) {
                         fifoFlags.objTileAddress = 0x8000;                       
                         fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
-                        fifoFlags.objTileAddress += ((currentLine - objArr[i].yPos + 16) % 8) << 1;
-                        fifoFlags.objHighByte = getTileByte(fifoFlags.tileAddress);
-                        fifoFlags.objLowByte = getTileByte(fifoFlags.tileAddress + 1);
+                        if ((objArr[i].flags & 0b1000000) > 0) {
+                            fifoFlags.objTileAddress += (~(((currentLine - objArr[i].yPos + 16) % 8) << 1)) & 0b1110;
+                        } else fifoFlags.objTileAddress += ((currentLine - objArr[i].yPos + 16) % 8) << 1;
+                        fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress);
+                        fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress + 1);
                         combineTile(fifoFlags.objHighByte, fifoFlags.objLowByte, obj);
                     }
                 }
@@ -186,10 +188,10 @@ u8 PPU::ppuLoop(u8 ticks) {
                         fifoFlags.awaitingPush = true;
                     }
                     window.WX_cond = true;
-                    frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color;
-                } else if (xCoord < 160 && ((mem->ppu_read(0xff40) & 0b1) == 1)) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
-                else if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = 0;
+                }
+                if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = pixelPicker();
                 if (firstTile) firstTile = false;
+                if (!objQueue.empty()) objQueue.pop();
                 bgQueue.pop();
                 finishedLineDots += 1;
             }
@@ -224,6 +226,8 @@ u8 PPU::ppuLoop(u8 ticks) {
 
             } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
             window.xCoord = 0;
+            memset(objArr.data(), 0, objArr.size());
+            objFetchIdx = 0;
             currentLineDots -= 456;
             finishedLineDots -= 456; // idk tbh?
             if (ppuState != mode1) { 
@@ -262,6 +266,13 @@ std::array<u8, 23040>& PPU::getBuffer() {
     return frameBuffer;
 }
 
+u8 PPU::pixelPicker() {
+    if ((mem->read(0xFF40) & 0b10) == 0 || objQueue.empty() || objQueue.front().color == 0) {
+        if ((mem->read(0xFF40) & 0b1) == 0) return 0;
+        else return bgQueue.front().color;
+    } else return objQueue.front().color;
+}
+
 u8 PPU::modeSwitch() {
     return 0;
 }
@@ -271,15 +282,16 @@ u8 PPU::oamScan(u16 address) { // 2 dots
     u8 objY_pos = mem->ppu_read(address);
     Object obj = Object(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
     if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
-        if ((objY_pos - currentLine) > 0) {
+        if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
         }
     } else { // 8x8 tiles
-        if (((objY_pos - 8) - currentLine) > 0) {
+        if (((objY_pos - 8) - currentLine) > 0 && ((objY_pos - 8) - currentLine) < 9) {
             if (objFetchIdx < 10) {
+                std::cout << std::hex << (int)address << " " << std::dec << (int)objFetchIdx << " " << (int)objY_pos << " " << (int)currentLine << "\n";
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
