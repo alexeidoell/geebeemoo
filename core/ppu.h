@@ -7,10 +7,10 @@
 #include <queue>
 
 struct Pixel {
-    u8 color : 2;
-    u8 palette : 3;
-    u8 spritePriority : 1; // cgb only
-    u8 bgPriority : 1;
+    u8 color;
+    u8 palette;
+    u8 spritePriority; // cgb only
+    u8 bgPriority;
     Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority) {}
 };
 

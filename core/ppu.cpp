@@ -48,7 +48,7 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * 
             palette = 0;
             bgPriority = 0;
         }
-        Pixel& pixel = *new Pixel((u8)color, palette, 0, bgPriority);
+        Pixel& pixel = *new Pixel(color, palette, 0, bgPriority);
         if (tiletype == bg) {
             if (bgQueue.size() < 8) bgQueue.push(pixel);
             assert(bgQueue.size() <= 8);
@@ -77,9 +77,6 @@ u16 PPU::bgPixelFetcher() { //  2 dots
     u16 offset = 0xFF & ((mem->ppu_read(0xFF44) + mem->ppu_read(0xFF42)) / 8);
     offset <<= 5;
     offset += 0x1F & ((xCoord + mem->ppu_read(0xFF43)) / 8);
-    if (!firstTile) {
-        offset += 1;
-    }
     u8 tileID = mem->ppu_read(tileMap + offset);
     u16 tileAddress = ((u16)tileID) << 4;
     tileAddress += ((mem->ppu_read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
@@ -164,9 +161,6 @@ u8 PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
-                    while (!bgQueue.empty()) {
-                        bgQueue.pop();
-                    }
                 }
             }
             while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
@@ -187,10 +181,11 @@ u8 PPU::ppuLoop(u8 ticks) {
                 if (firstTile) {
                     for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
                         bgQueue.pop();
+                        xCoord += 1;
                     }
                 }
                 for (auto i = 0; i < objFetchIdx; ++i) {
-                    if (xCoord + 8 == objArr[i].xPos) {
+                    if (xCoord == objArr[i].xPos) {
                         fifoFlags.objTileAddress = 0x8000;                       
                         fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
                         bool flipCond = (objArr[i].flags & 0b1000000) > 0;
@@ -213,7 +208,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                         combineTile(fifoFlags.objHighByte, fifoFlags.objLowByte, obj, &objArr[i]);
                     }
                 }
-                if (xCoord < 160 && ((mem->read(0xFF40) & 0b100000) > 0) && window.WY_cond && (xCoord + 7 == mem->read(0xFF4B) || window.WX_cond)) { // window time
+                if (xCoord < 168 && ((mem->read(0xFF40) & 0b100000) > 0) && window.WY_cond && (xCoord == mem->read(0xFF4B) || window.WX_cond)) { // window time
                     if (bgQueue.empty() || window.WX_cond == false) {
                         while (!bgQueue.empty()) bgQueue.pop();
                         fifoFlags.tileAddress = winPixelFetcher();
@@ -225,8 +220,8 @@ u8 PPU::ppuLoop(u8 ticks) {
                     }
                     window.WX_cond = true;
                 }
-                if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = pixelPicker();
-                if (firstTile) firstTile = false;
+                if (xCoord > 7 && xCoord < 168) frameBuffer[(xCoord - 8) + currentLine * 160] = pixelPicker();
+                if (xCoord < 168) xCoord += 1;
                 if (!objQueue.empty()) objQueue.pop();
                 bgQueue.pop();
                 finishedLineDots += 1;
@@ -305,11 +300,14 @@ std::array<u8, 23040>& PPU::getBuffer() {
 u8 PPU::pixelPicker() {
     if ((objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem->read(0xFF40) & 0b10) == 0 || objQueue.empty() || objQueue.front().color == 0) {
         if ((mem->read(0xFF40) & 0b1) == 0) return 0;
-        else return bgQueue.front().color;
+        else return (mem->ppu_read(0xFF47) >> (2 * bgQueue.front().color)) & 0b11;
     } else {
         if (objQueue.front().palette == 0) {
             return (mem->ppu_read(0xFF48) >> (2 * objQueue.front().color)) & 0b11;
-        } else return (mem->ppu_read(0xFF49) >> (2 * objQueue.front().color)) & 0b11;
+        } else {
+            std::cout << std::bitset<8>(mem->read(0xFF49)) << " " << std::bitset<8>(objQueue.front().color) << "\n";
+            return (mem->ppu_read(0xFF49) >> (2 * (3 - objQueue.front().color))) & 0b11;
+        }
     }
 }
 
