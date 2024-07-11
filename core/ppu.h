@@ -40,12 +40,13 @@ struct FIFO {
     u8 lowByte;
 };
 
-enum tileType { background, window, obj };
+enum tileType { bg, win, obj };
 
 class PPU {
     private:
         std::shared_ptr<MMU> mem;
-        u16 pixelFetcher();
+        u16 bgPixelFetcher();
+        u16 winPixelFetcher();
         u8 getTileByte(u16 index);
         u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype);
         u8 modeSwitch();

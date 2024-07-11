@@ -75,7 +75,6 @@ u8 Core::op_tree() {
             registers.pc = 0x40;
         } else if (((mem->read(0xFF0F) & 0b10) & (mem->read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
             mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111101));
-            std::cout << "WTF\n";
             registers.sp -= 2;
             mem->write(registers.sp, registers.pc);
             registers.pc = 0x48;
@@ -711,7 +710,6 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] &= mask;
             } else {
-                std::cout << "hl bit set" << (int) bit << "\n";;
                 ticks -= 4;
                 u8 operand = mem->read(hl);
                 operand &= mask;
