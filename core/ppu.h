@@ -38,6 +38,9 @@ struct FIFO {
     u16 tileAddress;
     u8 highByte;
     u8 lowByte;
+    u16 objTileAddress;
+    u8 objHighByte;
+    u8 objLowByte;
 };
 
 enum tileType { bg, win, obj };

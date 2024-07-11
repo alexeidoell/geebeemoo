@@ -167,12 +167,12 @@ u8 PPU::ppuLoop(u8 ticks) {
                 }
                 for (auto i = 0; i < objArr.size(); ++i) {
                     if (xCoord + 8 == objArr[i].xPos) {
-                        fifoFlags.tileAddress = 0x8000;                       
-                        fifoFlags.tileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
-                        fifoFlags.tileAddress += ((currentLine - objArr[i].yPos + 16) % 8) << 1;
-                        fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
-                        fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
-                        combineTile(fifoFlags.highByte, fifoFlags.lowByte, obj);
+                        fifoFlags.objTileAddress = 0x8000;                       
+                        fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
+                        fifoFlags.objTileAddress += ((currentLine - objArr[i].yPos + 16) % 8) << 1;
+                        fifoFlags.objHighByte = getTileByte(fifoFlags.tileAddress);
+                        fifoFlags.objLowByte = getTileByte(fifoFlags.tileAddress + 1);
+                        combineTile(fifoFlags.objHighByte, fifoFlags.objLowByte, obj);
                     }
                 }
                 if (xCoord < 160 && ((mem->read(0xFF40) & 0b100000) > 0) && window.WY_cond && (xCoord + 7 == mem->read(0xFF4B) || window.WX_cond)) { // window time
@@ -187,11 +187,6 @@ u8 PPU::ppuLoop(u8 ticks) {
                     }
                     window.WX_cond = true;
                     frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color;
-                
-                } else if (xCoord < 160 && !objQueue.empty()) {
-                    if (objQueue.front().color == 0) frameBuffer[xCoord++ + currentLine * 160] = bgQueue.front().color;
-                    else frameBuffer[xCoord++ + currentLine * 160] = objQueue.front().color;
-                    objQueue.pop();
                 } else if (xCoord < 160 && ((mem->ppu_read(0xff40) & 0b1) == 1)) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
                 else if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = 0;
                 if (firstTile) firstTile = false;
