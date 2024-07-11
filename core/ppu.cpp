@@ -30,7 +30,11 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype) { // 0 dots
         } else if (tiletype == obj) {
             if (i < objQueueSize) {
                 Pixel oldPixel = objQueue.front();
-            }
+                objQueue.pop();
+                if (oldPixel.color == 0) objQueue.push(pixel);
+                else objQueue.push(oldPixel);
+            } else objQueue.push(pixel);
+
         }
     }
     return 0;
@@ -158,14 +162,17 @@ u8 PPU::ppuLoop(u8 ticks) {
                 assert((u8)bgQueue.front().color <= 3 && "pixel color is greater than 3 in dgb mode");
                 if (firstTile) {
                     for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
-                        //bgQueue.pop();
+                        bgQueue.pop();
                     }
                 }
                 for (auto i = 0; i < objArr.size(); ++i) {
-                    if (xCoord == objArr[i].xPos) {
+                    if (xCoord + 8 == objArr[i].xPos) {
                         fifoFlags.tileAddress = 0x8000;                       
                         fifoFlags.tileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
-                        fifoFlags.tileAddress += (currentLine - objArr[i].yPos % 8) << 1;
+                        fifoFlags.tileAddress += ((currentLine - objArr[i].yPos + 16) % 8) << 1;
+                        fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
+                        fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
+                        combineTile(fifoFlags.highByte, fifoFlags.lowByte, obj);
                     }
                 }
                 if (xCoord < 160 && ((mem->read(0xFF40) & 0b100000) > 0) && window.WY_cond && (xCoord + 7 == mem->read(0xFF4B) || window.WX_cond)) { // window time
@@ -181,6 +188,10 @@ u8 PPU::ppuLoop(u8 ticks) {
                     window.WX_cond = true;
                     frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color;
                 
+                } else if (xCoord < 160 && !objQueue.empty()) {
+                    if (objQueue.front().color == 0) frameBuffer[xCoord++ + currentLine * 160] = bgQueue.front().color;
+                    else frameBuffer[xCoord++ + currentLine * 160] = objQueue.front().color;
+                    objQueue.pop();
                 } else if (xCoord < 160 && ((mem->ppu_read(0xff40) & 0b1) == 1)) frameBuffer[xCoord++ + currentLine * 160] = (u8)bgQueue.front().color; // placeholder
                 else if (xCoord < 160) frameBuffer[xCoord++ + currentLine * 160] = 0;
                 if (firstTile) firstTile = false;
@@ -265,14 +276,14 @@ u8 PPU::oamScan(u16 address) { // 2 dots
     u8 objY_pos = mem->ppu_read(address);
     Object obj = Object(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
     if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
-        if (((objY_pos + 16) - currentLine) > 0) {
+        if ((objY_pos - currentLine) > 0) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
         }
     } else { // 8x8 tiles
-        if (((objY_pos + 8) - currentLine) > 0) {
+        if (((objY_pos - 8) - currentLine) > 0) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
