@@ -225,6 +225,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                     finishedLineDots += 1;
                 }
                 if (xCoord < 168) xCoord += 1;
+                if (firstTile) firstTile = false;
                 if (!objQueue.empty()) objQueue.pop();
                 bgQueue.pop();
             }
