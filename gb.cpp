@@ -18,12 +18,12 @@ void setPixel(SDL_Surface* surface, u8 w, u8 h, u8 pixel) {
     u32* pixelAddress = (u32*)surface->pixels;
     pixelAddress += surface->w * h + w;
     if (pixel == 0) {
-        *pixelAddress = 0x9bbc0fff;
+        *pixelAddress = 0x9bbc0f;
     } else if (pixel == 1) {
-        *pixelAddress = 0x8bac0fff;
+        *pixelAddress = 0x8bac0f;
     } else if (pixel == 2) {
-        *pixelAddress = 0x306230ff;
-    } else *pixelAddress = 0x0f380fff;
+        *pixelAddress = 0x306230;
+    } else *pixelAddress = 0x0f380f;
 
 }
 
@@ -75,7 +75,9 @@ void GB::runEmu(char* filename) {
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             //doctor_log(log, core, *mem);
             operation_ticks = core.op_tree();
-            ppu.ppuLoop(operation_ticks);
+            if ((mem->ppu_read(0xFF40) & 0x80) == 0x80) {
+                ppu.ppuLoop(operation_ticks);
+            }
             current_ticks += operation_ticks;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
@@ -101,8 +103,8 @@ void GB::runEmu(char* filename) {
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
-        std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
-        assert(mem->read(0xFF44) >= 153);
+        //std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        //assert(mem->read(0xFF44) >= 153);
 
     } 
 }

@@ -71,13 +71,6 @@ u8 PPU::ppuLoop(u8 ticks) {
     }
     u8 currentLine = mem->ppu_read(0xFF44); // ly register    
     while (mem->ppu_read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
-        if (currentLine == mem->ppu_read(0xFF45)) { // ly = lyc
-            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
-            if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
-                mem->ppu_write(0xFFFF, (u8)(mem->ppu_read(0xFFFF) | 0b10));
-            }
-            
-        } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         if (ppuState == mode1) {
             return 0;
         }
@@ -90,6 +83,7 @@ u8 PPU::ppuLoop(u8 ticks) {
         } 
         if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) {
             ppuState = mode3;
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             if (finishedLineDots == 80) { // setting up mode3
                 while(!bgQueue.empty()) bgQueue.pop();
                 while(!objQueue.empty()) objQueue.pop();
@@ -161,6 +155,10 @@ u8 PPU::ppuLoop(u8 ticks) {
         }
         if (finishedLineDots >= 172 + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
             ppuState = mode0;
+            if ((mem->ppu_read(0xFF41) | 0b00100) > 0) {
+                //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+            }
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             firstTile = true;
             xCoord = 0;
             while (finishedLineDots < currentLineDots) {
@@ -170,11 +168,25 @@ u8 PPU::ppuLoop(u8 ticks) {
     }
         if (currentLineDots >= 456) {
             // implement moving down to next scan line
-            mem->ppu_write(0xFF44, (u8)(currentLine + 1));
-            currentLine = mem->ppu_read(0xFF44);
+            currentLine += 1;
+            mem->ppu_write(0xFF44, (u8)(currentLine));
+            if (currentLine == mem->ppu_read(0xFF45)) { // ly = lyc
+                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+                if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+                    std::cout << "WTF " << (int)currentLine << "\n";
+                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+                }
+
+            } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
             currentLineDots -= 456;
             finishedLineDots -= 456; // idk tbh?
-            if (ppuState != mode1) ppuState = mode2;
+            if (ppuState != mode1) { 
+                ppuState = mode2;
+                if ((mem->ppu_read(0xFF41) | 0b10000) > 0) {
+                    //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+                }
+                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
+            }
             if (currentLine >= 154) {
                 // either need it to chill out until the last frame is done rendering
                 // or somehow start the next frame early
@@ -183,7 +195,13 @@ u8 PPU::ppuLoop(u8 ticks) {
             } else if (currentLine == 144) { // vblank
                 //std::cout << "vblank\n";
                 ppuState = mode1;
+                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
                 mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
+            } else if (currentLine > 144) {
+                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
+                if ((mem->ppu_read(0xFF41) | 0b01000) > 0) {
+                    //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+                }
             }
         }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";

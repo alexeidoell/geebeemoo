@@ -47,6 +47,11 @@ u8 MMU::write(u16 address, u8 word) {
                                   // but the timer uses double writes 
                                   // so still has permission
         write(0xFF03, (u16)0x00);
+    } else if (address == 0xFF40) {
+        std::cout << std::dec << "lcdc write at " << (int)mem[0xff44] << ": " << std::hex << (int)word << "\n";
+        if (ppuState == mode1 || ppuState == mode2) {
+            mem[address] = word;
+        }
     }
     else mem[address] = word;
     return 0;
@@ -62,6 +67,10 @@ u8 MMU::write(u16 address, u16 dword) {
     if (address == 0xFF46) {
         // start oam transfer process
 
+    } else if (address == 0xFF40) {
+        std::cout << std::dec << "dword lcdc write at " << (int)mem[0xff44] << ": " << std::hex << (int)dword << "\n";
+        mem[address] = (u8) (dword & 0xFF);
+        mem[address + 1] = (u8) (dword >> 8);
     } else {
         mem[address] = (u8) (dword & 0xFF);
         mem[address + 1] = (u8) (dword >> 8);
