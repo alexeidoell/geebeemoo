@@ -145,11 +145,11 @@ u8 PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchTileID = true;
                     finishedLineDots += 2;
                 } else if (!fifoFlags.fetchHighByte) {
-                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
+                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
                     fifoFlags.fetchHighByte = true;
                     finishedLineDots += 2;
                 } else if (!fifoFlags.fetchLowByte) {
-                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
+                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
                     fifoFlags.fetchLowByte = true;
                     fifoFlags.awaitingPush = true;
                     finishedLineDots += 2;
