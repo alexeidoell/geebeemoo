@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_timer.h>
 #include "core/timer.h"
 #include "lib/types.h"
@@ -51,16 +52,12 @@ void GB::runEmu(char* filename) {
     PPU& ppu = *new PPU(mem);
     core.bootup();
 
+    bool running = true;
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
-    while(SDL_WaitEvent(&event)) { // idk how to make an actual sdl main loop
-        if (event.type == SDL_QUIT) {
-            std::cout << "closing gbemu\n";
-            SDL_Quit();
-            exit(0);
-        }
+    while(running) {
         frameStart = SDL_GetTicks();
         mem->ppuState = mode2;
         mem->write(0xFF44, (u8)0);
@@ -70,6 +67,12 @@ void GB::runEmu(char* filename) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             //doctor_log(log, core, *mem);
+            while (SDL_PollEvent(&event)) {
+                if (event.type == SDL_QUIT) {
+                    std::cout << "closing gbemu\n";
+                    running = false;
+                }
+            }
             operation_ticks = core.op_tree();
             if ((mem->ppu_read(0xFF40) & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
@@ -103,6 +106,7 @@ void GB::runEmu(char* filename) {
         //assert(mem->read(0xFF44) >= 153);
 
     } 
+    SDL_Quit();
 }
 
 void GB::doctor_log(std::ofstream& log, Core& core, MMU& mem) {
