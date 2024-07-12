@@ -23,13 +23,16 @@ u8 MMU::read(u16 address) {
     if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
         return 0xFF;
     }
+    if (address == 0xFF00 && mem[0xFF00] == 0x30) {
+        return 0x3F;
+    }
+    if (address == 0xFF01) {
+        return 0xFF;
+    }
     if (address == 0xFF4D) {
         return 0xFF;
     }
     if (address == 0xFF02) {
-    }
-    if (address == 0xFF00) {
-        return 0x0F;
     }
     return mem[address];
 

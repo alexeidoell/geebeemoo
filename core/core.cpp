@@ -25,6 +25,7 @@ u8 Core::bootup() {
     registers.gpr.n.l = 0x4D;
     registers.pc  = 0x0100;
     registers.sp  = 0xFFFE;
+    mem->write(0xFF00, (u8)0xCF);
     mem->write(0xFF03, (u16)0xABCC);
     mem->write(0xFF0F, (u8)0xE1);
     mem->write(0xFF40, (u8)0x91);

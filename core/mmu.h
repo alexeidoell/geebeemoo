@@ -2,14 +2,12 @@
 #include <array>
 #include <string>
 #include "../lib/types.h"
-#include "joypad.h"
 
 enum PPUState { mode0, mode1, mode2, mode3 };
 
 class MMU {
 private:
     std::array<u8, 0x10000> mem = {0};
-    Joypad joypad;
 public:
     PPUState ppuState = mode2;
     u8 load_cart(char* filename);

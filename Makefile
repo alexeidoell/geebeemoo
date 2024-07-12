@@ -4,7 +4,7 @@ CFLAGS = -Wall -pedantic -g -fPIC
 
 EXECUTABLES = main
 
-CORE_FILES = core.cpp mmu.cpp timer.cpp ppu.cpp
+CORE_FILES = core.cpp mmu.cpp timer.cpp ppu.cpp joypad.cpp
 CORE = $(CORE_FILES:%.cpp=core/%.cpp)
 
 .PHONY: all clean
