@@ -17,7 +17,7 @@ void setPixel(SDL_Surface* surface, u8 w, u8 h, u8 pixel) {
     u32* pixelAddress = (u32*)surface->pixels;
     pixelAddress += surface->w * h + w;
 
-    u32 colors[4] = { 0xFFFFFF, 0x555555, 0xAAAAAA, 0x000000 };
+    u32 colors[4] = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
 
     *pixelAddress = colors[pixel];
 

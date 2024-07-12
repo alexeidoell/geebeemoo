@@ -30,6 +30,8 @@ u8 Core::bootup() {
     mem->write(0xFF40, (u8)0x91);
     mem->write(0xFF41, (u8)0x81);
     mem->write(0xFF07, (u8)0xF8);
+    mem->write(0xFF47, (u8)0xFC);
+    mem->write(0xFF48, (u16)0x0000);
 
     return 0;
 }

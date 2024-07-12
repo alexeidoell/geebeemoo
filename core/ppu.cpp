@@ -166,8 +166,8 @@ u8 PPU::ppuLoop(u8 ticks) {
             while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
                 if (!fifoFlags.awaitingPush) { // get next push ppu_ready
                     fifoFlags.tileAddress = bgPixelFetcher();
-                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
-                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
+                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
+                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
                     fifoFlags.awaitingPush = true;
                 }
                 if (!window.WX_cond && bgQueue.empty() && fifoFlags.awaitingPush) {
@@ -203,18 +203,18 @@ u8 PPU::ppuLoop(u8 ticks) {
                                 } else fifoFlags.objTileAddress |= ((u16)0b10000);
                             }
                         }
-                        fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress);
-                        fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress + 1);
+                        fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress + 1);
+                        fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress);
                         combineTile(fifoFlags.objHighByte, fifoFlags.objLowByte, obj, &objArr[i]);
                     }
                 }
-                if (xCoord < 168 && ((mem->read(0xFF40) & 0b100000) > 0) && window.WY_cond && (xCoord == mem->read(0xFF4B) || window.WX_cond)) { // window time
+                if (xCoord < 168 && ((mem->read(0xFF40) & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == mem->read(0xFF4B) || window.WX_cond)) { // window time
                     if (bgQueue.empty() || window.WX_cond == false) {
                         while (!bgQueue.empty()) bgQueue.pop();
                         fifoFlags.tileAddress = winPixelFetcher();
                         window.xCoord += 8;
-                        fifoFlags.highByte = getTileByte(fifoFlags.tileAddress);
-                        fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress + 1);
+                        fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
+                        fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
                         combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
                         fifoFlags.awaitingPush = true;
                     }
