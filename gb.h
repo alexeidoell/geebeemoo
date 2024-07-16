@@ -7,7 +7,7 @@
 class GB {
 public:
     void runEmu(char* filename);
-    void doctor_log(std::ofstream& log, Core& core, MMU& mem);
+    void doctor_log(u32 frame, std::ofstream& log, Core& core, MMU& mem);
     GB() = default;
     ~GB() = default;
 

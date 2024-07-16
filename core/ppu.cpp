@@ -281,7 +281,6 @@ u8 PPU::ppuLoop(u8 ticks) {
                 ppuState = mode1;
                 window.yCoord = 0;
                 mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
-                mem->ppu_write(0xFF85, (u8)0x00);
                 mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
             } else if (currentLine > 144) {
                 //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));

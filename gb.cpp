@@ -46,6 +46,7 @@ void GB::runEmu(char* filename) {
     bool first_frame = true;
 
     std::ofstream log("log.txt", std::ofstream::trunc);
+    u32 frame = 0;
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(running) {
@@ -68,7 +69,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            //doctor_log(log, core, *mem);
+            doctor_log(frame, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem->get_oam()) {
@@ -96,6 +97,7 @@ void GB::runEmu(char* filename) {
         } else first_frame = false;
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
+        frame += 1;
         //std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
         //assert(mem->read(0xFF44) >= 153);
 
@@ -104,8 +106,9 @@ void GB::runEmu(char* filename) {
     SDL_Quit();
 }
 
-void GB::doctor_log(std::ofstream& log, Core& core, MMU& mem) {
-    log << std::hex << std::setfill('0') << "A:" << std::setw(2) << (int) core.registers.gpr.n.a;
+void GB::doctor_log(u32 frame, std::ofstream& log, Core& core, MMU& mem) {
+    log << "Frame: " << std::dec << (int)frame;
+    log << std::hex << std::setfill('0') << " A:" << std::setw(2) << (int) core.registers.gpr.n.a;
     log << " F:" << std::setw(2) << (int) core.registers.flags;
     log << " B:" <<  std::setw(2) << (int) core.registers.gpr.n.b;
     log << " C:" <<  std::setw(2) << (int) core.registers.gpr.n.c;
