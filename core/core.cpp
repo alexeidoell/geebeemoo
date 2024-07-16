@@ -10,9 +10,6 @@ Core::Core(std::shared_ptr<MMU> memPtr) {
     mem = memPtr;
 }
 
-Core::~Core() {
-}
-
 u8 Core::bootup() {
     // set registers and memory to 0x100 state
     registers.gpr.n.a = 0x01;

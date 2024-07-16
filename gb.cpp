@@ -14,16 +14,6 @@
 #include <fstream>
 #include <memory>
 
-void setPixel(SDL_Surface* surface, u8 w, u8 h, u8 pixel) {
-    u32* pixelAddress = (u32*)surface->pixels;
-    pixelAddress += surface->w * h + w;
-
-    u32 colors[4] = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
-
-    *pixelAddress = colors[pixel];
-
-}
-
 void GB::runEmu(char* filename) {
     const double FPS = 59.7275;
     const u32 frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
@@ -47,12 +37,13 @@ void GB::runEmu(char* filename) {
     SDL_Surface* surface = SDL_GetWindowSurface(window);
     SDL_Event event;
 
-    Core& core = *new Core(mem);
-    Timer& timer = *new Timer(mem);
-    PPU& ppu = *new PPU(mem);
+    Core core(mem);
+    Timer timer(mem);
+    PPU ppu(mem, surface);
     core.bootup();
 
     bool running = true;
+    bool first_frame = true;
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     
@@ -60,24 +51,32 @@ void GB::runEmu(char* filename) {
     while(running) {
         frameStart = SDL_GetTicks();
         mem->ppuState = mode2;
-        mem->write(0xFF44, (u8)0);
+        mem->ppu_write(0xFF44, (u8)0);
+        if (mem->ppu_read(0xFF45) == 0) {
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+            if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+            }
+        } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
+        }
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             //doctor_log(log, core, *mem);
-            while (SDL_PollEvent(&event)) {
-                if (event.type == SDL_QUIT) {
-                    std::cout << "closing gbemu\n";
-                    running = false;
-                }
-            }
             operation_ticks = core.op_tree();
+            current_ticks += operation_ticks;
+            if (mem->get_oam()) {
+                mem->oam_transfer(current_ticks);
+            }
             if ((mem->ppu_read(0xFF40) & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
-            }
-            current_ticks += operation_ticks;
+            } else first_frame = true;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
                 timer.div_inc();
@@ -91,21 +90,17 @@ void GB::runEmu(char* filename) {
                 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
             }
         }
-        std::array<u8, 23040>& buffer = ppu.getBuffer();
-        for (auto i = 0; i < 144; ++i) {
-            for (auto j = 0; j < 160; ++j) {
-                u8 pixel = buffer[j + i * 160];
-                setPixel(surface, j, i, pixel);
-            }
-        }
         surface = SDL_GetWindowSurface(window);
-        SDL_UpdateWindowSurface(window);
+        if (!first_frame) {
+            SDL_UpdateWindowSurface(window);
+        } else first_frame = false;
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
-        std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        //std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
         //assert(mem->read(0xFF44) >= 153);
 
     } 
+    std::cout << "closing gbemu\n";
     SDL_Quit();
 }
 

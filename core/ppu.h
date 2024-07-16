@@ -1,6 +1,7 @@
 #pragma once
 #include "../lib/types.h"
 #include "mmu.h"
+#include <SDL2/SDL_surface.h>
 #include <array>
 #include <iostream>
 #include <memory>
@@ -47,11 +48,12 @@ enum tileType { bg, win, obj };
 
 class PPU {
     private:
+        const u32 colors[4] = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
         std::shared_ptr<MMU> mem;
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
-        u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * object);
+        u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object);
         u8 pixelPicker();
         u8 modeSwitch();
         PPUState& ppuState;
@@ -66,6 +68,9 @@ class PPU {
         std::array<u8, 23040> frameBuffer = { 0 };
         u8 oamScan(u16 address);
         bool firstTile = true;
+        void setPixel(u8 w, u8 h, u8 pixel);
+        SDL_Surface *surface;
+        s16 finishedLineDots;
     public:
         s16 currentLineDots; // need to keep track of state between
                              // calls so that the ppu can tell the
@@ -73,10 +78,9 @@ class PPU {
                              // the next call of the ppu loop that will
                              // resume the state it was at in the current
                              // line
-        PPU(std::shared_ptr<MMU> memPtr) 
-        :mem(memPtr), ppuState(mem->ppuState) {
+        PPU(std::shared_ptr<MMU> memPtr, SDL_Surface* surface) 
+        :mem(memPtr), ppuState(mem->ppuState), surface(surface){
         } // this feels gross
-        ~PPU();
         u8 ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer(); // u8 array is a placeholder
 };

@@ -10,7 +10,6 @@ class Timer {
     public:
         Timer(std::shared_ptr<MMU> memPtr) 
             :mem(memPtr) {}
-        ~Timer();
         u8 div_inc();
         s8 tima_inc();
 };

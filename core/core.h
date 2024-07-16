@@ -29,6 +29,5 @@ public: // need to change a lot of these to private when I start using rom tests
     u8 op_tree();
     u8 cb_op();
     Core(std::shared_ptr<MMU> memPtr);
-    ~Core();
 };
 

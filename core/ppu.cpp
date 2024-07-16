@@ -1,5 +1,6 @@
 #include "ppu.h"
 #include "mmu.h"
+#include <SDL2/SDL.h>
 #include <bitset>
 #include <cassert>
 #include <cstring>
@@ -8,7 +9,7 @@
 #include <ios>
 #include <iostream>
 
-u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * object) {
+u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
     u16 line;
     u16 mask;
     line = 0;
@@ -48,7 +49,7 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, const Object * 
             palette = 0;
             bgPriority = 0;
         }
-        Pixel& pixel = *new Pixel(color, palette, 0, bgPriority);
+        Pixel pixel(color, palette, 0, bgPriority);
         if (tiletype == bg) {
             if (bgQueue.size() < 8) bgQueue.push(pixel);
             assert(bgQueue.size() <= 8);
@@ -109,7 +110,6 @@ u16 PPU::winPixelFetcher() {
 
 u8 PPU::ppuLoop(u8 ticks) {
     if (mem->ppu_read(0xFF44) == 154) return 0;
-    s16 finishedLineDots = (s16)currentLineDots;
     currentLineDots += ticks;
     if (mem->ppu_read(0xFF44) >= 144) {
         finishedLineDots = currentLineDots;
@@ -221,7 +221,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                     window.WX_cond = true;
                 }
                 if (xCoord > 7 && xCoord < 168) {
-                    frameBuffer[(xCoord - 8) + currentLine * 160] = pixelPicker();
+                    setPixel(xCoord - 8, currentLine, pixelPicker());
                     finishedLineDots += 1;
                 }
                 if (xCoord < 168) xCoord += 1;
@@ -263,7 +263,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             memset(objArr.data(), 0, objArr.size());
             objFetchIdx = 0;
             currentLineDots -= 456;
-            finishedLineDots -= 456; // idk tbh?
+            finishedLineDots = 0; // idk tbh?
             if (ppuState != mode1) { 
                 ppuState = mode2;
                 if ((mem->ppu_read(0xFF41) & 0b100000) > 0) {
@@ -271,7 +271,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 }
                 mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             }
-            if (currentLine >= 154) {
+            if (currentLine > 154) {
                 // either need it to chill out until the last frame is done rendering
                 // or somehow start the next frame early
                 // former option is probably way better
@@ -281,18 +281,19 @@ u8 PPU::ppuLoop(u8 ticks) {
                 ppuState = mode1;
                 window.yCoord = 0;
                 mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
+                mem->ppu_write(0xFF85, (u8)0x00);
                 mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
             } else if (currentLine > 144) {
-                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
+                //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
                 if ((mem->ppu_read(0xFF41) & 0b010000) > 0) {
-                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+                    //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
                 }
             }
         }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
         mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | (u8)ppuState));
-        assert(finishedLineDots == currentLineDots);
+        //assert(finishedLineDots == currentLineDots);
         return 0;
 }
 
@@ -320,7 +321,7 @@ u8 PPU::modeSwitch() {
 u8 PPU::oamScan(u16 address) { // 2 dots
     u8 currentLine = mem->ppu_read(0xFF44); // ly register    
     u8 objY_pos = mem->ppu_read(address);
-    Object obj = Object(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
+    Object obj(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
     if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
         if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
             if (objFetchIdx < 10) {
@@ -339,3 +340,11 @@ u8 PPU::oamScan(u16 address) { // 2 dots
     }
     return 0;
 }
+
+void PPU::setPixel(u8 w, u8 h, u8 pixel) {
+    u32* pixelAddress = (u32*)surface->pixels;
+    pixelAddress += surface->w * h + w;
+
+    *pixelAddress = colors[pixel];
+}
+

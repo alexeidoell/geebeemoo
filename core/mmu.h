@@ -8,6 +8,9 @@ enum PPUState { mode0, mode1, mode2, mode3 };
 class MMU {
 private:
     std::array<u8, 0x10000> mem = {0};
+    bool oam_state = false;
+    u8 oam_offset = 0;
+    u16 oam_address;
 public:
     PPUState ppuState = mode2;
     u8 load_cart(char* filename);
@@ -23,5 +26,8 @@ public:
     u8 div_inc();
     u8 tima_inc();
     bool tima_tick = false;
+
+    bool get_oam();
+    u8 oam_transfer(u8 ticks);
 };
 
