@@ -141,7 +141,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 2;
             }
         } 
-        if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) {
+        if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 + mode3_delay && finishedLineDots < currentLineDots) {
             ppuState = mode3;
             if (finishedLineDots == 80) { // setting up mode3
                 while(!bgQueue.empty()) bgQueue.pop();
@@ -169,12 +169,13 @@ u8 PPU::ppuLoop(u8 ticks) {
             if (finishedLineDots == 92) { // first pixel push
                 if (fifoFlags.awaitingPush) {
                     combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
+                    newTile = true;
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
                 }
             }
-            while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) { // normal mode3 cycle
+            while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 + mode3_delay && finishedLineDots < currentLineDots) { // normal mode3 cycle
                 if (!fifoFlags.awaitingPush) { // get next push ppu_ready
                     fifoFlags.tileAddress = bgPixelFetcher();
                     fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
@@ -184,6 +185,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 if (!window.WX_cond && bgQueue.empty() && fifoFlags.awaitingPush) {
                     // push new tile row
                     combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
+                    newTile = true;
                     fifoFlags.awaitingPush = false;
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
@@ -193,10 +195,19 @@ u8 PPU::ppuLoop(u8 ticks) {
                     for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
                         bgQueue.pop();
                         xCoord += 1;
+                        mode3_delay += 1;
                     }
                 }
                 for (auto i = 0; i < objFetchIdx; ++i) {
                     if (xCoord == objArr[i].xPos) {
+                        mode3_delay += 6;
+                        if (newTile) {
+                            newTile = false;
+                            s8 objPenalty = bgQueue.size();
+                            objPenalty -= 2;
+                            objPenalty = (objPenalty < 0) ? 0 : objPenalty;
+                            mode3_delay += objPenalty;
+                        }
                         fifoFlags.objTileAddress = 0x8000;                       
                         fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
                         bool flipCond = (objArr[i].flags & 0b1000000) > 0;
@@ -229,6 +240,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                         combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
                         fifoFlags.awaitingPush = true;
                     }
+                    if (window.WX_cond) mode3_delay += 6;
                     window.WX_cond = true;
                 }
                 if (xCoord > 7 && xCoord < 168) {
@@ -236,12 +248,13 @@ u8 PPU::ppuLoop(u8 ticks) {
                     finishedLineDots += 1;
                 }
                 if (xCoord < 168) xCoord += 1;
+                else finishedLineDots += 1;
                 if (firstTile) firstTile = false;
                 if (!objQueue.empty()) objQueue.pop();
                 bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 172 + 80 && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
+        if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
             ppuState = mode0;
             if ((mem->ppu_read(0xFF41) & 0b001000) > 0) {
                 mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
@@ -273,6 +286,7 @@ u8 PPU::ppuLoop(u8 ticks) {
         } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         window.xCoord = 0;
         xCoord = 0;
+        mode3_delay = 0;
         memset(objArr.data(), 0, objArr.size());
         objFetchIdx = 0;
         currentLineDots -= 456;

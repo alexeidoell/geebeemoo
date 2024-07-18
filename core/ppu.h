@@ -70,6 +70,7 @@ class PPU {
         bool firstTile = true;
         void setPixel(u8 w, u8 h, u8 pixel);
         SDL_Surface *surface;
+        bool newTile = true;
         s16 finishedLineDots;
     public:
         s16 currentLineDots; // need to keep track of state between
