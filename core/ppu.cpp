@@ -251,7 +251,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 else finishedLineDots += 1;
                 if (firstTile) firstTile = false;
                 if (!objQueue.empty()) objQueue.pop();
-                bgQueue.pop();
+                if (!bgQueue.empty()) bgQueue.pop();
             }
         }
         if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
