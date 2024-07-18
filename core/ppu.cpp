@@ -109,8 +109,25 @@ u16 PPU::winPixelFetcher() {
 }
 
 u8 PPU::ppuLoop(u8 ticks) {
-    if (mem->ppu_read(0xFF44) == 154) return 0;
     currentLineDots += ticks;
+    if (mem->ppu_read(0xFF44) == 153) {
+        if (currentLineDots >= 4 && currentLineDots < 456) {
+            if (0 == mem->ppu_read(0xFF45)) { // ly = lyc
+                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+                if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+                }
+            } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
+        } else if (currentLineDots < 456) {
+            if (153 == mem->ppu_read(0xFF45)) { // ly = lyc
+                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+                if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+                }
+            } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
+        }
+
+    }
     if (mem->ppu_read(0xFF44) >= 144) {
         finishedLineDots = currentLineDots;
     }
@@ -243,57 +260,49 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
     }
-        if (currentLineDots >= 456) {
-            // implement moving down to next scan line
-            window.WY_cond = false;
-            if (window.WX_cond) {
-                window.yCoord += 1;
-            }
-            window.WX_cond = false;
-            currentLine += 1;
-            mem->ppu_write(0xFF44, (u8)(currentLine));
-            if (currentLine == mem->ppu_read(0xFF45)) { // ly = lyc
-                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
-                if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
-                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-                }
-
-            } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
-            window.xCoord = 0;
-            memset(objArr.data(), 0, objArr.size());
-            objFetchIdx = 0;
-            currentLineDots -= 456;
-            finishedLineDots = 0; // idk tbh?
-            if (ppuState != mode1) { 
-                ppuState = mode2;
-                if ((mem->ppu_read(0xFF41) & 0b100000) > 0) {
-                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-                }
-                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
-            }
-            if (currentLine > 154) {
-                // either need it to chill out until the last frame is done rendering
-                // or somehow start the next frame early
-                // former option is probably way better
-                return 0; // ??
-            } else if (currentLine == 144) { // vblank
-                //std::cout << "vblank\n";
-                ppuState = mode1;
-                window.yCoord = 0;
-                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
-                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
-            } else if (currentLine > 144) {
-                //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
-                if ((mem->ppu_read(0xFF41) & 0b010000) > 0) {
-                    //mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-                }
-            }
+    if (currentLineDots >= 456) {
+        // implement moving down to next scan line
+        window.WY_cond = false;
+        if (window.WX_cond) {
+            window.yCoord += 1;
         }
+        window.WX_cond = false;
+        if (currentLine == 153) {
+            currentLine = 0;
+            ppuState = mode2;
+        }
+        else currentLine += 1;
+        mem->ppu_write(0xFF44, (u8)(currentLine));
+        if (currentLine == mem->ppu_read(0xFF45)) { // ly = lyc
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+            if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+            }
+        } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
+        window.xCoord = 0;
+        memset(objArr.data(), 0, objArr.size());
+        objFetchIdx = 0;
+        currentLineDots -= 456;
+        finishedLineDots = 0; // idk tbh?
+        if (currentLine == 144) { // vblank
+            ppuState = mode1;
+            window.yCoord = 0;
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
+            mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
+        }
+        if (ppuState != mode1) { 
+            ppuState = mode2;
+            if ((mem->ppu_read(0xFF41) & 0b100000) > 0) {
+                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+            }
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
+        } 
+    }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
-        mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | (u8)ppuState));
-        //assert(finishedLineDots == currentLineDots);
-        return 0;
+    mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | (u8)ppuState));
+    //assert(finishedLineDots == currentLineDots);
+    return 0;
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {

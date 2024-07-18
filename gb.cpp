@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_events.h>
+#include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_timer.h>
 #include "core/timer.h"
 #include "lib/types.h"
@@ -44,21 +45,15 @@ void GB::runEmu(char* filename) {
 
     bool running = true;
     bool first_frame = true;
+    bool white = false;
 
     std::ofstream log("log.txt", std::ofstream::trunc);
-    u32 frame = 0;
+    u32 frame = 1;
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(running) {
         frameStart = SDL_GetTicks();
         mem->ppuState = mode2;
-        mem->ppu_write(0xFF44, (u8)0);
-        if (mem->ppu_read(0xFF45) == 0) {
-            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
-            if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
-                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-            }
-        } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
         while (SDL_PollEvent(&event)) {
@@ -66,10 +61,11 @@ void GB::runEmu(char* filename) {
                 running = false;
             }
         }
+        white = false;
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            doctor_log(frame, log, core, *mem);
+            //doctor_log(frame, current_ticks, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem->get_oam()) {
@@ -77,7 +73,7 @@ void GB::runEmu(char* filename) {
             }
             if ((mem->ppu_read(0xFF40) & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
-            } else first_frame = true;
+            } else white = true;
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
                 timer.div_inc();
@@ -92,9 +88,14 @@ void GB::runEmu(char* filename) {
             }
         }
         surface = SDL_GetWindowSurface(window);
-        if (!first_frame) {
-            SDL_UpdateWindowSurface(window);
-        } else first_frame = false;
+        if (first_frame) {
+            first_frame = false;
+            SDL_FillRect(surface, NULL, 0xFFFFFFFF);
+        }
+        if (white) {
+            SDL_FillRect(surface, NULL, 0xFFFFFFFF);
+        }
+        SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
@@ -106,8 +107,9 @@ void GB::runEmu(char* filename) {
     SDL_Quit();
 }
 
-void GB::doctor_log(u32 frame, std::ofstream& log, Core& core, MMU& mem) {
+void GB::doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& mem) {
     log << "Frame: " << std::dec << (int)frame;
+    log << " Ticks: " << std::dec << (int)ticks;
     log << std::hex << std::setfill('0') << " A:" << std::setw(2) << (int) core.registers.gpr.n.a;
     log << " F:" << std::setw(2) << (int) core.registers.flags;
     log << " B:" <<  std::setw(2) << (int) core.registers.gpr.n.b;
@@ -117,6 +119,7 @@ void GB::doctor_log(u32 frame, std::ofstream& log, Core& core, MMU& mem) {
     log << " H:" <<  std::setw(2) << (int) core.registers.gpr.n.h;
     log << " L:" <<  std::setw(2) << (int) core.registers.gpr.n.l;
     log << " SP:" <<  std::setw(4) << (int) core.registers.sp;
+    log << " SPMEM:" <<  std::setw(4) << (int) ((mem.ppu_read(core.registers.sp + 1) << 8) + mem.ppu_read(core.registers.sp));
     log << " PC:" <<  std::setw(4) << (int) core.registers.pc;
     log << " PCMEM:" <<  std::setw(2) << (int) mem.read(core.registers.pc) << ",";
     log <<  std::setw(2) << (int) mem.read(core.registers.pc + 1) << ",";
