@@ -47,7 +47,7 @@ void GB::runEmu(char* filename) {
     bool first_frame = true;
     bool white = false;
 
-    std::ofstream log("log.txt", std::ofstream::trunc);
+    //std::ofstream log("log.txt", std::ofstream::trunc);
     u32 frame = 1;
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
@@ -64,7 +64,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            doctor_log(frame, current_ticks, log, core, *mem);
+            //doctor_log(frame, current_ticks, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem->get_oam()) {
@@ -98,7 +98,7 @@ void GB::runEmu(char* filename) {
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
-        //std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
         //assert(mem->read(0xFF44) >= 153);
 
     } 

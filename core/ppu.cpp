@@ -143,7 +143,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         } 
         if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 && finishedLineDots < currentLineDots) {
             ppuState = mode3;
-            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             if (finishedLineDots == 80) { // setting up mode3
                 while(!bgQueue.empty()) bgQueue.pop();
                 while(!objQueue.empty()) objQueue.pop();
@@ -247,7 +246,6 @@ u8 PPU::ppuLoop(u8 ticks) {
             if ((mem->ppu_read(0xFF41) & 0b001000) > 0) {
                 mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
             }
-            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             firstTile = true;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
@@ -282,7 +280,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         if (currentLine == 144) { // vblank
             ppuState = mode1;
             window.yCoord = 0;
-            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b1));
         }
         if (ppuState != mode1) { 
@@ -290,12 +287,11 @@ u8 PPU::ppuLoop(u8 ticks) {
             if ((mem->ppu_read(0xFF41) & 0b100000) > 0) {
                 mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
             }
-            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
         } 
     }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
-    mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | (u8)ppuState));
+    mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & (u8)~0b11) | (u8)ppuState));
     //assert(finishedLineDots == currentLineDots);
     return 0;
 }

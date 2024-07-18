@@ -3,7 +3,7 @@
 #include <string>
 #include "../lib/types.h"
 
-enum PPUState { mode0, mode1, mode2, mode3 };
+enum PPUState { mode0 = 0, mode1, mode2, mode3 };
 
 class MMU {
 private:
