@@ -53,7 +53,6 @@ void GB::runEmu(char* filename) {
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(running) {
         frameStart = SDL_GetTicks();
-        mem->ppuState = mode2;
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
         while (SDL_PollEvent(&event)) {
@@ -65,7 +64,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            //doctor_log(frame, current_ticks, log, core, *mem);
+            doctor_log(frame, current_ticks, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem->get_oam()) {

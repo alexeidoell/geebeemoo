@@ -1,6 +1,7 @@
 #include "ppu.h"
 #include "mmu.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_surface.h>
 #include <bitset>
 #include <cassert>
 #include <cstring>
@@ -75,9 +76,9 @@ u16 PPU::bgPixelFetcher() { //  2 dots
     if ((mem->ppu_read(0xFF40) & 0b1000) > 0) { 
         tileMap = 0x9C00;
     }
-    u16 offset = 0xFF & ((mem->ppu_read(0xFF44) + mem->ppu_read(0xFF42)) / 8);
+    u16 offset = 0xFF & ((u8)(mem->ppu_read(0xFF44) + mem->ppu_read(0xFF42)) / 8);
     offset <<= 5;
-    offset += 0x1F & ((xCoord + mem->ppu_read(0xFF43)) / 8);
+    offset |= 0x1F & ((u8)(xCoord + mem->ppu_read(0xFF43)) / 8);
     u8 tileID = mem->ppu_read(tileMap + offset);
     u16 tileAddress = ((u16)tileID) << 4;
     tileAddress += ((mem->ppu_read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
@@ -118,7 +119,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                     mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
                 }
             } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
-        } else if (currentLineDots < 456) {
+        } else if (currentLineDots < 4) {
             if (153 == mem->ppu_read(0xFF45)) { // ly = lyc
                 mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
                 if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
@@ -128,14 +129,8 @@ u8 PPU::ppuLoop(u8 ticks) {
         }
 
     }
-    if (mem->ppu_read(0xFF44) >= 144) {
-        finishedLineDots = currentLineDots;
-    }
     u8 currentLine = mem->ppu_read(0xFF44); // ly register    
     while (mem->ppu_read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
-        if (ppuState == mode1) {
-            return 0;
-        }
         if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
             if (mem->read(0xFF4A) <= currentLine) {
                 window.WY_cond = true;
@@ -254,7 +249,6 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
             mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | ppuState));
             firstTile = true;
-            xCoord = 0;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
             }
@@ -280,6 +274,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         window.xCoord = 0;
+        xCoord = 0;
         memset(objArr.data(), 0, objArr.size());
         objFetchIdx = 0;
         currentLineDots -= 456;
