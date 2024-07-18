@@ -32,7 +32,15 @@ u8 MMU::read(u16 address) {
         return 0xFF;
     }
     if (address == 0xFF00) {
-        return 0x3F;
+        u8 inputReg = mem[address];
+        if ((inputReg & 0x30) == 0x10) { // buttons
+            inputReg &= 0xF0;
+            inputReg += joypad->getButton();
+        } else { // dpad
+            inputReg &= 0xF0;
+            inputReg += joypad->getDpad();
+        }
+        return inputReg;
     }
     if (address == 0xFF01) {
         return 0xFF;

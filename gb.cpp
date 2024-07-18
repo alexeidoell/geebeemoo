@@ -26,7 +26,8 @@ void GB::runEmu(char* filename) {
     u32 operation_ticks;
     bool tima_flag = false;
     
-    std::shared_ptr<MMU> mem = std::make_shared<MMU>();
+    std::shared_ptr<Joypad> joypad = std::make_shared<Joypad>();
+    std::shared_ptr<MMU> mem = std::make_shared<MMU>(joypad);
     mem->load_cart(filename);
 
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
@@ -58,7 +59,7 @@ void GB::runEmu(char* filename) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
-            }
+            } else joypad->pollPresses(event);
         }
         white = false;
         while (current_ticks < maxTicks) {
