@@ -16,9 +16,8 @@ u8 MMU::load_cart(char* filename) {
         fclose(f);
         return read_chars;
     } else {
-        fclose(f);
         std::cout << "opening cartridge failed\n"; 
-        return -1;
+        return 0;
     }
 }
 u8 MMU::read(u16 address) {

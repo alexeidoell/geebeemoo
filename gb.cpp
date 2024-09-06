@@ -28,7 +28,11 @@ void GB::runEmu(char* filename) {
     
     std::shared_ptr<Joypad> joypad = std::make_shared<Joypad>();
     std::shared_ptr<MMU> mem = std::make_shared<MMU>(joypad);
-    mem->load_cart(filename);
+    if (0 == mem->load_cart(filename)) {
+        std::cout << "emu quitting due to rom not existing\n";
+        return;
+    }
+
 
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
                 SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
