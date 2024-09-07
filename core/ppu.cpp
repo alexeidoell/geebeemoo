@@ -265,6 +265,7 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
     }
+    std::cout << "test\n";
     if (currentLineDots >= 456) {
         // implement moving down to next scan line
         window.WY_cond = false;
@@ -274,6 +275,7 @@ u8 PPU::ppuLoop(u8 ticks) {
         window.WX_cond = false;
         if (currentLine == 153) {
             currentLine = 0;
+            std::cout << "line153 \n";
             ppuState = mode2;
         }
         else currentLine += 1;
@@ -305,7 +307,7 @@ u8 PPU::ppuLoop(u8 ticks) {
     }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
-    mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & (u8)~0b11) | (u8)ppuState));
+    mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & (u8)0b11111100) | (u8)ppuState));
     //assert(finishedLineDots == currentLineDots);
     return 0;
 }

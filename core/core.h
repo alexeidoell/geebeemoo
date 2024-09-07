@@ -23,6 +23,7 @@ public: // need to change a lot of these to private when I start using rom tests
     bool ei_set = false;
     bool ime = false;
     bool halt_flag = false;
+    bool halt_bug = false;
     gbRegisters registers; 
     std::shared_ptr<MMU> mem;
     u8 bootup();

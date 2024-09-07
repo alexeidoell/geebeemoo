@@ -46,7 +46,7 @@ u8 Core::op_tree() {
 	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
 	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
 	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
-	2,2,2,2,2,2,0,2,1,1,1,1,1,1,2,1,
+	2,2,2,2,2,2,1,2,1,1,1,1,1,1,2,1,
 	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
 	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
 	1,1,1,1,1,1,2,1,1,1,1,1,1,1,2,1,
@@ -57,14 +57,15 @@ u8 Core::op_tree() {
 	3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4 };
 
 
-    if (ime && halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) {
-        registers.pc += 1;
-    } else if (halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) == 0) { // halt
-        return ticks;
-    } else if (!ime && halt_flag && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { 
+    if (halt_bug) {
 
     }
-    halt_flag = false;
+
+    if (halt_flag) {
+        if (((mem->read(0xFFFF) & mem->read(0xFF0F)) != 0)) { // interrupt to be handled
+            halt_flag = false;
+        } else return ticks;
+    }
 
     if (ime && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { // interrupt handling
         ticks += 16;
@@ -343,7 +344,9 @@ u8 Core::op_tree() {
         // HL in src or dst
         if (src == 6 && dst == 6) {
             // halt op
-            halt_flag = true;
+            if (!ime && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { 
+                halt_bug = true;
+            } else halt_flag = true;           
         } else if (src == 6) {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             registers.gpr.r[dst] = mem->read(hl);

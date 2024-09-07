@@ -7,7 +7,7 @@
 #include <cstring>
 #include <iterator>
 
-u8 MMU::load_cart(char* filename) {
+u32 MMU::load_cart(char* filename) {
     FILE* f;
     u32 read_chars;
     f = fopen(filename, "rb"); // maybe i should replace this with more c++ type file handling

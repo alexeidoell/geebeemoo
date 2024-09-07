@@ -19,7 +19,7 @@ public:
     MMU(std::shared_ptr<Joypad> joypad) : joypad(joypad) {};
 
     PPUState ppuState = mode2;
-    u8 load_cart(char* filename);
+    u32 load_cart(char* filename);
     u8 read(u16 address);
     u8 write(u16 address, u8 word);
     u8 write(u16 address, u16 dword);
