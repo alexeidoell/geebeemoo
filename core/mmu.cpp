@@ -3,21 +3,33 @@
 #include <array>
 #include <cassert>
 #include <cstdio>
+#include <fstream>
+#include <ios>
 #include <iostream>
 #include <cstring>
 #include <iterator>
+#include <vector>
 
 u32 MMU::load_cart(char* filename) {
-    FILE* f;
-    u32 read_chars;
-    f = fopen(filename, "rb"); // maybe i should replace this with more c++ type file handling
-    if (f) {
-        read_chars = fread(mem.data(), sizeof(u8), 0x8000, f);
-        fclose(f);
-        return read_chars;
-    } else {
-        std::cout << "opening cartridge failed\n"; 
+    std::ifstream pf(filename, std::ios::binary); // maybe i should replace this with more c++ type file handling
+    pf.seekg(0x100, std::ios_base::beg);
+    pf.read((char*)&cartridge.header[0], 0x50); // lol ????
+    if (pf.fail()) {
+        std::cout << "failed to read cartridge header\n";
         return 0;
+    }
+    cartridge.rom_size = 0x8000 * (1 << cartridge.header[0x48]);
+    u8 ram_sizes[6] = {0, 0, 8, 32, 128, 64};
+    cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
+    cartridge.rom.resize(cartridge.rom_size);
+    pf.seekg(0, std::ios_base::beg);
+    pf.read((char*)&cartridge.rom[0], cartridge.rom_size);
+    if (pf.fail()) {
+        std::cout << "failed to read cartridge\n";
+        return 0;
+    } else {
+        std::copy(&cartridge.rom[0], &cartridge.rom[0x8000], &mem[0]);
+        return pf.gcount();
     }
 }
 u8 MMU::read(u16 address) {
