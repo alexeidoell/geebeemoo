@@ -77,7 +77,12 @@ void GB::runEmu(char* filename) {
             }
             if ((mem->ppu_read(0xFF40) & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
-            } else white = true;
+            } else { // lcd disable
+                mem->ppu_write(0xFF44, (u8)0);
+                mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
+                ppu.currentLineDots = 0;
+                white = true;
+            }
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
                 timer.div_inc();

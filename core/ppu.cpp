@@ -265,7 +265,6 @@ u8 PPU::ppuLoop(u8 ticks) {
             }
         }
     }
-    std::cout << "test\n";
     if (currentLineDots >= 456) {
         // implement moving down to next scan line
         window.WY_cond = false;
@@ -275,7 +274,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         window.WX_cond = false;
         if (currentLine == 153) {
             currentLine = 0;
-            std::cout << "line153 \n";
             ppuState = mode2;
         }
         else currentLine += 1;
