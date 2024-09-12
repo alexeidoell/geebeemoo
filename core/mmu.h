@@ -8,23 +8,6 @@
 
 enum PPUState { mode0 = 0, mode1, mode2, mode3 };
 
-enum MBC {  rom_only = 0, 
-            mbc1, 
-            mbc2, 
-            mbc3, 
-            mbc5 = 5, 
-            mbc6, 
-            mbc7,
-            mmm01,
-            m161,
-            HuC1,
-            HuC3
-            // mbc1m
-            // ems
-            // bung
-            // wisdom tree
-};
-
 struct Cartridge {
     std::array<u8, 0x50> header = {0};
     u16 rom_size; 
@@ -32,7 +15,6 @@ struct Cartridge {
     u8 ram_size;
     bool battery;
     std::vector<u8> rom;
-    MBC mbc;
 };
 
 class MMU {

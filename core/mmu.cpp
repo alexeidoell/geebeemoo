@@ -11,6 +11,7 @@
 #include <vector>
 
 u32 MMU::load_cart(char* filename) {
+    u32 read_chars;
     std::ifstream pf(filename, std::ios::binary); // maybe i should replace this with more c++ type file handling
     pf.seekg(0x100, std::ios_base::beg);
     pf.read((char*)&cartridge.header[0], 0x50); // lol ????
@@ -65,6 +66,9 @@ u8 MMU::read(u16 address) {
 
 }
 u8 MMU::write(u16 address, u8 word) {
+    if (address < 0x8000) { // mbc read
+
+    }
     if (address < 0xFF80 && oam_state) {
         return -1;
     }
@@ -99,6 +103,9 @@ u8 MMU::write(u16 address, u8 word) {
 }
 
 u8 MMU::write(u16 address, u16 dword) {
+    if (address < 0x8000) { // mbc read
+
+    }
     if (address < 0xFF80 && oam_state) {
         return -1;
     }

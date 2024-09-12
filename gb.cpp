@@ -54,6 +54,7 @@ void GB::runEmu(char* filename) {
 
     //std::ofstream log("log.txt", std::ofstream::trunc);
     u32 frame = 1;
+    u64 frameavg = 0;
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(running) {
@@ -108,10 +109,12 @@ void GB::runEmu(char* filename) {
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
-        //std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        frameavg += (int)SDL_GetTicks() - frameStart;
         //assert(mem->read(0xFF44) >= 153);
 
     } 
+    std::cout << frameavg / frame << "\n";
     std::cout << "closing gbemu\n";
     SDL_Quit();
 }
