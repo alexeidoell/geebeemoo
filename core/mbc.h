@@ -8,5 +8,5 @@ class MBC1 {
 
     u8 mbc_write(u16 address, u8 word);
 
-    u16 mapper(u16 base_address);
+    u32 mapper(u16 base_address);
 };
