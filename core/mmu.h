@@ -5,6 +5,7 @@
 #include <vector>
 #include "../lib/types.h"
 #include "joypad.h"
+#include "mbc.h"
 
 enum PPUState { mode0 = 0, mode1, mode2, mode3 };
 
@@ -25,6 +26,7 @@ private:
     u8 oam_offset = 0;
     u16 oam_address;
     std::shared_ptr<Joypad> joypad;
+
 public:
 
     MMU(std::shared_ptr<Joypad> joypad) : joypad(joypad) {};
