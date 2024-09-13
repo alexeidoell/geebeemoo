@@ -25,12 +25,18 @@ u32 MBC1::mapper(u16 base_address) {
             mapped_address += base_address;
         }
     } else if (base_address < 0x8000) {
-        base_address = base_address & ~(((u32)0b11) << 14); // idk if this should be 13
+        base_address = base_address & ~(((u32)0b11) << 14); 
         if (banking_mode == 1) {
             mapped_address += ((u32)ram_bank << 19);
             mapped_address += base_address;
         }
         mapped_address += ((u32)rom_bank << 14);
+    } else if (base_address < 0xC000) {
+        if (banking_mode == 1) {
+            mapped_address += ((u32)ram_bank << 13);
+        }
+        base_address = base_address & ~(((u32)0b111) << 13); 
+        mapped_address += base_address;
     }
     return mapped_address;
 }
