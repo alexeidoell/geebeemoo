@@ -1,10 +1,10 @@
 CC = g++
 CPPFLAGS = -I.
-CFLAGS = -Wall -pedantic -g -fPIC -O3
+CFLAGS = -Wall -pedantic -g -fPIC -Og
 
 EXECUTABLES = main
 
-CORE_FILES = core.cpp mmu.cpp timer.cpp ppu.cpp joypad.cpp
+CORE_FILES = core.cpp mmu.cpp timer.cpp ppu.cpp joypad.cpp mbc.cpp
 CORE = $(CORE_FILES:%.cpp=core/%.cpp)
 
 .PHONY: all clean

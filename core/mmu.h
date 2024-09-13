@@ -26,6 +26,7 @@ private:
     u8 oam_offset = 0;
     u16 oam_address;
     std::shared_ptr<Joypad> joypad;
+    std::unique_ptr<MBC> mbc;
 
 public:
 

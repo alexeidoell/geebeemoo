@@ -1,10 +1,6 @@
 #include "../lib/types.h"
 #include "mbc.h"
 
-
-// TO DO:
-// convert to a MBC abstract base class and implement inheritance for an mbc1 class
-
 u8 MBC1::mbc_write(u16 address, u8 word) {
     if (address < 0x2000) {
         if ((word & 0b1111) == 0xA) ram_enable = true;
@@ -43,4 +39,12 @@ u32 MBC1::mapper(u16 base_address) {
         mapped_address += base_address;
     }
     return mapped_address;
+}
+
+u8 MBC0::mbc_write(u16 address, u8 word) {
+    return 0;
+}
+
+u32 MBC0::mapper(u16 base_address) {
+    return base_address;
 }

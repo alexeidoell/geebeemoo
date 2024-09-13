@@ -8,11 +8,12 @@
 #include <iostream>
 #include <cstring>
 #include <iterator>
+#include <memory>
 #include <vector>
 
 u32 MMU::load_cart(char* filename) {
     u32 read_chars;
-    std::ifstream pf(filename, std::ios::binary); // maybe i should replace this with more c++ type file handling
+    std::ifstream pf(filename, std::ios::binary);
     pf.seekg(0x100, std::ios_base::beg);
     pf.read((char*)&cartridge.header[0], 0x50); // lol ????
     if (pf.fail()) {
@@ -20,6 +21,11 @@ u32 MMU::load_cart(char* filename) {
         return 0;
     }
     cartridge.rom_size = 0x8000 * (1 << cartridge.header[0x48]);
+    if (cartridge.header[0x47] == 0x0) {
+        mbc = std::make_unique<MBC0>();
+    } else if (cartridge.header[0x47] < 0x04) {
+        mbc = std::make_unique<MBC1>();
+    }
     u8 ram_sizes[6] = {0, 0, 8, 32, 128, 64};
     cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
     cartridge.rom.resize(cartridge.rom_size);
@@ -34,6 +40,9 @@ u32 MMU::load_cart(char* filename) {
     }
 }
 u8 MMU::read(u16 address) {
+    if (address < 0x8000) {
+        return cartridge.rom[mbc->mapper(address)];
+    }
     if (address < 0xFF80 && oam_state) {
         return 0xFF;
     }
@@ -129,6 +138,9 @@ u8 MMU::write(u16 address, u16 dword) {
 }
 
 u8 MMU::ppu_read(u16 address) {
+    if (address < 0x8000) {
+        return cartridge.rom[mbc->mapper(address)];
+    }
     return mem[address];
 }
 u8 MMU::ppu_write(u16 address, u8 word) {
