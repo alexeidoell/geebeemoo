@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "../lib/types.h"
-#include "joypad.h"
-#include "mbc.h"
+#include <../lib/types.h>
+#include <joypad.h>
+#include <mbc.h>
 
 enum PPUState { mode0 = 0, mode1, mode2, mode3 };
 

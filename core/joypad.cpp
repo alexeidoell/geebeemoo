@@ -1,4 +1,4 @@
-#include "joypad.h"
+#include <joypad.h>
 #include <SDL2/SDL_events.h>
 
 u8 Joypad::pollPresses(SDL_Event& event) {

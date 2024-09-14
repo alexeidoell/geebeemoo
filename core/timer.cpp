@@ -1,6 +1,5 @@
-#include "timer.h"
-#include "mmu.h"
-#include <iostream>
+#include <timer.h>
+#include <mmu.h>
 
 
 u8 Timer::div_inc() {

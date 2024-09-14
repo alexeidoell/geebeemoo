@@ -1,9 +1,7 @@
 #include <memory>
-#include <iostream>
-#include <bit>
-#include "mmu.h"
-#include "../lib/types.h"
-#include "core.h"
+#include <../lib/types.h>
+#include <mmu.h>
+#include <core.h>
 
 
 Core::Core(std::shared_ptr<MMU> memPtr) {

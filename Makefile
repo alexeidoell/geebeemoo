@@ -1,6 +1,7 @@
 CC = g++
 CPPFLAGS = -I.
 CFLAGS = -Wall -pedantic -g -fPIC -Og
+INCLUDES = -I. -Icore/ -Ilib/
 
 EXECUTABLES = main
 
@@ -15,4 +16,4 @@ clean:
 	rm -rf $(EXECUTABLES) log.txt
 
 $(EXECUTABLES) : % : main.cpp gb.cpp $(CORE)
-	$(CC) $(CFLAGS) $^ -lSDL2main -lSDL2 -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -lSDL2main -lSDL2 -o $@

@@ -1,7 +1,7 @@
 #include <fstream>
-#include "json.hpp"
-#include "mmu.h"
-#include "core.h"
+#include <json.hpp>
+#include <mmu.h>
+#include <core.h>
 #include <iostream>
 #include <filesystem>
 

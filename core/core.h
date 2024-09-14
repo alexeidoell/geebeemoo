@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../lib/types.h"
-#include "mmu.h"
+#include <../lib/types.h>
+#include <mmu.h>
 #include <memory>
 
 union GPRRegs {

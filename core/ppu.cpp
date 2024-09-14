@@ -1,14 +1,9 @@
-#include "ppu.h"
-#include "mmu.h"
+#include <ppu.h>
+#include <mmu.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_surface.h>
-#include <bitset>
 #include <cassert>
 #include <cstring>
-#include <exception>
-#include <iomanip>
-#include <ios>
-#include <iostream>
 
 u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
     u16 line;
