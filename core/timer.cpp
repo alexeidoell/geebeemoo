@@ -1,7 +1,6 @@
 #include <timer.h>
 #include <mmu.h>
 
-
 u8 Timer::div_inc() {
     u16 div = mem->read(0xFF03);
     div = (mem->read(0xFF04) << 8) + div;

@@ -1,18 +1,13 @@
-#include <../lib/types.h>
+#include <lib/types.h>
 #include <mmu.h>
 #include <array>
-#include <cassert>
-#include <cstdio>
 #include <fstream>
 #include <ios>
 #include <iostream>
-#include <cstring>
-#include <iterator>
 #include <memory>
 #include <vector>
 
 u32 MMU::load_cart(char* filename) {
-    u32 read_chars;
     std::ifstream pf(filename, std::ios::binary);
     pf.seekg(0x100, std::ios_base::beg);
     pf.read((char*)&cartridge.header[0], 0x50); // lol ????

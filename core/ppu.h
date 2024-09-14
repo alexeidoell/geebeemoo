@@ -1,9 +1,8 @@
 #pragma once
-#include <../lib/types.h>
+#include <lib/types.h>
 #include <mmu.h>
 #include <SDL2/SDL_surface.h>
 #include <array>
-#include <iostream>
 #include <memory>
 #include <queue>
 

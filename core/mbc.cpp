@@ -1,4 +1,4 @@
-#include <../lib/types.h>
+#include <lib/types.h>
 #include <mbc.h>
 
 u8 MBC1::mbc_write(u16 address, u8 word) {

@@ -1,9 +1,8 @@
 #pragma once
 #include <array>
 #include <memory>
-#include <string>
 #include <vector>
-#include <../lib/types.h>
+#include <lib/types.h>
 #include <joypad.h>
 #include <mbc.h>
 
