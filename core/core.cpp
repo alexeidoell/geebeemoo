@@ -132,7 +132,7 @@ u8 Core::op_tree() {
         } else if ((byte1 & 0b1111) == 0b1001) { // two byte addition to hl
             registers.flags &= 0b10111111; // set subtraction flag
             u8 operand = (byte1 >> 4) & 0b111;
-            u16 operandValue;
+            u16 operandValue = 0;
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             switch (operand) {
             case 0:
@@ -186,7 +186,7 @@ u8 Core::op_tree() {
                 }
             } else if ((byte1 & 0b111) == 0b010) { // loading memory to/from A
                 u8 dst = (byte1) >> 4;
-                u16 address;
+                u16 address = 0;
                 if (dst == 0) address = (registers.gpr.n.b << 8) + registers.gpr.n.c;
                 else if (dst == 1) address = (registers.gpr.n.d << 8) + registers.gpr.n.e;
                 else if (dst == 2) {
@@ -550,7 +550,7 @@ u8 Core::op_tree() {
             }
  
         } else { // push
-            u16 regValue;
+            u16 regValue = 0;
             switch (dst) {
                 case 0:
                     regValue = (registers.gpr.n.b << 8) + registers.gpr.n.c;
@@ -653,7 +653,7 @@ u8 Core::op_tree() {
                 registers.gpr.n.h = result >> 8;
             } else registers.sp = result;
         } else {
-            u16 address;
+            u16 address = 0;
             if ((byte1 & 0b1111) == 0b0000) { // load to and from imm8
                 address = 0xFF00 + (mem->read(registers.pc++));
             } else if ((byte1 & 0b1111) == 0b0010) { // c register
@@ -677,12 +677,10 @@ u8 Core::op_tree() {
 }
 
 u8 Core::cb_op() {
-    u8 ticks = 8;
     u8 byte2 = mem->read(registers.pc++);
     u8 dst = byte2 & 0b111;
     u16 hl;
     if (dst == 6) {
-        ticks += 8;
         hl = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     }
 
@@ -695,7 +693,6 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 check = (registers.gpr.r[dst] >> bit) & 0b1;
             } else {
-                ticks -= 4;
                 check = (mem->read(hl) >> bit) & 0b1;
             }
             if (check == 0) {
@@ -711,7 +708,6 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] &= mask;
             } else {
-                ticks -= 4;
                 u8 operand = mem->read(hl);
                 operand &= mask;
                 mem->write(hl, operand);
@@ -722,7 +718,6 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] |= mask;
             } else {
-                ticks -= 4;
                 u8 operand = mem->read(hl);
                 operand |= mask;
                 mem->write(hl, operand);

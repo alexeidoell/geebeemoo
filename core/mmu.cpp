@@ -16,6 +16,7 @@ u32 MMU::load_cart(char* filename) {
         return 0;
     }
     cartridge.rom_size = 0x8000 * (1 << cartridge.header[0x48]);
+    std::cout << std::hex << (int) cartridge.header[0x47] << "\n";
     if (cartridge.header[0x47] == 0x0) {
         mbc = std::make_unique<MBC0>();
     } else if (cartridge.header[0x47] < 0x04) {
@@ -30,7 +31,7 @@ u32 MMU::load_cart(char* filename) {
         std::cout << "failed to read cartridge\n";
         return 0;
     } else {
-        std::copy(&cartridge.rom[0], &cartridge.rom[0x8000], &mem[0]);
+        std::copy(cartridge.rom.begin(), cartridge.rom.begin() + 0x8000, &mem[0]);
         return pf.gcount();
     }
 }

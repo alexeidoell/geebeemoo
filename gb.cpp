@@ -31,7 +31,6 @@ void GB::runEmu(char* filename) {
         return;
     }
 
-
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
                 SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
     if (!window) {
