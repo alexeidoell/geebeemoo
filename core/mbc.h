@@ -2,11 +2,11 @@
 
 class MBC {
 protected:
-    bool ram_enable;
     u8 rom_bank;
     u8 ram_bank;
     u8 banking_mode;
 public:
+    bool ram_enable;
     virtual u8 mbc_write(u16 address, u8 word) = 0;
     virtual u32 mapper(u16 base_address) = 0;
     virtual ~MBC() = default;

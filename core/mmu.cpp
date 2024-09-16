@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <lib/types.h>
 #include <mmu.h>
 #include <array>
@@ -25,6 +26,7 @@ u32 MMU::load_cart(char* filename) {
     u8 ram_sizes[6] = {0, 0, 8, 32, 128, 64};
     cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
     cartridge.rom.resize(cartridge.rom_size);
+    cartridge.ram.resize(cartridge.ram_size);
     pf.seekg(0, std::ios_base::beg);
     pf.read((char*)&cartridge.rom[0], cartridge.rom_size);
     if (pf.fail()) {
@@ -38,6 +40,11 @@ u32 MMU::load_cart(char* filename) {
 u8 MMU::read(u16 address) {
     if (address < 0x8000) {
         return cartridge.rom[mbc->mapper(address)];
+    }
+    if (address < 0xC000 && address >= 0xA000) {
+        if (!mbc->ram_enable) {
+            return 0xFF;
+        } else return cartridge.ram[mbc->mapper(address)];
     }
     if (address < 0xFF80 && oam_state) {
         return 0xFF;
@@ -73,9 +80,19 @@ u8 MMU::read(u16 address) {
 u8 MMU::write(u16 address, u8 word) {
     if (address < 0x8000) { // mbc read
         mbc->mbc_write(address, word);
+        return 0;
+    }
+    if (address < 0xC000 && address >= 0xA000) {
+        if (!mbc->ram_enable) {
+            return 0;
+        } else { 
+            u16 mapped_address = mbc->mapper(address);
+            cartridge.ram[mapped_address] = word;
+            return 0;
+        }
     }
     if (address < 0xFF80 && oam_state) {
-        return -1;
+        return 0;
     }
     if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
         return 0;
@@ -109,7 +126,17 @@ u8 MMU::write(u16 address, u8 word) {
 
 u8 MMU::write(u16 address, u16 dword) {
     if (address < 0x8000) { // mbc read
-
+        return 0;
+    }
+    if (address < 0xC000 && address >= 0xA000) {
+        if (!mbc->ram_enable) {
+            return 0;
+        } else { 
+            u16 mapped_address = mbc->mapper(address);
+            cartridge.ram[mapped_address] = (u8) dword & 0xFF;
+            cartridge.ram[mapped_address + 1] = (u8) (dword >> 8);
+            return 0;
+        }
     }
     if (address < 0xFF80 && oam_state) {
         return -1;
@@ -136,6 +163,11 @@ u8 MMU::write(u16 address, u16 dword) {
 u8 MMU::ppu_read(u16 address) {
     if (address < 0x8000) {
         return cartridge.rom[mbc->mapper(address)];
+    }
+    if (address < 0xC000 && address >= 0xA000) {
+        if (!mbc->ram_enable) {
+            return 0xFF;
+        } else return cartridge.ram[mbc->mapper(address)];
     }
     return mem[address];
 }

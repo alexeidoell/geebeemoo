@@ -11,10 +11,10 @@ enum PPUState { mode0 = 0, mode1, mode2, mode3 };
 struct Cartridge {
     std::array<u8, 0x50> header = {0};
     u32 rom_size; 
-    bool ram;
-    u8 ram_size;
+    u32 ram_size;
     bool battery;
     std::vector<u8> rom;
+    std::vector<u8> ram;
 };
 
 class MMU {
