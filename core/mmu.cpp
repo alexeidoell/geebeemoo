@@ -72,7 +72,7 @@ u8 MMU::read(u16 address) {
 }
 u8 MMU::write(u16 address, u8 word) {
     if (address < 0x8000) { // mbc read
-
+        mbc->mbc_write(address, word);
     }
     if (address < 0xFF80 && oam_state) {
         return -1;

@@ -106,7 +106,7 @@ void GB::runEmu(char* filename) {
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
-        std::cout << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
         frameavg += (int)SDL_GetTicks() - frameStart;
         //assert(mem->read(0xFF44) >= 153);
 
