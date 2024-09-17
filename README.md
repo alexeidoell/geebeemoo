@@ -10,7 +10,7 @@ fighting for my life in an attempt to simulate a gaming boy
 | Cycle accurate CPU emulation | :white_check_mark: |
 | MBC1 support | :white_check_mark: |
 | Cycle accurate PPU emulation | :question: |
-| Support for battery backed SRAM | :white_square_button: |
+| Support for battery backed SRAM | :white_check_mark: |
 | CGB emulation | :white_square_button: |
 | Further MBC support | :white_square_button: |
 | Audio support | :white_square_button: |
