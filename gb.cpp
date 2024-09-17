@@ -49,7 +49,7 @@ void GB::runEmu(char* filename) {
     bool first_frame = true;
     bool white = false;
 
-    //std::ofstream log("log.txt", std::ofstream::trunc);
+    std::ofstream log("log.txt", std::ofstream::trunc);
     u32 frame = 1;
     u64 frameavg = 0;
     
@@ -104,9 +104,10 @@ void GB::runEmu(char* filename) {
         }
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
-        if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
+        //if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
-        std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms per frame\n";
+        log.seekp(0);
+        std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms for frame " << (int) frame << "\n";
         frameavg += (int)SDL_GetTicks() - frameStart;
         //assert(mem->read(0xFF44) >= 153);
 

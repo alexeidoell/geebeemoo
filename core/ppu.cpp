@@ -1,3 +1,4 @@
+#include <iostream>
 #include <ppu.h>
 #include <mmu.h>
 #include <SDL2/SDL.h>
@@ -126,6 +127,9 @@ u8 PPU::ppuLoop(u8 ticks) {
     }
     u8 currentLine = mem->ppu_read(0xFF44); // ly register    
     while (mem->ppu_read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
+        if (finishedLineDots >= 456) {
+            break;
+        }
         if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
             if (mem->read(0xFF4A) <= currentLine) {
                 window.WY_cond = true;
@@ -261,7 +265,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         }
     }
     if (currentLineDots >= 456) {
-        // implement moving down to next scan line
         window.WY_cond = false;
         if (window.WX_cond) {
             window.yCoord += 1;
