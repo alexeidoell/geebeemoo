@@ -7,25 +7,25 @@
 #include <queue>
 
 struct Pixel {
-    u8 color;
-    u8 palette;
-    u8 spritePriority; // cgb only
-    u8 bgPriority;
+    u8 color = 0;
+    u8 palette = 0;
+    u8 spritePriority = 0; // cgb only
+    u8 bgPriority = 0;
     Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority) {}
 };
 
 struct Window {
     bool WY_cond = false;
     bool WX_cond = false;
-    u8 yCoord;
-    u8 xCoord;
+    u8 yCoord = 0;
+    u8 xCoord = 0;
 };
 
 struct Object {
-    u8 yPos;
-    u8 xPos;
-    u8 tileIndex;
-    u8 flags;
+    u8 yPos = 0;
+    u8 xPos = 0;
+    u8 tileIndex = 0;
+    u8 flags = 0;
     Object() = default;
     Object(u8 yPos, u8 xPos, u8 tileIndex, u8 flags) : yPos(yPos), xPos(xPos), tileIndex(tileIndex), flags(flags) {}
 };
@@ -35,12 +35,12 @@ struct FIFO {
     bool fetchLowByte = false;
     bool fetchHighByte = false;
     bool awaitingPush = false;
-    u16 tileAddress;
-    u8 highByte;
-    u8 lowByte;
-    u16 objTileAddress;
-    u8 objHighByte;
-    u8 objLowByte;
+    u16 tileAddress = 0;
+    u8 highByte = 0;
+    u8 lowByte = 0;
+    u16 objTileAddress = 0;
+    u8 objHighByte = 0;
+    u8 objLowByte = 0;
 };
 
 enum tileType { bg, win, obj };
@@ -59,8 +59,8 @@ class PPU {
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
-        u8 objFetchIdx;
-        u8 xCoord;
+        u8 objFetchIdx = 0;
+        u8 xCoord = 0;
         u8 mode3_delay = 0;
         FIFO fifoFlags;
         Window window;
@@ -70,9 +70,9 @@ class PPU {
         void setPixel(u8 w, u8 h, u8 pixel);
         SDL_Surface *surface;
         bool newTile = true;
-        s16 finishedLineDots;
+        s16 finishedLineDots = 0;
     public:
-        s16 currentLineDots; // need to keep track of state between
+        s16 currentLineDots = 0; // need to keep track of state between
                              // calls so that the ppu can tell the
                              // memory or cpu what not to do before
                              // the next call of the ppu loop that will

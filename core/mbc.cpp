@@ -6,7 +6,10 @@
 u8 MBC1::mbc_write(u16 address, u8 word) {
     if (address < 0x2000) {
         if ((word & 0b1111) == 0xA) ram_enable = true;
-        else ram_enable = false;
+        else {
+            ram_enable = false;
+            return 1;
+        }
     } else if (address < 0x4000) {
         rom_bank = word & 0b11111;       
         if (rom_bank == 0x0) rom_bank = 0x1;

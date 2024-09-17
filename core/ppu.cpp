@@ -285,7 +285,7 @@ u8 PPU::ppuLoop(u8 ticks) {
         window.xCoord = 0;
         xCoord = 0;
         mode3_delay = 0;
-        memset(objArr.data(), 0, objArr.size());
+        objArr = {};
         objFetchIdx = 0;
         currentLineDots -= 456;
         finishedLineDots = 0; // idk tbh?
@@ -313,7 +313,7 @@ std::array<u8, 23040>& PPU::getBuffer() {
 }
 
 u8 PPU::pixelPicker() {
-    if ((objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem->read(0xFF40) & 0b10) == 0 || objQueue.empty() || objQueue.front().color == 0) {
+    if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem->read(0xFF40) & 0b10) == 0 || objQueue.front().color == 0) {
         if ((mem->read(0xFF40) & 0b1) == 0) return 0;
         else return (mem->ppu_read(0xFF47) >> (2 * bgQueue.front().color)) & 0b11;
     } else {

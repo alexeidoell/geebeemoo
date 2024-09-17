@@ -1,6 +1,8 @@
 #pragma once
 #include <array>
+#include <fstream>
 #include <memory>
+#include <string_view>
 #include <vector>
 #include <lib/types.h>
 #include <joypad.h>
@@ -26,13 +28,14 @@ private:
     u16 oam_address;
     std::shared_ptr<Joypad> joypad;
     std::unique_ptr<MBC> mbc;
-
+    std::string save_file;
+    std::string temp_file;
 public:
 
     MMU(std::shared_ptr<Joypad> joypad) : joypad(joypad) {};
 
     PPUState ppuState = mode2;
-    u32 load_cart(char* filename);
+    u32 load_cart(std::string_view filename);
     u8 read(u16 address);
     u8 write(u16 address, u8 word);
     u8 write(u16 address, u16 dword);
