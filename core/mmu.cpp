@@ -46,6 +46,7 @@ u32 MMU::load_cart(std::string_view filename) {
         std::cout << "failed to read cartridge\n";
         return 0;
     } else {
+        std::cout << "cartridge loaded\n";
         std::copy(cartridge.rom.begin(), cartridge.rom.begin() + 0x8000, &mem[0]);
         return cart_file.gcount();
     }

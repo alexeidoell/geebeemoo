@@ -104,7 +104,7 @@ void GB::runEmu(char* filename) {
         }
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
-        //if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
+        if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
         log.seekp(0);
         std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms for frame " << (int) frame << "\n";

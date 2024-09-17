@@ -239,7 +239,9 @@ u8 PPU::ppuLoop(u8 ticks) {
                         combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
                         fifoFlags.awaitingPush = true;
                     }
-                    if (window.WX_cond) mode3_delay += 6;
+                    if (!window.WX_cond) {
+                        mode3_delay += 6;
+                    }
                     window.WX_cond = true;
                 }
                 if (xCoord > 7 && xCoord < 168) {
@@ -284,6 +286,7 @@ u8 PPU::ppuLoop(u8 ticks) {
         } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         window.xCoord = 0;
         xCoord = 0;
+        assert(mode3_delay <= 117 && "mode 3 delay too large\n");
         mode3_delay = 0;
         objArr = {};
         objFetchIdx = 0;
