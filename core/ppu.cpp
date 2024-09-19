@@ -75,9 +75,10 @@ u16 PPU::bgPixelFetcher() { //  2 dots
     u16 offset = 0xFF & ((u8)(mem->ppu_read(0xFF44) + mem->ppu_read(0xFF42)) / 8);
     offset <<= 5;
     offset |= 0x1F & ((u8)(xCoord + mem->ppu_read(0xFF43)) / 8);
-    u8 tileID = mem->ppu_read(tileMap + offset);
-    u16 tileAddress = ((u16)tileID) << 4;
-    tileAddress += ((mem->ppu_read(0xFF44) + mem->read(0xFF42)) % 8) << 1;
+    offset &= 0x3FF;
+    u16 tileID = mem->ppu_read(tileMap + offset);
+    u16 tileAddress = (tileID) << 4;
+    tileAddress += (((u16)mem->ppu_read(0xFF44) + (u16)mem->read(0xFF42)) % 8) << 1;
     tileAddress += 0b1 << 15;
     bool addressing_method = (mem->ppu_read(0xFF40) & 0b10000) == 0b10000;
     if (!addressing_method && (tileID & 0x80) == 0) {
@@ -107,25 +108,8 @@ u16 PPU::winPixelFetcher() {
 
 u8 PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
-    if (mem->ppu_read(0xFF44) == 153) {
-        if (currentLineDots >= 4 && currentLineDots < 456) {
-            if (0 == mem->ppu_read(0xFF45)) { // ly = lyc
-                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
-                if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
-                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-                }
-            } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
-        } else if (currentLineDots < 4) {
-            if (153 == mem->ppu_read(0xFF45)) { // ly = lyc
-                mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
-                if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
-                    mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-                }
-            } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
-        }
-
-    }
-    u8 currentLine = mem->ppu_read(0xFF44); // ly register    
+    statInterruptHandler();
+    u8 currentLine = mem->ppu_read(0xFF44); // ly register 
     while (mem->ppu_read(0xFF44) < 144 && finishedLineDots < currentLineDots) {
         if (finishedLineDots >= 456) {
             break;
@@ -193,7 +177,7 @@ u8 PPU::ppuLoop(u8 ticks) {
                 if (firstTile) {
                     for (auto i = 0; i < (mem->ppu_read(0xff43) % 8); ++i) {
                         bgQueue.pop();
-                        xCoord += 1;
+                        //xCoord += 1;
                         mode3_delay += 1;
                     }
                 }
@@ -257,9 +241,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         }
         if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
             ppuState = mode0;
-            if ((mem->ppu_read(0xFF41) & 0b001000) > 0) {
-                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-            }
             firstTile = true;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
@@ -280,9 +261,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         mem->ppu_write(0xFF44, (u8)(currentLine));
         if (currentLine == mem->ppu_read(0xFF45)) { // ly = lyc
             mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
-            if ((mem->ppu_read(0xFF41) & 0b1000000) > 0) {
-                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-            }
         } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         window.xCoord = 0;
         xCoord = 0;
@@ -299,10 +277,8 @@ u8 PPU::ppuLoop(u8 ticks) {
         }
         if (ppuState != mode1) { 
             ppuState = mode2;
-            if ((mem->ppu_read(0xFF41) & 0b100000) > 0) {
-                mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
-            }
         } 
+        statInterruptHandler();
     }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem->ppu_read(0xFF44) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem->ppu_read(0xFF44) << " " << ppuState << '\n';
@@ -362,3 +338,31 @@ void PPU::setPixel(u8 w, u8 h, u8 pixel) {
     *pixelAddress = colors[pixel];
 }
 
+u8 PPU::statInterruptHandler() {
+    bool prevIRQ = statIRQ;
+    if (mem->ppu_read(0xFF45) == 0 && mem->ppu_read(0xFF44) == 153 && currentLineDots > 4 && (mem->ppu_read(0xFF41) & 0b1000000) > 0) {
+            statIRQ = true;
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+    } else if ((mem->ppu_read(0xFF44) == mem->ppu_read(0xFF45) && (mem->ppu_read(0xFF41) & 0b1000000) > 0)) {
+            statIRQ = true;
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) | 0b100));
+    } else if (ppuState == mode2 && (mem->ppu_read(0xFF41) & 0b100000) > 0) {
+            statIRQ = true;
+            mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & 0b11111100) | mode2));
+    } else if (ppuState == mode1 && (mem->ppu_read(0xFF41) & 0b10000) > 0) {
+            statIRQ = true;
+            mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & 0b11111100) | mode1));
+    } else if (ppuState == mode0 && (mem->ppu_read(0xFF41) & 0b1000) > 0) {
+            statIRQ = true;
+            mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & 0b11111100) | mode0));
+    } else {
+        statIRQ = false;
+        if (mem->ppu_read(0xFF44) != mem->ppu_read(0xFF45)) {
+            mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
+        }
+    }
+    if (!prevIRQ && statIRQ) {
+        mem->ppu_write(0xFF0F, (u8)(mem->ppu_read(0xFF0F) | 0b10));
+    }
+    return 0;
+}

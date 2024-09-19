@@ -71,6 +71,8 @@ class PPU {
         SDL_Surface *surface;
         bool newTile = true;
         s16 finishedLineDots = 0;
+        u8 statInterruptHandler();
+        bool statIRQ = false;
     public:
         s16 currentLineDots = 0; // need to keep track of state between
                              // calls so that the ppu can tell the
