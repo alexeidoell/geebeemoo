@@ -38,15 +38,21 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object
         color >>= (14 - (i * 2));
         u8 palette;
         u8 bgPriority;
+        u8 xCoord;
+        u8 objIndex;
         if (tiletype == obj)  {
+            xCoord = object->xPos;
             palette = (object->flags & 0b10000) >> 4;
             bgPriority = (object->flags & 0b10000000) >> 7;
+            objIndex = object->objIndex;
         }
         else {
+            xCoord = 0;
             palette = 0;
             bgPriority = 0;
+            objIndex = 0;
         }
-        Pixel pixel(color, palette, 0, bgPriority);
+        Pixel pixel(color, palette, 0, bgPriority, xCoord, objIndex);
         if (tiletype == bg) {
             if (bgQueue.size() < 8) bgQueue.push(pixel);
             assert(bgQueue.size() <= 8);
@@ -54,8 +60,14 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object
             if (i < objQueueSize) {
                 Pixel oldPixel = objQueue.front();
                 objQueue.pop();
-                if (oldPixel.color == 0) objQueue.push(pixel);
-                else objQueue.push(oldPixel);
+                if (oldPixel.color == 0 || oldPixel.xCoord > pixel.xCoord) objQueue.push(pixel);
+                else {
+                    if (oldPixel.xCoord == pixel.xCoord && pixel.xCoord < oldPixel.xCoord) {
+                        objQueue.push(pixel);
+                    } else {
+                        objQueue.push(oldPixel);
+                    }
+                }
             } else objQueue.push(pixel);
 
         }
@@ -264,7 +276,6 @@ u8 PPU::ppuLoop(u8 ticks) {
         } else mem->ppu_write(0xFF41, (u8)(mem->ppu_read(0xFF41) & 0b11111011));
         window.xCoord = 0;
         xCoord = 0;
-        assert(mode3_delay <= 117 && "mode 3 delay too large\n");
         mode3_delay = 0;
         objArr = {};
         objFetchIdx = 0;
@@ -311,7 +322,7 @@ u8 PPU::modeSwitch() {
 u8 PPU::oamScan(u16 address) { // 2 dots
     u8 currentLine = mem->ppu_read(0xFF44); // ly register    
     u8 objY_pos = mem->ppu_read(address);
-    Object obj(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3));
+    Object obj(objY_pos, mem->ppu_read(address + 1), mem->ppu_read(address + 2), mem->ppu_read(address + 3), address - 0xFE00);
     if ((mem->ppu_read(0xFF40) & 0b100) > 0) { // 8x16 tiles
         if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
             if (objFetchIdx < 10) {

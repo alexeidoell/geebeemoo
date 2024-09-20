@@ -11,7 +11,9 @@ struct Pixel {
     u8 palette = 0;
     u8 spritePriority = 0; // cgb only
     u8 bgPriority = 0;
-    Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority) {}
+    u8 xCoord = 0;
+    u8 objIndex;
+    Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority, u8 xCoord, u8 objIndex) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority), xCoord(xCoord), objIndex(objIndex) {}
 };
 
 struct Window {
@@ -27,7 +29,8 @@ struct Object {
     u8 tileIndex = 0;
     u8 flags = 0;
     Object() = default;
-    Object(u8 yPos, u8 xPos, u8 tileIndex, u8 flags) : yPos(yPos), xPos(xPos), tileIndex(tileIndex), flags(flags) {}
+    u8 objIndex;
+    Object(u8 yPos, u8 xPos, u8 tileIndex, u8 flags, u8 objIndex) : yPos(yPos), xPos(xPos), tileIndex(tileIndex), flags(flags), objIndex(objIndex) {}
 };
 
 struct FIFO {
