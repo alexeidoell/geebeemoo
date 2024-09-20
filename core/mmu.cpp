@@ -1,3 +1,4 @@
+#include <bitset>
 #include <cmath>
 #include <cstdio>
 #include <filesystem>
@@ -54,7 +55,7 @@ u32 MMU::load_cart(std::string_view filename) {
 }
 u8 MMU::read(u16 address) {
     if (address < 0x8000) {
-        return cartridge.rom[mbc->mapper(address)];
+        return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
     }
     if (address < 0xC000 && address >= 0xA000) {
         if (!mbc->ram_enable) {
@@ -79,7 +80,7 @@ u8 MMU::read(u16 address) {
             inputReg &= 0xF0;
             inputReg += joypad->getDpad();
         }
-        return inputReg;
+        return inputReg | 0xC0;
     }
     if (address == 0xFF01) {
         return 0xFF;
@@ -181,7 +182,7 @@ u8 MMU::write(u16 address, u16 dword) {
 
 u8 MMU::ppu_read(u16 address) {
     if (address < 0x8000) {
-        return cartridge.rom[mbc->mapper(address)];
+        return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
     }
     if (address < 0xC000 && address >= 0xA000) {
         if (!mbc->ram_enable) {
