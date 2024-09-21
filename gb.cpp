@@ -16,10 +16,12 @@
 
 void callback(void* idk, u8* stream, int len) {
 
-    auto* sample_stream{reinterpret_cast<s16*>(stream)};
-    len = len / sizeof(s16);
+    auto* float_stream{reinterpret_cast<float*>(stream)};
+    len /= sizeof(float);
+    float constant = 1.0;
     for (auto i = 0; i < len; ++i) {
-        sample_stream[i] = 1;
+        if (i % 64 == 0) constant *= -1.0;
+        float_stream[i] = 0.1 * constant;
     }
 
 }
@@ -42,12 +44,17 @@ void GB::runEmu(char* filename) {
         return;
     }
 
+    SDL_Init(SDL_INIT_EVERYTHING);
+
     SDL_AudioSpec want, have;
+    SDL_zero(want);
     want.freq = 48000;
-    want.format = AUDIO_S16;
+    want.format = AUDIO_F32;
     want.channels = 1;
-    want.samples = 1024;
+    want.samples = 4096;
     want.callback = &callback;
+
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
 
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
@@ -58,7 +65,6 @@ void GB::runEmu(char* filename) {
     }
     SDL_Surface* surface = SDL_GetWindowSurface(window);
     SDL_Event event;
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
     Core core(mem);
     Timer timer(mem);
