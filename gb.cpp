@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_audio.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_timer.h>
@@ -12,6 +13,16 @@
 #include <iomanip>
 #include <fstream>
 #include <memory>
+
+void callback(void* idk, u8* stream, int len) {
+
+    auto* sample_stream{reinterpret_cast<s16*>(stream)};
+    len = len / sizeof(s16);
+    for (auto i = 0; i < len; ++i) {
+        sample_stream[i] = 1;
+    }
+
+}
 
 void GB::runEmu(char* filename) {
     const double FPS = 59.7275;
@@ -31,6 +42,14 @@ void GB::runEmu(char* filename) {
         return;
     }
 
+    SDL_AudioSpec want, have;
+    want.freq = 48000;
+    want.format = AUDIO_S16;
+    want.channels = 1;
+    want.samples = 1024;
+    want.callback = &callback;
+
+
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
                 SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
     if (!window) {
@@ -39,6 +58,7 @@ void GB::runEmu(char* filename) {
     }
     SDL_Surface* surface = SDL_GetWindowSurface(window);
     SDL_Event event;
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
     Core core(mem);
     Timer timer(mem);
@@ -52,6 +72,8 @@ void GB::runEmu(char* filename) {
     std::ofstream log("log.txt", std::ofstream::trunc);
     u32 frame = 1;
     u64 frameavg = 0;
+
+    SDL_PauseAudioDevice(dev, 0);
     
     const static u16 tima_freq[] = { 9, 3, 5, 7 };
     while(running) {
@@ -67,7 +89,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            //doctor_log(frame, current_ticks, log, core, *mem);
+            doctor_log(frame, current_ticks, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem->get_oam()) {
@@ -106,7 +128,6 @@ void GB::runEmu(char* filename) {
         frameTime = SDL_GetTicks() - frameStart;
         if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
         frame += 1;
-        log.seekp(0);
         std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms for frame " << (int) frame << "\n";
         frameavg += (int)SDL_GetTicks() - frameStart;
         //assert(mem->read(0xFF44) >= 153);
