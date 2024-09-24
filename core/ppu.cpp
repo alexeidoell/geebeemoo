@@ -7,8 +7,8 @@
 #include <cstring>
 
 u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
-    u16 line;
-    u16 mask;
+    u16 line = 0;
+    u16 mask = 0;
     line = 0;
 
     bool flipCond = false;
@@ -36,21 +36,15 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object
         mask >>= (i * 2);
         u16 color = line & mask;
         color >>= (14 - (i * 2));
-        u8 palette;
-        u8 bgPriority;
-        u8 xCoord;
-        u8 objIndex;
+        u8 palette = 0;
+        u8 bgPriority = 0;
+        u8 xCoord = 0;
+        u8 objIndex = 0;
         if (tiletype == obj)  {
             xCoord = object->xPos;
             palette = (object->flags & 0b10000) >> 4;
             bgPriority = (object->flags & 0b10000000) >> 7;
             objIndex = object->objIndex;
-        }
-        else {
-            xCoord = 0;
-            palette = 0;
-            bgPriority = 0;
-            objIndex = 0;
         }
         Pixel pixel(color, palette, 0, bgPriority, xCoord, objIndex);
         if (tiletype == bg) {
@@ -343,7 +337,8 @@ u8 PPU::oamScan(u16 address) { // 2 dots
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
-    u32* pixelAddress = (u32*)surface->pixels;
+    u32* pixelAddress = std::bit_cast<u32*>(surface->pixels);
+    const static std::array<u32,4> colors = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
     pixelAddress += surface->w * h + w;
 
     *pixelAddress = colors[pixel];

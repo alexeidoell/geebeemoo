@@ -21,7 +21,7 @@ u8 MBC1::mbc_write(u16 address, u8 word) {
     return 0;
 }
 
-u32 MBC1::mapper(u16 base_address) {
+u32 MBC1::mapper(u16 base_address)  {
     u32 mapped_address = 0;
     if (base_address < 0x4000) {
         base_address = base_address & ~(((u16)0b11) << 14); // idk if this should be 13

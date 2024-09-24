@@ -1,3 +1,4 @@
+#include <bit>
 #include <bitset>
 #include <cmath>
 #include <cstdio>
@@ -15,7 +16,7 @@
 u32 MMU::load_cart(std::string_view filename) {
     std::ifstream cart_file(filename.data(), std::ios::binary);
     cart_file.seekg(0x100, std::ios_base::beg);
-    cart_file.read((char*)&cartridge.header[0], 0x50); // lol ????
+    cart_file.read(std::bit_cast<char*>(&cartridge.header[0]), 0x50); // lol ????
     if (cart_file.fail()) {
         std::cout << "failed to read cartridge header\n";
         return 0;
@@ -26,7 +27,7 @@ u32 MMU::load_cart(std::string_view filename) {
     } else if (cartridge.header[0x47] < 0x04) {
         mbc = std::make_unique<MBC1>();
     }
-    u8 ram_sizes[6] = {0, 0, 8, 32, 128, 64};
+    const static std::array<u8,6> ram_sizes = {0, 0, 8, 32, 128, 64};
     cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
     cartridge.ram.resize(cartridge.ram_size);
     save_file  = std::string_view(filename).substr(0, filename.length() - 2);
@@ -35,7 +36,7 @@ u32 MMU::load_cart(std::string_view filename) {
     std::cout << save_file << "\n";
     std::ifstream ram_file(save_file, std::ios::binary);
     ram_file.seekg(0, std::ios_base::beg);
-    ram_file.read((char*)&cartridge.ram[0], cartridge.ram_size);
+    ram_file.read(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
     if (!ram_file.fail()) {
         std::cout << "save loaded\n";
     } else {
@@ -43,7 +44,7 @@ u32 MMU::load_cart(std::string_view filename) {
     }
     cartridge.rom.resize(cartridge.rom_size);
     cart_file.seekg(0, std::ios_base::beg);
-    cart_file.read((char*)&cartridge.rom[0], cartridge.rom_size);
+    cart_file.read(std::bit_cast<char*>(&cartridge.rom[0]), cartridge.rom_size);
     if (cart_file.fail()) {
         std::cout << "failed to read cartridge\n";
         return 0;
@@ -97,7 +98,7 @@ u8 MMU::write(u16 address, u8 word) {
     if (address < 0x8000) { // mbc read
         if (1 == mbc->mbc_write(address, word)) { // ram disabled
             std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
-            temp_save.write((char *)&cartridge.ram[0], cartridge.ram_size);
+            temp_save.write(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
             std::filesystem::rename(temp_file, save_file);
         }
         return 0;

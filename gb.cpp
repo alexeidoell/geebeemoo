@@ -13,28 +13,29 @@
 #include <iomanip>
 #include <fstream>
 #include <memory>
+#include <bit>
 
 void callback(void* idk, u8* stream, int len) {
 
-    auto* float_stream{reinterpret_cast<float*>(stream)};
+    auto* float_stream{std::bit_cast<float*>(stream)};
     len /= sizeof(float);
-    float constant = 1.0;
+    float constant = 1.0f;
     for (auto i = 0; i < len; ++i) {
         if (i % 64 == 0) constant *= -1.0;
-        float_stream[i] = 0.1 * constant;
+        float_stream[i] = 0.1f * constant;
     }
 
 }
 
 void GB::runEmu(char* filename) {
     const double FPS = 59.7275;
-    const u32 frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
+    const double frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
     const u32 maxTicks = 70224; // number of instuctions per frame
-    double current_ticks = maxTicks;
-    u32 frameStart;
-    u32 frameTime;
-    s32 div_ticks;
-    u32 operation_ticks;
+    u32 current_ticks = maxTicks;
+    u32 frameStart = 0;
+    u32 frameTime = 0;
+    u32 div_ticks = 0;
+    u32 operation_ticks = 0;
     bool tima_flag = false;
     
     std::shared_ptr<Joypad> joypad = std::make_shared<Joypad>();
@@ -54,7 +55,7 @@ void GB::runEmu(char* filename) {
     want.samples = 4096;
     want.callback = &callback;
 
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(NULL, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 
 
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
@@ -81,7 +82,7 @@ void GB::runEmu(char* filename) {
 
     SDL_PauseAudioDevice(dev, 0);
     
-    const static u16 tima_freq[] = { 9, 3, 5, 7 };
+    const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
         frameStart = SDL_GetTicks();
         current_ticks = current_ticks - maxTicks;
@@ -95,7 +96,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
-            doctor_log(frame, current_ticks, log, core, *mem);
+            //doctor_log(frame, current_ticks, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem->get_oam()) {
@@ -125,14 +126,16 @@ void GB::runEmu(char* filename) {
         surface = SDL_GetWindowSurface(window);
         if (first_frame) {
             first_frame = false;
-            SDL_FillRect(surface, NULL, 0xFFFFFFFF);
+            SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
         if (white) {
-            SDL_FillRect(surface, NULL, 0xFFFFFFFF);
+            SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
-        if (frameDelay > frameTime) SDL_Delay(frameDelay - frameTime);
+        // this u32 conversion is honestly terrible and i should
+        // find a better way to sleep per frame
+        if (frameDelay > frameTime) SDL_Delay((u32)frameDelay - frameTime);
         frame += 1;
         std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms for frame " << (int) frame << "\n";
         frameavg += (int)SDL_GetTicks() - frameStart;

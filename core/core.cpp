@@ -1,12 +1,9 @@
+#include <bit>
 #include <memory>
 #include <lib/types.h>
 #include <mmu.h>
 #include <core.h>
 
-
-Core::Core(std::shared_ptr<MMU> memPtr) {
-    mem = memPtr;
-}
 
 u8 Core::bootup() {
     // set registers and memory to 0x100 state
@@ -36,7 +33,7 @@ u8 Core::op_tree() {
     u8 ticks = 4; // it seems that instructions are pre fetched
                   // so there is no extra 4 ticks for fetching
     
-    u8 tick_chart[] = {
+    std::array<u8,0x100> tick_chart = {
     1,3,2,2,1,1,2,1,5,2,2,2,1,1,2,1,
 	0,3,2,2,1,1,2,1,3,2,2,2,1,1,2,1,
 	2,3,2,2,1,1,2,1,2,2,2,2,1,1,2,1,
@@ -116,7 +113,7 @@ u8 Core::op_tree() {
             address = address + (mem->read(registers.pc++) << 8);
             mem->write(address, registers.sp);
         } else if ((byte1 & 0b111) == 0) { // relative jumps
-            s8 offset = mem->read(registers.pc++);
+            s8 offset = std::bit_cast<s8>(mem->read(registers.pc++));
             if ((byte1 >> 3) == 0b11) { // unconditional jump
                 registers.pc += offset;
             } else if ((byte1 >> 5) == 1) { // conditional jumps
@@ -210,8 +207,8 @@ u8 Core::op_tree() {
 
             } 
         } else if ((byte1 & 0b111) == 0b11) { // 2 byte increment/decrement
-            s8 operand;
-            u16 reg;
+            s8 operand = 0;
+            u16 reg = 0;
             if ((byte1 & 0b1000) == 0b1000) { //decrement
                 operand = -1;
             } else operand = 1; // increment
@@ -237,8 +234,8 @@ u8 Core::op_tree() {
         } else if ((byte1 & 0b111) == 0b100) { // one byte increments
             u8 dst = (byte1 >> 3) & 0b111;
             registers.flags &= 0b10111111; // set subtraction flag
-            u8 operand;
-            u16 hl;
+            u8 operand = 0;
+            u16 hl = 0;
             if (dst != 6) {
                 operand = registers.gpr.r[dst];
             } else {
@@ -259,8 +256,8 @@ u8 Core::op_tree() {
         } else if ((byte1 & 0b111) == 0b101) { // one byte decrement
             u8 dst = (byte1 >> 3) & 0b111;
             registers.flags |= 0b01000000; // set subtraction flag
-            u8 operand;
-            u16 hl;
+            u8 operand = 0;
+            u16 hl = 0;
             if (dst != 6) {
                 operand = registers.gpr.r[dst];
             } else {
@@ -355,15 +352,15 @@ u8 Core::op_tree() {
             registers.gpr.r[dst] = registers.gpr.r[src];
         }
     } else if (byte1 >= 0x80 && byte1 < 0xC0) { // arithmetic
-        u8 operand;
-        u8 operandValue;
+        u8 operand = 0;
+        u8 operandValue = 0;
         operand = byte1 & 0b111;
         if (operand != 6) operandValue = registers.gpr.r[operand];
         else {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
             operandValue = mem->read(hl);
         }
-        u16 result;
+        u16 result = 0;
 
         if (byte1 < 0x90) { // addition
             registers.flags &=  0b10111111; // subtraction bit
@@ -449,7 +446,7 @@ u8 Core::op_tree() {
     } else if ((byte1 & 0b111) == 0b110) { // arithmetic on A register with immediate
         u8 operandValue = mem->read(registers.pc++);
         u8 operation = (byte1 >> 4) & 0b11;
-        u16 result;
+        u16 result = 0;
         switch (operation) {
         case 0:
             registers.flags &=  0b10111111; // subtraction bit
@@ -636,8 +633,8 @@ u8 Core::op_tree() {
     } else if ((byte1 >> 5) == 0b111) { // stack and heap operations
         if (((byte1 & 0b1111) == 0b1000)) { // both instructions add an immediate to sp
             registers.flags &= 0b00111111; // set zero and subtraction flags
-            s8 operandValue = mem->read(registers.pc++);
-            s16 result = registers.sp + operandValue;
+            s8 operandValue = std::bit_cast<s8>(mem->read(registers.pc++));
+            u16 result = registers.sp + operandValue;
             if ((((registers.sp & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
             else registers.flags &= 0b11011111;
 
@@ -679,7 +676,7 @@ u8 Core::op_tree() {
 u8 Core::cb_op() {
     u8 byte2 = mem->read(registers.pc++);
     u8 dst = byte2 & 0b111;
-    u16 hl;
+    u16 hl = 0;
     if (dst == 6) {
         hl = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
     }
@@ -689,7 +686,7 @@ u8 Core::cb_op() {
             registers.flags |= 0b00100000;
             registers.flags &= 0b10111111;
             u8 bit = (byte2 >> 3) & 0b111;
-            u8 check;
+            u8 check = 0;
             if (dst != 6) {
                 check = (registers.gpr.r[dst] >> bit) & 0b1;
             } else {
@@ -725,7 +722,7 @@ u8 Core::cb_op() {
         }
     } else if ((byte2 >> 5) == 0) { // rotates
             registers.flags &= 0b10011111; // set subtraction and half carry
-            u8 operand;
+            u8 operand = 0;
             if (dst == 6) {
                 operand = mem->read(hl);
             } else operand = registers.gpr.r[dst];
@@ -781,7 +778,7 @@ u8 Core::cb_op() {
             }
         } else if ((byte2 >> 3) == 0b00100) { // left shift
             registers.flags &= 0b10011111; // set subtraction and half carry
-            u8 operand;
+            u8 operand = 0;
             if (dst == 6) {
                 operand = mem->read(hl);
             } else operand = registers.gpr.r[dst];
@@ -798,7 +795,7 @@ u8 Core::cb_op() {
 
         } else { // right shifts
             registers.flags &= 0b10011111; // set subtraction and half carry
-            u8 operand;
+            u8 operand = 0;
             if (dst == 6) {
                 operand = mem->read(hl);
             } else operand = registers.gpr.r[dst];
@@ -821,7 +818,7 @@ u8 Core::cb_op() {
             
 
     }
-    u8 tick_chart[] = {
+    std::array<u8,0x100> tick_chart = {
     2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
 	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
 	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,

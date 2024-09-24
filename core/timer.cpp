@@ -8,9 +8,12 @@ u8 Timer::div_inc() {
     mem->write(0xFF03, div);
     return 0;
 }
+
 s8 Timer::tima_inc() {
+    /*
     u16 div = mem->read(0xFF03);
     div = (mem->read(0xFF04) << 8) + div;
+    */
     if (mem->read(0xFF05) == 0xFF) {
         tima_flag = true;
         mem->write(0xFF05, (u8)0x00);

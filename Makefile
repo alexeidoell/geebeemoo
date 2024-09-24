@@ -1,6 +1,6 @@
 CC = g++
 CPPFLAGS = -I.
-CFLAGS = -Wall -pedantic -g -fPIC -Og
+CFLAGS = -std=gnu++23 -Wall -pedantic -g -fPIC -O2
 INCLUDES = -I. -Icore/ -Ilib/
 
 EXECUTABLES = main

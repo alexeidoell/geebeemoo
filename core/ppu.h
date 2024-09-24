@@ -12,7 +12,7 @@ struct Pixel {
     u8 spritePriority = 0; // cgb only
     u8 bgPriority = 0;
     u8 xCoord = 0;
-    u8 objIndex;
+    u8 objIndex = 0;
     Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority, u8 xCoord, u8 objIndex) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority), xCoord(xCoord), objIndex(objIndex) {}
 };
 
@@ -29,7 +29,7 @@ struct Object {
     u8 tileIndex = 0;
     u8 flags = 0;
     Object() = default;
-    u8 objIndex;
+    u8 objIndex = 0;
     Object(u8 yPos, u8 xPos, u8 tileIndex, u8 flags, u8 objIndex) : yPos(yPos), xPos(xPos), tileIndex(tileIndex), flags(flags), objIndex(objIndex) {}
 };
 
@@ -50,7 +50,6 @@ enum tileType { bg, win, obj };
 
 class PPU {
     private:
-        const u32 colors[4] = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
         std::shared_ptr<MMU> mem;
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
@@ -84,7 +83,7 @@ class PPU {
                              // resume the state it was at in the current
                              // line
         PPU(std::shared_ptr<MMU> memPtr, SDL_Surface* surface) 
-        :mem(memPtr), ppuState(mem->ppuState), surface(surface){
+        :mem(std::move(memPtr)), ppuState(mem->ppuState), surface(surface){
         } // this feels gross
         u8 ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer(); // u8 array is a placeholder
