@@ -25,6 +25,8 @@ u8 Core::bootup() {
     mem->write(0xFF07, (u8)0xF8);
     mem->write(0xFF47, (u8)0xFC);
     mem->write(0xFF48, (u16)0x0000);
+    mem->write(0xFF18, (u8)0xFF);
+    mem->write(0xFF19, (u8)0xBF);
 
     return 0;
 }

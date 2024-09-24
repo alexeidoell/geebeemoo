@@ -8,6 +8,7 @@
 #include <core/timer.h>
 #include <core/core.h>
 #include <core/ppu.h>
+#include <core/apu.h>
 #include <gb.h>
 #include <iostream>
 #include <iomanip>
@@ -15,14 +16,15 @@
 #include <memory>
 #include <bit>
 
-void callback(void* idk, u8* stream, int len) {
+void callback(void* apu_ptr, u8* stream, int len) {
 
     auto* float_stream{std::bit_cast<float*>(stream)};
+    float sample;
+    APU& apu = *(APU*)apu_ptr; // lol???? ????? ???
     len /= sizeof(float);
-    float constant = 1.0f;
     for (auto i = 0; i < len; ++i) {
-        if (i % 64 == 0) constant *= -1.0;
-        float_stream[i] = 0.1f * constant;
+        sample = apu.getSample();
+        float_stream[i] = 0.1f * sample;
     }
 
 }
@@ -47,16 +49,6 @@ void GB::runEmu(char* filename) {
 
     SDL_Init(SDL_INIT_EVERYTHING);
 
-    SDL_AudioSpec want, have;
-    SDL_zero(want);
-    want.freq = 48000;
-    want.format = AUDIO_F32;
-    want.channels = 1;
-    want.samples = 4096;
-    want.callback = &callback;
-
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-
 
     SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
                 SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
@@ -70,6 +62,7 @@ void GB::runEmu(char* filename) {
     Core core(mem);
     Timer timer(mem);
     PPU ppu(mem, surface);
+    APU apu(mem);
     core.bootup();
 
     bool running = true;
@@ -80,7 +73,16 @@ void GB::runEmu(char* filename) {
     u32 frame = 1;
     u64 frameavg = 0;
 
-    SDL_PauseAudioDevice(dev, 0);
+    SDL_AudioSpec want, have;
+    SDL_zero(want);
+    want.freq = 48000;
+    want.format = AUDIO_F32;
+    want.channels = 1;
+    want.samples = 128;
+    want.callback = &callback;
+    want.userdata = &apu;
+
+    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
     
     const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
@@ -113,6 +115,7 @@ void GB::runEmu(char* filename) {
             div_ticks += operation_ticks;
             while (div_ticks >= 4) {
                 timer.div_inc();
+                apu.period_clock();
                 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
                 u8 after_tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1; 
                 if ((mem->read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem->read(0xFF07) > 3)) { // falling edge
@@ -131,6 +134,7 @@ void GB::runEmu(char* filename) {
         if (white) {
             SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
+        SDL_PauseAudioDevice(dev, 0);
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
         // this u32 conversion is honestly terrible and i should
