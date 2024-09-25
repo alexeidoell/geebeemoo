@@ -10,6 +10,7 @@
 #include <core/ppu.h>
 #include <core/apu.h>
 #include <gb.h>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -19,7 +20,7 @@
 void callback(void* apu_ptr, u8* stream, int len) {
 
     auto* float_stream{std::bit_cast<float*>(stream)};
-    float sample;
+    float sample = 0;
     APU& apu = *(APU*)apu_ptr; // lol???? ????? ???
     len /= sizeof(float);
     for (auto i = 0; i < len; ++i) {
@@ -78,11 +79,12 @@ void GB::runEmu(char* filename) {
     want.freq = 48000;
     want.format = AUDIO_F32;
     want.channels = 1;
-    want.samples = 128;
+    want.samples = 2048;
     want.callback = &callback;
     want.userdata = &apu;
 
     SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+        SDL_PauseAudioDevice(dev, 0);
     
     const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
@@ -134,7 +136,6 @@ void GB::runEmu(char* filename) {
         if (white) {
             SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
-        SDL_PauseAudioDevice(dev, 0);
         SDL_UpdateWindowSurface(window);
         frameTime = SDL_GetTicks() - frameStart;
         // this u32 conversion is honestly terrible and i should

@@ -18,6 +18,7 @@ struct channel2 {
 
 class APU {
 private:
+    u32 sample_counter = 0;
     channel2 ch2;
     std::shared_ptr<MMU> mem;
 public:
