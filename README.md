@@ -1,8 +1,8 @@
 # gbemu
 
-(gee-bee-moo)
+(gee-bee-moo) fighting for my life in an attempt to simulate a gaming boy
 
-fighting for my life in an attempt to simulate a gaming boy
+Gameboy emulator written in C++23 using SDL2.
 
 # Features and Plans
 | Feature | Status |
@@ -11,9 +11,9 @@ fighting for my life in an attempt to simulate a gaming boy
 | MBC1 support | :white_check_mark: |
 | Cycle (mostly) accurate PPU emulation | :white_check_mark: |
 | Support for battery backed SRAM | :white_check_mark: |
+| Audio support | :interrobang: |
 | CGB emulation | :white_square_button: |
 | Further MBC support | :white_square_button: |
-| Audio support | :white_square_button: |
 | GUI built in Qt | :white_square_button: |
 
 # Credits
