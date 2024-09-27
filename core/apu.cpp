@@ -166,7 +166,7 @@ u8 APU::period_clock() {
     } else {
         ch1.period_timer += 1;
     }
-    if (ch3_tick) {
+    for (int i = 0; i < 2; ++i) {
         if (ch3.period_timer == 0x7FF) {
             ch3.period_timer = mem->ppu_read(0xFF1D) + ((mem->ppu_read(0xFF1E) & 0b111) << 8);
             if (ch3.duty_step == 31) ch3.duty_step = 0;
@@ -174,9 +174,6 @@ u8 APU::period_clock() {
         } else {
             ch3.period_timer += 1;
         }
-        ch3_tick = false;
-    } else {
-        ch3_tick = true;
     }
     if (ch4_tick == 3) {
         if (ch4.period_timer == ch4.clock_pace) {
@@ -212,10 +209,10 @@ float APU::getSample() {
         ch3.buffer.pop();
     }
     if (ch4.buffer.size() > 0) {
-        //sample += ch4.buffer.front();
+        sample += ch4.buffer.front();
         ch4.buffer.pop();
     }
-    sample /= 3;
+    sample /= 4;
     return sample;
 }
 
