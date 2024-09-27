@@ -53,16 +53,20 @@ private:
     u32 sample_counter = 0;
     channel1 ch1;
     channel2 ch2;
+    channel3 ch3;
     std::shared_ptr<MMU> mem;
     bool div_raised = false;
     u8 apu_div = 0;
+    bool ch3_tick = false;
 public:
     APU(std::shared_ptr<MMU> mem) : mem(std::move(mem)) {};
     u8 period_clock();
     u8 initAPU();
     u8 triggerCH2();
     u8 triggerCH1();
+    u8 triggerCH3();
     float getSample();
+    u8 getNibble();
     u8 envelopeAdjust();
     u8 lengthAdjust();
     u8 periodSweep();
