@@ -3,6 +3,7 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_timer.h>
+#include <chrono>
 #include <lib/types.h>
 #include <core/mmu.h>
 #include <core/timer.h>
@@ -16,6 +17,7 @@
 #include <fstream>
 #include <memory>
 #include <bit>
+#include <thread>
 
 void callback(void* apu_ptr, u8* stream, int len) {
 
@@ -32,11 +34,11 @@ void callback(void* apu_ptr, u8* stream, int len) {
 
 void GB::runEmu(char* filename) {
     const double FPS = 59.7275;
-    const double frameDelay = 1000 / FPS; // gameboy framerate to 4 decimal places lol
+    std::chrono::duration<double, std::micro> frameDelay(1000000 / FPS);
     const u32 maxTicks = 70224; // number of instuctions per frame
     u32 current_ticks = maxTicks;
-    u32 frameStart = 0;
-    u32 frameTime = 0;
+    std::chrono::time_point<std::chrono::high_resolution_clock> frameStart;
+    std::chrono::duration<double, std::micro> frameTime{};
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;
@@ -72,14 +74,14 @@ void GB::runEmu(char* filename) {
 
     std::ofstream log("log.txt", std::ofstream::trunc);
     u32 frame = 1;
-    u64 frameavg = 0;
+    std::chrono::duration<double, std::micro> frameavg{};
 
     SDL_AudioSpec want, have;
     SDL_zero(want);
     want.freq = 48000;
     want.format = AUDIO_F32;
     want.channels = 1;
-    want.samples = 2048;
+    want.samples = 4096;
     want.callback = &callback;
     want.userdata = &apu;
 
@@ -88,7 +90,7 @@ void GB::runEmu(char* filename) {
     
     const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
-        frameStart = SDL_GetTicks();
+        frameStart = std::chrono::high_resolution_clock::now();
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
         while (SDL_PollEvent(&event)) {
@@ -137,17 +139,15 @@ void GB::runEmu(char* filename) {
             SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
         SDL_UpdateWindowSurface(window);
-        frameTime = SDL_GetTicks() - frameStart;
-        // this u32 conversion is honestly terrible and i should
-        // find a better way to sleep per frame
-        if (frameDelay > frameTime) SDL_Delay((u32)frameDelay - frameTime);
+        frameTime = std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();
+        if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
         frame += 1;
-        std::cout << std::dec << (int)SDL_GetTicks() - frameStart << " ms for frame " << (int) frame << "\n";
-        frameavg += (int)SDL_GetTicks() - frameStart;
+        frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
+        std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem->read(0xFF44) >= 153);
 
     } 
-    std::cout << frameavg / frame << "\n";
+    std::cout << frameavg.count() / 1000 / frame << "\n";
     std::cout << "closing gbemu\n";
     SDL_Quit();
 }

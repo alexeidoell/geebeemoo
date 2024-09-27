@@ -2,7 +2,7 @@
 
 (gee-bee-moo) fighting for my life in an attempt to simulate a gaming boy
 
-Gameboy emulator written in C++23 using SDL2.
+Gameboy emulator written in C++ using SDL2.
 
 # Features and Plans
 | Feature | Status |

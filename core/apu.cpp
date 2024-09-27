@@ -7,7 +7,7 @@ u8 APU::period_clock() {
     u8 ch2_wave_duty = mem->ppu_read(0xFF16) >> 6;
     sample_counter += 48000;
     if (sample_counter >= 1048576) {
-        if (ch2.buffer.size() >= 4096) {
+        if (ch2.buffer.size() >= 8192) {
             ch2.buffer.pop();
         }
         ch2.buffer.push(0.1 * (mem->ppu_read(0xFF17) >> 4) * duty_cycle[ch2_wave_duty][ch2.duty_step]);
