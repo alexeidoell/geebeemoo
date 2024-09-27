@@ -1,6 +1,6 @@
-# gbemu
+# geebeemoo
 
-(gee-bee-moo) fighting for my life in an attempt to simulate a gaming boy
+fighting for my life in an attempt to simulate a gaming boy
 
 Gameboy emulator written in C++ using SDL2.
 
