@@ -23,7 +23,7 @@ void callback(void* apu_ptr, u8* stream, int len) {
 
     auto* float_stream{std::bit_cast<float*>(stream)};
     float sample = 0;
-    APU& apu = *(APU*)apu_ptr; // lol???? ????? ???
+    APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
     len /= sizeof(float);
     for (auto i = 0; i < len; ++i) {
         sample = apu.getSample();
@@ -33,8 +33,7 @@ void callback(void* apu_ptr, u8* stream, int len) {
 }
 
 void GB::runEmu(char* filename) {
-    // putting 60 instead of the actual value makes it slightly more accurate
-    // lol
+    // putting 60 instead of the actual value makes it slightly more accurate lol
     const double FPS = 60;
     std::chrono::duration<double, std::micro> frameDelay(1000000 / FPS);
     const u32 maxTicks = 70224; // number of instuctions per frame

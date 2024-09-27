@@ -2,3 +2,5 @@
 testroms/
 compile_commands.json
 .cache/
+log.txt
+main
