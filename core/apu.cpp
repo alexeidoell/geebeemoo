@@ -1,9 +1,17 @@
 #include <apu.h>
+#include <iostream>
 #include <mmu.h>
 #include <types.h>
 
 
 u8 APU::period_clock() {
+    // need to check if any channels have been triggered in the last cpu instruction
+    
+    if ((mem->ppu_read(0xFF19) & 0b10000000) > 1) { // ch2 triggered
+        triggerCH2();
+        mem->ppu_write(0xFF19, (u8)(mem->ppu_read(0xFF19) & 0b01111111));
+    }
+
     u8 ch2_wave_duty = mem->ppu_read(0xFF16) >> 6;
     sample_counter += 48000;
     if (sample_counter >= 1048576) {
@@ -13,7 +21,7 @@ u8 APU::period_clock() {
         if ((mem->ppu_read(0xFF26) & 0b10000000) == 0) {
             ch2.buffer.push(0);
         } else {
-            ch2.buffer.push(0.1 * (mem->ppu_read(0xFF17) >> 4) * duty_cycle[ch2_wave_duty][ch2.duty_step]);
+            ch2.buffer.push(0.1 * ch2.internal_volume * duty_cycle[ch2_wave_duty][ch2.duty_step]);
         }
         sample_counter -= 1048576;
     }
@@ -34,4 +42,15 @@ float APU::getSample() {
         ch2.buffer.pop();
     }
     return sample;
+}
+
+u8 APU::initAPU() {
+    ch2.internal_volume = mem->ppu_read(0xFF17) >> 4;
+    return 0;
+}
+
+u8 APU::triggerCH2() {
+    ch2.internal_volume = mem->ppu_read(0xFF17) >> 4;
+    ch2.duty_step = 0;
+    return 0;
 }

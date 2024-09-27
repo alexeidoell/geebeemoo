@@ -69,6 +69,7 @@ void GB::runEmu(char* filename) {
     PPU ppu(mem, surface);
     APU apu(mem);
     core.bootup();
+    apu.initAPU();
 
     bool running = true;
     bool first_frame = true;
@@ -90,7 +91,7 @@ void GB::runEmu(char* filename) {
     SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
         SDL_PauseAudioDevice(dev, 0);
     
-        frameStart = std::chrono::high_resolution_clock::now();
+    frameStart = std::chrono::high_resolution_clock::now();
     const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
         current_ticks = current_ticks - maxTicks;
