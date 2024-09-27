@@ -80,6 +80,12 @@ u8 MMU::read(u16 address) {
         } else { // dpad
             inputReg &= 0xF0;
             inputReg += joypad->getDpad();
+            if ((inputReg & 0b11) == 0) {
+                inputReg += 0b11;
+            }
+            if ((inputReg & 0b1100) == 0) {
+                inputReg += 0b1100;
+            }
         }
         return inputReg | 0xC0;
     }
