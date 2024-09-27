@@ -1,4 +1,5 @@
 #include <apu.h>
+#include <iostream>
 #include <mmu.h>
 #include <types.h>
 
@@ -77,7 +78,7 @@ u8 APU::period_clock() {
         } else {
             if (ch2.enabled && ch2.dac) {
                 sample = duty_cycle[ch2_wave_duty][ch2.duty_step] * ch2.internal_volume;
-                sample = 0 + (sample * (1/7.5));
+                sample = 0 - (sample * (1.0/0xF));
                 ch2.buffer.push(volume * sample);
             } else if (ch2.dac) {
                 ch2.buffer.push(volume * 1.0);
@@ -86,7 +87,7 @@ u8 APU::period_clock() {
             }
             if (ch1.enabled && ch2.dac) {
                 sample = duty_cycle[ch1_wave_duty][ch1.duty_step] * ch1.internal_volume;
-                sample = 0 + (sample * (1/7.5));
+                sample = 0 - (sample * (1.0/0xF));
                 ch1.buffer.push(volume * sample);
             } else if (ch1.dac) {
                 ch1.buffer.push(volume * 1.0);
