@@ -11,19 +11,26 @@ constexpr float duty_cycle[4][8] = { // NOLINT
 };
 
 struct channel2 {
+    bool enabled = true;
+    bool dac = true;
     u16 period_timer = 0x7FF;
     u8 duty_step = 0;
     u8 internal_volume = 0;
+    u8 length_timer = 0;
     u8 env_sweep_tick = 0;
     std::queue<float> buffer;
 };
 
 struct channel1 {
+    bool enabled = true;
+    bool dac = true;
     u16 period_timer = 0x7FF;
     u8 duty_step = 0;
     u8 internal_volume = 0;
     u8 env_sweep_tick = 0;
+    u8 length_timer = 0;
     u8 pulse_timer = 0; // placeholder
+    u8 pulse_pace = 0;
     std::queue<float> buffer;
 };
 
@@ -43,4 +50,6 @@ public:
     u8 triggerCH1();
     float getSample();
     u8 envelopeAdjust();
+    u8 lengthAdjust();
+    u8 periodSweep();
 };

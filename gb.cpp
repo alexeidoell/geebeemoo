@@ -150,7 +150,8 @@ void GB::runEmu(char* filename) {
         frameStart = std::chrono::high_resolution_clock::now();
 
     } 
-    std::cout << frameavg.count() / 1000 / frame << "\n";
+    std::cout << "\n" << frameavg.count() / 1000 / frame << " avg ms per frame\n";
+    std::cout << 1000000 / frameavg.count() * frame << " avg fps\n";
     std::cout << "closing gbemu\n";
     SDL_Quit();
 }
