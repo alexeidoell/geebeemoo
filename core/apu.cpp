@@ -10,7 +10,11 @@ u8 APU::period_clock() {
         if (ch2.buffer.size() >= 8192) {
             ch2.buffer.pop();
         }
-        ch2.buffer.push(0.1 * (mem->ppu_read(0xFF17) >> 4) * duty_cycle[ch2_wave_duty][ch2.duty_step]);
+        if ((mem->ppu_read(0xFF26) & 0b10000000) == 0) {
+            ch2.buffer.push(0);
+        } else {
+            ch2.buffer.push(0.1 * (mem->ppu_read(0xFF17) >> 4) * duty_cycle[ch2_wave_duty][ch2.duty_step]);
+        }
         sample_counter -= 1048576;
     }
     if (ch2.period_timer == 0x7FF) {

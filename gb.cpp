@@ -33,7 +33,9 @@ void callback(void* apu_ptr, u8* stream, int len) {
 }
 
 void GB::runEmu(char* filename) {
-    const double FPS = 59.7275;
+    // putting 60 instead of the actual value makes it slightly more accurate
+    // lol
+    const double FPS = 60;
     std::chrono::duration<double, std::micro> frameDelay(1000000 / FPS);
     const u32 maxTicks = 70224; // number of instuctions per frame
     u32 current_ticks = maxTicks;
@@ -88,9 +90,9 @@ void GB::runEmu(char* filename) {
     SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
         SDL_PauseAudioDevice(dev, 0);
     
+        frameStart = std::chrono::high_resolution_clock::now();
     const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
-        frameStart = std::chrono::high_resolution_clock::now();
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
         while (SDL_PollEvent(&event)) {
@@ -145,6 +147,7 @@ void GB::runEmu(char* filename) {
         frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
         std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem->read(0xFF44) >= 153);
+        frameStart = std::chrono::high_resolution_clock::now();
 
     } 
     std::cout << frameavg.count() / 1000 / frame << "\n";
