@@ -1,6 +1,4 @@
 #include <apu.h>
-#include <iostream>
-#include <math.h>
 #include <mmu.h>
 #include <types.h>
 
@@ -8,6 +6,8 @@
 // digusting code
 u8 APU::period_clock() {
     float sample = 0;
+    float volume = mem->ppu_read(0xFF24) & 0b111; // currently only taking right ear volume into account
+    volume = (volume + 1) / 8;
     if ((mem->ppu_read(0xFF10) & 0b1110000) == 0) { // pulse pace disabled
         ch1.pulse_pace = 0;
     } else if (ch1.pulse_pace == 0) { // internal pulse pace is 0, and new pace is written 
@@ -46,14 +46,14 @@ u8 APU::period_clock() {
     // dac disable
     // need to research how dac works more
     if (ch1.enabled && (mem->ppu_read(0xFF12) >> 3) == 0) {
-        ch1.enabled = false;
+        disableChannel(1);
         ch2.dac = false;
     } else {
         ch1.dac = true;
     }
 
     if (ch2.enabled && (mem->ppu_read(0xFF17) >> 3) == 0) {
-        ch2.enabled = false;
+        disableChannel(2);
         ch2.dac = false;
     } else {
         ch2.dac = true;
@@ -78,18 +78,18 @@ u8 APU::period_clock() {
             if (ch2.enabled && ch2.dac) {
                 sample = duty_cycle[ch2_wave_duty][ch2.duty_step] * ch2.internal_volume;
                 sample = 0 + (sample * (1/7.5));
-                ch2.buffer.push(0.5 * sample);
+                ch2.buffer.push(volume * sample);
             } else if (ch2.dac) {
-                ch2.buffer.push(0.5 * 1.0);
+                ch2.buffer.push(volume * 1.0);
             } else {
                 ch2.buffer.push(0);
             }
             if (ch1.enabled && ch2.dac) {
                 sample = duty_cycle[ch1_wave_duty][ch1.duty_step] * ch1.internal_volume;
                 sample = 0 + (sample * (1/7.5));
-                ch1.buffer.push(0.5 * sample);
+                ch1.buffer.push(volume * sample);
             } else if (ch1.dac) {
-                ch1.buffer.push(0.5 * 1.0);
+                ch1.buffer.push(volume * 1.0);
             } else {
                 ch1.buffer.push(0);
             }
@@ -134,17 +134,21 @@ u8 APU::initAPU() {
 
 u8 APU::triggerCH2() {
     ch2.enabled = true;
+    mem->ppu_write(0xFF26, (u8)(mem->ppu_read(0xFF26) | 0b10));
     ch2.internal_volume = mem->ppu_read(0xFF17) >> 4;
     ch2.length_timer = mem->ppu_read(0xFF16) & 0b111111;
+    ch2.env_dir = 1 & (mem->ppu_read(0xFF17) >> 3);
     ch2.duty_step = 0;
     return 0;
 }
 
 u8 APU::triggerCH1() {
     ch1.enabled = true;
+    mem->ppu_write(0xFF26, (u8)(mem->ppu_read(0xFF26) | 0b1));
     ch1.internal_volume = mem->ppu_read(0xFF12) >> 4;
     ch1.length_timer = mem->ppu_read(0xFF11) & 0b111111;
     ch1.pulse_pace = mem->ppu_read(0xFF10) >> 4;
+    ch1.env_dir = 1 & (mem->ppu_read(0xFF12) >> 3);
     ch1.duty_step = 0;
     return 0;
 }
@@ -155,7 +159,7 @@ u8 APU::envelopeAdjust() {
     ch1.env_sweep_tick += 1;
     if (ch2.env_sweep_tick != 0 && ch2.env_sweep_tick == (mem->ppu_read(0xFF17) & 0b111)) {
         ch2.env_sweep_tick = 0;
-        if ((mem->ppu_read(0xFF17) & 0b1000) > 0) {
+        if (ch2.env_dir == 1) {
             if (ch2.internal_volume < 0xF) ch2.internal_volume += 1;
         } else {
             if (ch2.internal_volume > 0) ch2.internal_volume -= 1;
@@ -163,7 +167,7 @@ u8 APU::envelopeAdjust() {
     }
     if (ch1.env_sweep_tick != 0 && ch1.env_sweep_tick == (mem->ppu_read(0xFF12) & 0b111)) {
         ch1.env_sweep_tick = 0;
-        if ((mem->ppu_read(0xFF12) & 0b1000) > 0) {
+        if (ch1.env_dir == 1) {
             if (ch1.internal_volume < 0xF) ch1.internal_volume += 1;
         } else {
             if (ch1.internal_volume > 0) ch1.internal_volume -= 1;
@@ -177,13 +181,13 @@ u8 APU::lengthAdjust() {
     if ((mem->ppu_read(0xFF14) & 0b1000000) > 0) {
         ch1.length_timer += 1;
         if (ch1.length_timer == 64) {
-            ch1.enabled = false;
+            disableChannel(1);
         }
     }
     if ((mem->ppu_read(0xFF19) & 0b1000000) > 0) {
         ch2.length_timer += 1;
         if (ch2.length_timer == 64) {
-            ch2.enabled = false;
+            disableChannel(2);
         }
     }
 
@@ -202,13 +206,26 @@ u8 APU::periodSweep() {
         } else {
             current_period += period_diff;
             if (current_period > 0x7FFF) {
-                ch1.enabled = false;
+                disableChannel(1);
             }
         }
         mem->ppu_write(0xFF13, (u8)(current_period & 0xFF));
         mem->ppu_write(0xFF14, (u8)((mem->ppu_read(0xFF14) & 0b11000000) + (current_period >> 8)));
         ch1.pulse_pace = mem->ppu_read(0xFF10) >> 4;
         ch1.pulse_timer = 0;
+    }
+    return 0;
+}
+
+u8 APU::disableChannel(u8 channel) {
+    switch (channel) {
+        case 1:
+            ch1.enabled = false;
+            mem->ppu_write(0xFF26, (u8)(mem->ppu_read(0xFF26) & 0b11111110));
+            break;
+        case 2:
+            ch2.enabled = false;
+            mem->ppu_write(0xFF26, (u8)(mem->ppu_read(0xFF26) & 0b11111101));
     }
     return 0;
 }
