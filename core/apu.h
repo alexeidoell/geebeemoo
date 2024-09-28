@@ -42,7 +42,7 @@ struct channel3 {
     u16 period_timer = 0x7FF;
     u8 duty_step = 0;
     u8 internal_volume = 0;
-    u8 length_timer = 0;
+    u16 length_timer = 0;
     std::queue<float> buffer;
 };
 

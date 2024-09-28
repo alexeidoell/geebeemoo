@@ -22,15 +22,16 @@ u8 APU::period_clock() {
             apu_div += 1;
             if (apu_div % 8 == 0) { // envelope
                envelopeAdjust();
+               apu_div = 0;
             } 
-            if (apu_div % 4 == 0) { // sound length
+            if (apu_div % 2 == 0) { // sound length
                lengthAdjust();
             }
-            if (apu_div % 2 == 0) { // ch1 sweep
+            if (apu_div % 4 == 0) { // ch1 sweep
                 periodSweep();
             }
         }
-    } else if ((mem->ppu_read(0xFF04) & 0b10000) > 1) {
+    } else if ((mem->ppu_read(0xFF04) & 0b10000) > 0) {
         div_raised = true;
     }
 
@@ -317,7 +318,7 @@ u8 APU::lengthAdjust() {
     }
     if ((mem->ppu_read(0xFF1E) & 0b1000000) > 0) {
         ch3.length_timer += 1;
-        if (ch3.length_timer == 64) {
+        if (ch3.length_timer == 256) {
             disableChannel(3);
         }
     }
