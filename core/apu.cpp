@@ -1,4 +1,5 @@
 #include <apu.h>
+#include <bitset>
 #include <iostream>
 #include <mmu.h>
 #include <types.h>
@@ -140,9 +141,7 @@ u8 APU::period_clock() {
             }
             if (ch4.enabled && ch4.dac) {
                 sample = ch4.output;
-                sample -= 7.5;
-                sample /= 7.5;
-                sample = 0 - ch4.output;
+                sample = 0 - (ch4.output * (1.0/0xF));
                 ch4.buffer.push(volume * sample);
             } else if (ch1.dac) {
                 ch4.buffer.push(volume * 1.0);
@@ -177,8 +176,8 @@ u8 APU::period_clock() {
     }
     if (ch4_tick == 3) {
         if (ch4.period_timer == ch4.clock_pace) {
-            float divider = static_cast<float>((int)mem->ppu_read(0xFF22) & 0b111);
-            divider = divider ? divider : 0.5;
+            auto divider = (float)((int)(mem->ppu_read(0xFF22) & 0b111));
+            divider = divider != 0 ? divider : 0.5;
             u16 shift = 2 << (mem->ppu_read(0xFF22) >> 4);
             ch4.clock_pace = shift * divider;
             ch4.period_timer = 0;
@@ -257,10 +256,15 @@ u8 APU::triggerCH3() {
 u8 APU::triggerCH4() {
     ch4.enabled = true;
     mem->ppu_write(0xFF26, (u8)(mem->ppu_read(0xFF26) | 0b1000));
-    ch4.internal_volume = mem->ppu_read(0xFF23) >> 4;
+    ch4.internal_volume = mem->ppu_read(0xFF21) >> 4;
     ch4.length_timer = mem->ppu_read(0xFF20) & 0b111111;
     ch4.env_dir = 1 & (mem->ppu_read(0xFF21) >> 3);
-    ch4.lfsr = ~(0);
+    auto divider = (float)((int)(mem->ppu_read(0xFF22) & 0b111));
+    divider = divider != 0 ? divider : 0.5;
+    u16 shift = 2 << (mem->ppu_read(0xFF22) >> 4);
+    ch4.clock_pace = shift * divider;
+    ch4.period_timer = 0;
+    ch4.lfsr = 0;
     ch4.duty_step = 0;
     ch4.output = 0;
     return 0;
@@ -383,7 +387,7 @@ u8 APU::getNibble() {
 }
 
 u8 APU::lfsrClock() {
-    u8 bit0, bit1, new_bit;
+    u8 bit0 = 0, bit1 = 0, new_bit = 0;
     bit0 = ch4.lfsr & 0b1;
     bit1 = (ch4.lfsr >> 1) & 0b1;
     new_bit = bit0 == bit1 ? 1 : 0;
