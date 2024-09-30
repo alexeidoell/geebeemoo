@@ -92,6 +92,9 @@ u8 MMU::read(u16 address) {
     if (address == 0xFF01) {
         return 0xFF;
     }
+    if (address == 0xFF23) {
+        return ppu_read(0xFF23) | 0xBF;
+    }
     if (address == 0xFF4D) {
         return 0xFF;
     }
@@ -125,6 +128,26 @@ u8 MMU::write(u16 address, u8 word) {
         return 0;
     } else if (address >= 0xFE00 && address < 0xFEA0 && (ppuState == mode2 || ppuState == mode3)) { 
         return 0;
+    }
+    if (address == 0xFF19) {
+        if (word > 0x70) {
+            channel_trigger = 2;
+        }
+    }
+    if (address == 0xFF14) {
+        if (word > 0x70) {
+            channel_trigger = 1;
+        }
+    }
+    if (address == 0xFF23) {
+        if (word > 0x70) {
+            channel_trigger = 4;
+        }
+    }
+    if (address == 0xFF1E) {
+        if (word > 0x70) {
+            channel_trigger = 3;
+        }
     }
     if (address == 0xFF02) {
            std::cout << (char) mem[0xFF01];

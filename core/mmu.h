@@ -31,6 +31,7 @@ private:
     std::string save_file;
     std::string temp_file;
 public:
+    u8 channel_trigger = 0;
 
     MMU(std::shared_ptr<Joypad> joypad) : joypad(std::move(joypad)) {};
 

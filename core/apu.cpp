@@ -36,22 +36,21 @@ u8 APU::period_clock() {
     }
 
     // need to check if any channels have been triggered in the last m cycle
-    if ((mem->ppu_read(0xFF19) & 0b10000000) > 1) { // ch2 triggered
+    if (mem->channel_trigger == 2) { // ch2 triggered
         triggerCH2();
-        mem->ppu_write(0xFF19, (u8)(mem->ppu_read(0xFF19) & 0b01111111));
+        mem->channel_trigger = 0;
     }
-    
-    if ((mem->ppu_read(0xFF14) & 0b10000000) > 1) { // ch1 triggered
+    if (mem->channel_trigger == 1) { // ch1 triggered
         triggerCH1();
-        mem->ppu_write(0xFF14, (u8)(mem->ppu_read(0xFF14) & 0b01111111));
+        mem->channel_trigger = 0;
     }
-    if ((mem->ppu_read(0xFF1E) & 0b10000000) > 1) { // ch3 triggered
+    if (mem->channel_trigger == 3) { // ch3 triggered
         triggerCH3();
-        mem->ppu_write(0xFF1E, (u8)(mem->ppu_read(0xFF1E) & 0b01111111));
+        mem->channel_trigger = 0;
     }
-    if ((mem->ppu_read(0xFF23) & 0b10000000) > 1) { // ch4 triggered
+    if (mem->channel_trigger == 4) { // ch4 triggered
         triggerCH4();
-        mem->ppu_write(0xFF23, (u8)(mem->ppu_read(0xFF23) & 0b01111111));
+        mem->channel_trigger = 0;
     }
 
     // dac disable
@@ -230,6 +229,7 @@ u8 APU::triggerCH2() {
     ch2.internal_volume = mem->ppu_read(0xFF17) >> 4;
     ch2.length_timer = mem->ppu_read(0xFF16) & 0b111111;
     ch2.env_dir = 1 & (mem->ppu_read(0xFF17) >> 3);
+    ch2.env_sweep_tick = 0;
     ch2.duty_step = 0;
     return 0;
 }
@@ -241,6 +241,7 @@ u8 APU::triggerCH1() {
     ch1.length_timer = mem->ppu_read(0xFF11) & 0b111111;
     ch1.pulse_pace = mem->ppu_read(0xFF10) >> 4;
     ch1.env_dir = 1 & (mem->ppu_read(0xFF12) >> 3);
+    ch1.env_sweep_tick = 0;
     ch1.duty_step = 0;
     return 0;
 }
@@ -260,6 +261,7 @@ u8 APU::triggerCH4() {
     ch4.internal_volume = mem->ppu_read(0xFF21) >> 4;
     ch4.length_timer = mem->ppu_read(0xFF20) & 0b111111;
     ch4.env_dir = 1 & (mem->ppu_read(0xFF21) >> 3);
+    ch4.env_sweep_tick = 0;
     auto divider = (float)((int)(mem->ppu_read(0xFF22) & 0b111));
     divider = divider != 0 ? divider : 0.5;
     u16 shift = 2 << (mem->ppu_read(0xFF22) >> 4);
@@ -273,6 +275,7 @@ u8 APU::triggerCH4() {
 
 u8 APU::envelopeAdjust() {
     apu_div = 0;
+    ch4.env_sweep_tick += 1;
     ch2.env_sweep_tick += 1;
     ch1.env_sweep_tick += 1;
     if (ch2.env_sweep_tick != 0 && ch2.env_sweep_tick == (mem->ppu_read(0xFF17) & 0b111)) {
@@ -305,26 +308,26 @@ u8 APU::envelopeAdjust() {
 
 u8 APU::lengthAdjust() {
     if ((mem->ppu_read(0xFF14) & 0b1000000) > 0) {
-        ch1.length_timer += 1;
-        if (ch1.length_timer == 64) {
+        ch1.length_timer -= 1;
+        if (ch1.length_timer == 0) {
             disableChannel(1);
         }
     }
     if ((mem->ppu_read(0xFF19) & 0b1000000) > 0) {
-        ch2.length_timer += 1;
-        if (ch2.length_timer == 64) {
+        ch2.length_timer -= 1;
+        if (ch2.length_timer == 0) {
             disableChannel(2);
         }
     }
     if ((mem->ppu_read(0xFF1E) & 0b1000000) > 0) {
-        ch3.length_timer += 1;
-        if (ch3.length_timer == 256) {
+        ch3.length_timer -= 1;
+        if (ch3.length_timer == 0) {
             disableChannel(3);
         }
     }
     if ((mem->ppu_read(0xFF23) & 0b1000000) > 0) {
-        ch4.length_timer += 1;
-        if (ch4.length_timer == 64) {
+        ch4.length_timer -= 1;
+        if (ch4.length_timer == 0) {
             disableChannel(4);
         }
     }
