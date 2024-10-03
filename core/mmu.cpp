@@ -150,7 +150,7 @@ u8 MMU::write(u16 address, u8 word) {
         }
     }
     if (address == 0xFF02) {
-           std::cout << (char) mem[0xFF01];
+           //std::cout << (char) mem[0xFF01];
     }
     else if (address == 0xFF04) { // div register
                                   // this prevents normal writes

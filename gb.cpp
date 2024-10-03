@@ -11,7 +11,6 @@
 #include <core/ppu.h>
 #include <core/apu.h>
 #include <gb.h>
-#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
