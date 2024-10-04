@@ -50,7 +50,7 @@ enum tileType { bg, win, obj };
 
 class PPU {
     private:
-        std::shared_ptr<MMU> mem;
+        MMU& mem;
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
@@ -82,9 +82,9 @@ class PPU {
                              // the next call of the ppu loop that will
                              // resume the state it was at in the current
                              // line
-        PPU(std::shared_ptr<MMU> memPtr, SDL_Surface* surface) 
-        :mem(std::move(memPtr)), ppuState(mem->ppuState), surface(surface){
+        PPU(MMU& mem, SDL_Surface* surface) 
+        :mem(mem), ppuState(mem.ppuState), surface(surface) {
         } // this feels gross
         u8 ppuLoop(u8 ticks);
-        std::array<u8, 23040>& getBuffer(); // u8 array is a placeholder
+        std::array<u8, 23040>& getBuffer();
 };

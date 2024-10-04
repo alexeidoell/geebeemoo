@@ -76,10 +76,10 @@ u8 MMU::read(u16 address) {
         u8 inputReg = mem[address];
         if ((inputReg & 0x30) == 0x10) { // buttons
             inputReg &= 0xF0;
-            inputReg += joypad->getButton();
+            inputReg += joypad.getButton();
         } else { // dpad
             inputReg &= 0xF0;
-            inputReg += joypad->getDpad();
+            inputReg += joypad.getDpad();
             if ((inputReg & 0b11) == 0) {
                 inputReg += 0b11;
             }

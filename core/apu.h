@@ -70,13 +70,13 @@ private:
     channel2 ch2;
     channel3 ch3;
     channel4 ch4;
-    std::shared_ptr<MMU> mem;
+    MMU& mem;
     bool div_raised = false;
     u8 apu_div = 0;
     bool ch3_tick = false;
     u8 ch4_tick = 0;
 public:
-    APU(std::shared_ptr<MMU> mem) : mem(std::move(mem)) {};
+    APU(MMU& mem) : mem(mem) {};
     u8 period_clock();
     u8 initAPU();
     u8 triggerCH2();

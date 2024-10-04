@@ -14,7 +14,6 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <memory>
 #include <bit>
 #include <thread>
 
@@ -23,7 +22,7 @@ void callback(void* apu_ptr, u8* stream, int len) {
     auto* float_stream{std::bit_cast<float*>(stream)};
     float sample = 0;
     APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
-    len /= sizeof(float);
+    len /= sizeof(float); // LOL!!
     for (auto i = 0; i < len; ++i) {
         sample = apu.getSample();
         float_stream[i] = 0.1f * sample;
@@ -43,9 +42,9 @@ void GB::runEmu(char* filename) {
     u32 operation_ticks = 0;
     bool tima_flag = false;
     
-    std::shared_ptr<Joypad> joypad = std::make_shared<Joypad>();
-    std::shared_ptr<MMU> mem = std::make_shared<MMU>(joypad);
-    if (0 == mem->load_cart(filename)) {
+    Joypad joypad{};
+    MMU mem(joypad);
+    if (0 == mem.load_cart(filename)) {
         std::cout << "emu quitting due to rom not existing\n";
         return;
     }
@@ -97,23 +96,23 @@ void GB::runEmu(char* filename) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
-            } else joypad->pollPresses(event);
+            } else joypad.pollPresses(event);
         }
         white = false;
         while (current_ticks < maxTicks) {
-            u16 div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
-            u8 tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
+            u16 div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
+            u8 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
             //doctor_log(frame, current_ticks, log, core, *mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
-            if (mem->get_oam()) {
-                mem->oam_transfer(current_ticks);
+            if (mem.get_oam()) {
+                mem.oam_transfer(current_ticks);
             }
-            if ((mem->ppu_read(0xFF40) & 0x80) == 0x80) {
+            if ((mem.ppu_read(0xFF40) & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
             } else { // lcd disable
-                mem->ppu_write(0xFF44, (u8)0);
-                mem->ppu_write(0xFF41, (u8)((mem->ppu_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
+                mem.ppu_write(0xFF44, (u8)0);
+                mem.ppu_write(0xFF41, (u8)((mem.ppu_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
                 ppu.currentLineDots = 0;
                 white = true;
             }
@@ -121,14 +120,14 @@ void GB::runEmu(char* filename) {
             while (div_ticks >= 4) {
                 timer.div_inc();
                 apu.period_clock();
-                div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
-                u8 after_tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1; 
-                if ((mem->read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem->read(0xFF07) > 3)) { // falling edge
+                div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
+                u8 after_tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1; 
+                if ((mem.read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem.read(0xFF07) > 3)) { // falling edge
                     tima_flag = (timer.tima_inc() == -1);
                 }
                 div_ticks -= 4;
-                div = (mem->read(0xFF04) << 8) + mem->read(0xFF03);
-                tima_bit = (div >> tima_freq[mem->read(0xFF07) & 0b11]) & 0b1;
+                div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
+                tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
             }
         }
         surface = SDL_GetWindowSurface(window);
@@ -145,7 +144,7 @@ void GB::runEmu(char* filename) {
         frame += 1;
         frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
-        //assert(mem->read(0xFF44) >= 153);
+        //assert(mem.read(0xFF44) >= 153);
         frameStart = std::chrono::high_resolution_clock::now();
 
     } 

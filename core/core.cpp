@@ -17,36 +17,36 @@ u8 Core::bootup() {
     registers.gpr.n.l = 0x4D;
     registers.pc  = 0x0100;
     registers.sp  = 0xFFFE;
-    mem->write(0xFF00, (u8)0xCF);
-    mem->write(0xFF03, (u16)0xABCC);
-    mem->write(0xFF0F, (u8)0xE1);
-    mem->write(0xFF40, (u8)0x91);
-    mem->write(0xFF41, (u8)0x81);
-    mem->write(0xFF07, (u8)0xF8);
-    mem->write(0xFF47, (u8)0xFC);
-    mem->write(0xFF48, (u16)0x0000);
+    mem.write(0xFF00, (u8)0xCF);
+    mem.write(0xFF03, (u16)0xABCC);
+    mem.write(0xFF0F, (u8)0xE1);
+    mem.write(0xFF40, (u8)0x91);
+    mem.write(0xFF41, (u8)0x81);
+    mem.write(0xFF07, (u8)0xF8);
+    mem.write(0xFF47, (u8)0xFC);
+    mem.write(0xFF48, (u16)0x0000);
 
-    mem->write(0xFF10, (u8)0x80);
-    mem->write(0xFF11, (u8)0xBF);
-    mem->write(0xFF12, (u8)0xF3);
-    mem->write(0xFF13, (u8)0xFF);
-    mem->write(0xFF14, (u8)0xBF);
-    mem->write(0xFF16, (u8)0x3F);
-    mem->write(0xFF17, (u8)0x00);
-    mem->write(0xFF18, (u8)0xFF);
-    mem->write(0xFF19, (u8)0xBF);
-    mem->write(0xFF1A, (u8)0x7F);
-    mem->write(0xFF1B, (u8)0xFF);
-    mem->write(0xFF1C, (u8)0x9F);
-    mem->write(0xFF1D, (u8)0xFF);
-    mem->write(0xFF1E, (u8)0xBF);
-    mem->write(0xFF20, (u8)0xFF);
-    mem->write(0xFF21, (u8)0x00);
-    mem->write(0xFF22, (u8)0x00);
-    mem->write(0xFF23, (u8)0xBF);
-    mem->write(0xFF24, (u8)0x77);
-    mem->write(0xFF25, (u8)0xF3);
-    mem->write(0xFF26, (u8)0xF1);
+    mem.write(0xFF10, (u8)0x80);
+    mem.write(0xFF11, (u8)0xBF);
+    mem.write(0xFF12, (u8)0xF3);
+    mem.write(0xFF13, (u8)0xFF);
+    mem.write(0xFF14, (u8)0xBF);
+    mem.write(0xFF16, (u8)0x3F);
+    mem.write(0xFF17, (u8)0x00);
+    mem.write(0xFF18, (u8)0xFF);
+    mem.write(0xFF19, (u8)0xBF);
+    mem.write(0xFF1A, (u8)0x7F);
+    mem.write(0xFF1B, (u8)0xFF);
+    mem.write(0xFF1C, (u8)0x9F);
+    mem.write(0xFF1D, (u8)0xFF);
+    mem.write(0xFF1E, (u8)0xBF);
+    mem.write(0xFF20, (u8)0xFF);
+    mem.write(0xFF21, (u8)0x00);
+    mem.write(0xFF22, (u8)0x00);
+    mem.write(0xFF23, (u8)0xBF);
+    mem.write(0xFF24, (u8)0x77);
+    mem.write(0xFF25, (u8)0xF3);
+    mem.write(0xFF26, (u8)0xF1);
 
     return 0;
 }
@@ -79,43 +79,43 @@ u8 Core::op_tree() {
     }
 
     if (halt_flag) {
-        if (((mem->read(0xFFFF) & mem->read(0xFF0F)) != 0)) { // interrupt to be handled
+        if (((mem.read(0xFFFF) & mem.read(0xFF0F)) != 0)) { // interrupt to be handled
             halt_flag = false;
         } else return ticks;
     }
 
-    if (ime && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { // interrupt handling
+    if (ime && (mem.read(0xFFFF) & mem.read(0xFF0F)) != 0) { // interrupt handling
         ticks += 16;
-        if (((mem->read(0xFF0F) & 0b1) & (mem->read(0xFFFF) & 0b1)) != 0) { // vblank interrupt
-            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111110));
+        if (((mem.read(0xFF0F) & 0b1) & (mem.read(0xFFFF) & 0b1)) != 0) { // vblank interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111110));
             registers.sp -= 2;
-            mem->write(registers.sp, registers.pc);
+            mem.write(registers.sp, registers.pc);
             registers.pc = 0x40;
-        } else if (((mem->read(0xFF0F) & 0b10) & (mem->read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
-            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111101));
+        } else if (((mem.read(0xFF0F) & 0b10) & (mem.read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111101));
             registers.sp -= 2;
-            mem->write(registers.sp, registers.pc);
+            mem.write(registers.sp, registers.pc);
             registers.pc = 0x48;
-        } else if (((mem->read(0xFF0F) & 0b100) & (mem->read(0xFFFF) & 0b100)) != 0) { // timer interrupt
-            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11111011));
+        } else if (((mem.read(0xFF0F) & 0b100) & (mem.read(0xFFFF) & 0b100)) != 0) { // timer interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111011));
             registers.sp -= 2;
-            mem->write(registers.sp, registers.pc);
+            mem.write(registers.sp, registers.pc);
             registers.pc = 0x50;
-        } else if (((mem->read(0xFF0F) & 0b1000) & (mem->read(0xFFFF) & 0b1000)) != 0) { // serial interrupt
-            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11110111));
+        } else if (((mem.read(0xFF0F) & 0b1000) & (mem.read(0xFFFF) & 0b1000)) != 0) { // serial interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11110111));
             registers.sp -= 2;
-            mem->write(registers.sp, registers.pc);
+            mem.write(registers.sp, registers.pc);
             registers.pc = 0x58;
-        } else if (((mem->read(0xFF0F) & 0b10000) & (mem->read(0xFFFF) & 0b10000)) != 0) { // joypad interrupt
-            mem->write(0xFF0F, (u8)(mem->read(0xFF0F) & 0b11101111));
+        } else if (((mem.read(0xFF0F) & 0b10000) & (mem.read(0xFFFF) & 0b10000)) != 0) { // joypad interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11101111));
             registers.sp -= 2;
-            mem->write(registers.sp, registers.pc);
+            mem.write(registers.sp, registers.pc);
             registers.pc = 0x60;
         }
         ime = false;
         return ticks;
     }
-    u8 byte1 = mem->read(registers.pc++); 
+    u8 byte1 = mem.read(registers.pc++); 
     ticks = tick_chart[byte1] * 4;
     bool ei_op = false;
 
@@ -131,11 +131,11 @@ u8 Core::op_tree() {
         // lock up system
     } else if (byte1 < 0x40) { // operations 0x01 to 0x3F
         if (byte1 == 0x08) { // store sp at imm
-            u16 address = mem->read(registers.pc++);
-            address = address + (mem->read(registers.pc++) << 8);
-            mem->write(address, registers.sp);
+            u16 address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            mem.write(address, registers.sp);
         } else if ((byte1 & 0b111) == 0) { // relative jumps
-            s8 offset = std::bit_cast<s8>(mem->read(registers.pc++));
+            s8 offset = std::bit_cast<s8>(mem.read(registers.pc++));
             if ((byte1 >> 3) == 0b11) { // unconditional jump
                 registers.pc += offset;
             } else if ((byte1 >> 5) == 1) { // conditional jumps
@@ -177,8 +177,8 @@ u8 Core::op_tree() {
 
 
         } else if ((byte1 & 0b111) == 0b001) { // two byte imm load ops
-            u8 imm_byte1 = mem->read(registers.pc++);
-            u8 imm_byte2 = mem->read(registers.pc++);
+            u8 imm_byte1 = mem.read(registers.pc++);
+            u8 imm_byte2 = mem.read(registers.pc++);
             u8 dst = byte1 >> 4;
             if (dst == 0x00) {
                 registers.gpr.n.c = imm_byte1;
@@ -199,9 +199,9 @@ u8 Core::op_tree() {
                 u8 dst = (byte1 >> 3) & 0b111;
                 if (dst == 6) { // load into HL
                     u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-                    mem->write(hl, mem->read(registers.pc++));
+                    mem.write(hl, mem.read(registers.pc++));
                 } else {
-                    registers.gpr.r[dst] = mem->read(registers.pc++);
+                    registers.gpr.r[dst] = mem.read(registers.pc++);
                 }
             } else if ((byte1 & 0b111) == 0b010) { // loading memory to/from A
                 u8 dst = (byte1) >> 4;
@@ -222,9 +222,9 @@ u8 Core::op_tree() {
                     registers.gpr.n.l = hl & 0xFF;
                 }
                 if ((byte1 & 0b1000) == 0b1000) {
-                    registers.gpr.n.a = mem->read(address);
+                    registers.gpr.n.a = mem.read(address);
                 } else {
-                    mem->write(address, registers.gpr.n.a);
+                    mem.write(address, registers.gpr.n.a);
                 }
 
             } 
@@ -262,7 +262,7 @@ u8 Core::op_tree() {
                 operand = registers.gpr.r[dst];
             } else {
                 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-                operand = mem->read(hl);
+                operand = mem.read(hl);
             }
             if ((operand & 0xF) == 0xF) registers.flags |= 0b00100000;
             else registers.flags &= 0b11011111;
@@ -273,7 +273,7 @@ u8 Core::op_tree() {
             if (dst != 6) {
                 registers.gpr.r[dst] = result;
             } else {
-                mem->write(hl, (u8) result);
+                mem.write(hl, (u8) result);
             }
         } else if ((byte1 & 0b111) == 0b101) { // one byte decrement
             u8 dst = (byte1 >> 3) & 0b111;
@@ -284,7 +284,7 @@ u8 Core::op_tree() {
                 operand = registers.gpr.r[dst];
             } else {
                 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-                operand = mem->read(hl);
+                operand = mem.read(hl);
             }
             if ((operand & 0xF) == 0) registers.flags |= 0b00100000;
             else registers.flags &= 0b11011111;
@@ -295,7 +295,7 @@ u8 Core::op_tree() {
             if (dst != 6) {
                 registers.gpr.r[dst] = result;
             } else {
-                mem->write(hl, (u8) result);
+                mem.write(hl, (u8) result);
             }
 
         } else if ((byte1 & 0b111) == 0b111) { // rotates and weird transformations
@@ -361,15 +361,15 @@ u8 Core::op_tree() {
         // HL in src or dst
         if (src == 6 && dst == 6) {
             // halt op
-            if (!ime && (mem->read(0xFFFF) & mem->read(0xFF0F)) != 0) { 
+            if (!ime && (mem.read(0xFFFF) & mem.read(0xFF0F)) != 0) { 
                 halt_bug = true;
             } else halt_flag = true;           
         } else if (src == 6) {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-            registers.gpr.r[dst] = mem->read(hl);
+            registers.gpr.r[dst] = mem.read(hl);
         } else if (dst == 6) {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-            mem->write(hl, registers.gpr.r[src]);
+            mem.write(hl, registers.gpr.r[src]);
         } else {
             registers.gpr.r[dst] = registers.gpr.r[src];
         }
@@ -380,7 +380,7 @@ u8 Core::op_tree() {
         if (operand != 6) operandValue = registers.gpr.r[operand];
         else {
             u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
-            operandValue = mem->read(hl);
+            operandValue = mem.read(hl);
         }
         u16 result = 0;
 
@@ -466,7 +466,7 @@ u8 Core::op_tree() {
         ei_op = true;
         ei_set = true;
     } else if ((byte1 & 0b111) == 0b110) { // arithmetic on A register with immediate
-        u8 operandValue = mem->read(registers.pc++);
+        u8 operandValue = mem.read(registers.pc++);
         u8 operation = (byte1 >> 4) & 0b11;
         u16 result = 0;
         switch (operation) {
@@ -547,8 +547,8 @@ u8 Core::op_tree() {
     } else if ((byte1 & 0b11001011) == 0b11000001) { // pop and push
         u8 dst = (byte1 >> 4) & 0b11;
         if ((byte1 & 0b111) == 0b1) { // pop
-            u8 lowReg = mem->read(registers.sp++);
-            u8 highReg = mem->read(registers.sp++);
+            u8 lowReg = mem.read(registers.sp++);
+            u8 highReg = mem.read(registers.sp++);
             switch (dst) {
                 case 0:
                     registers.gpr.n.c = lowReg;
@@ -585,17 +585,17 @@ u8 Core::op_tree() {
                     break;
             }
             registers.sp -= 2;
-            mem->write(registers.sp, regValue);
+            mem.write(registers.sp, regValue);
         }
     } else if ((byte1 & 0b111) == 0b111 ) { // vector calls
         u16 address = (byte1 & 0b00111000);
         registers.sp -= 2;
-        mem->write(registers.sp, registers.pc);
+        mem.write(registers.sp, registers.pc);
         registers.pc = address;
     } else if ((byte1 >> 5) == 0b110) { // jumps and returns
         if ((byte1 & 0b111) < 0b10) { // returns
-            u16 address = mem->read(registers.sp++);
-            address = address + (mem->read(registers.sp++) << 8);
+            u16 address = mem.read(registers.sp++);
+            address = address + (mem.read(registers.sp++) << 8);
             if (byte1 == 0xC9) { // unconditional return
                 registers.pc = address;
             } else if (byte1 == 0xD9) { // reti
@@ -614,8 +614,8 @@ u8 Core::op_tree() {
                 }
             }
         } else if ((byte1 & 0b111) < 4) { // jp instructions
-            u16 address = mem->read(registers.pc++);
-            address = address + (mem->read(registers.pc++) << 8);
+            u16 address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
             if (byte1 == 0xC3) { // unconditional jump
                 registers.pc = address;
             } else if ((byte1 & 0b111) == 2) { // conditional jump
@@ -631,11 +631,11 @@ u8 Core::op_tree() {
  
 
         } else if ((byte1 & 0b110) == 0b100) { // calls
-            u16 address = mem->read(registers.pc++);
-            address = address + (mem->read(registers.pc++) << 8);
+            u16 address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
             if ((byte1 & 0b1) == 0b1) { // unconditional call
                 registers.sp -= 2;
-                mem->write(registers.sp, registers.pc);
+                mem.write(registers.sp, registers.pc);
                 registers.pc = address;
             } else { // conditional calls
                 u8 condition = (byte1 >> 3) & 0b11;
@@ -644,7 +644,7 @@ u8 Core::op_tree() {
                 if ((condition == 0 && !zero_flag) || (condition == 1 && zero_flag) ||
                     (condition == 2 && !carry_flag) || (condition == 3 && carry_flag)) {
                     registers.sp -= 2;
-                    mem->write(registers.sp, registers.pc);
+                    mem.write(registers.sp, registers.pc);
                     registers.pc = address;
                     ticks += 12;
                 }
@@ -655,7 +655,7 @@ u8 Core::op_tree() {
     } else if ((byte1 >> 5) == 0b111) { // stack and heap operations
         if (((byte1 & 0b1111) == 0b1000)) { // both instructions add an immediate to sp
             registers.flags &= 0b00111111; // set zero and subtraction flags
-            s8 operandValue = std::bit_cast<s8>(mem->read(registers.pc++));
+            s8 operandValue = std::bit_cast<s8>(mem.read(registers.pc++));
             u16 result = registers.sp + operandValue;
             if ((((registers.sp & 0xF) + (operandValue & 0xF)) > 0xF)) registers.flags |= 0b00100000;
             else registers.flags &= 0b11011111;
@@ -674,16 +674,16 @@ u8 Core::op_tree() {
         } else {
             u16 address = 0;
             if ((byte1 & 0b1111) == 0b0000) { // load to and from imm8
-                address = 0xFF00 + (mem->read(registers.pc++));
+                address = 0xFF00 + (mem.read(registers.pc++));
             } else if ((byte1 & 0b1111) == 0b0010) { // c register
                 address = 0xFF00 + (registers.gpr.n.c);
             } else if ((byte1 & 0b1111) == 0b1010) {
-                address = mem->read(registers.pc++);
-                address = address + (mem->read(registers.pc++) << 8);
+                address = mem.read(registers.pc++);
+                address = address + (mem.read(registers.pc++) << 8);
             }
             if ((byte1 >> 4) == 0xE) {
-                mem->write(address, registers.gpr.n.a);
-            } else registers.gpr.n.a = mem->read(address);
+                mem.write(address, registers.gpr.n.a);
+            } else registers.gpr.n.a = mem.read(address);
         }
     }
     registers.flags &= 0xF0;
@@ -696,7 +696,7 @@ u8 Core::op_tree() {
 }
 
 u8 Core::cb_op() {
-    u8 byte2 = mem->read(registers.pc++);
+    u8 byte2 = mem.read(registers.pc++);
     u8 dst = byte2 & 0b111;
     u16 hl = 0;
     if (dst == 6) {
@@ -712,7 +712,7 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 check = (registers.gpr.r[dst] >> bit) & 0b1;
             } else {
-                check = (mem->read(hl) >> bit) & 0b1;
+                check = (mem.read(hl) >> bit) & 0b1;
             }
             if (check == 0) {
                 registers.flags |= 0b10000000;
@@ -727,9 +727,9 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] &= mask;
             } else {
-                u8 operand = mem->read(hl);
+                u8 operand = mem.read(hl);
                 operand &= mask;
-                mem->write(hl, operand);
+                mem.write(hl, operand);
             }
         } else { // set bit
             u8 bit = (byte2 >> 3) & 0b111;
@@ -737,16 +737,16 @@ u8 Core::cb_op() {
             if (dst != 6) {
                 registers.gpr.r[dst] |= mask;
             } else {
-                u8 operand = mem->read(hl);
+                u8 operand = mem.read(hl);
                 operand |= mask;
-                mem->write(hl, operand);
+                mem.write(hl, operand);
             }
         }
     } else if ((byte2 >> 5) == 0) { // rotates
             registers.flags &= 0b10011111; // set subtraction and half carry
             u8 operand = 0;
             if (dst == 6) {
-                operand = mem->read(hl);
+                operand = mem.read(hl);
             } else operand = registers.gpr.r[dst];
         if (((byte2 >> 3) & 0b1) == 0) { // left rotate
             u8 msb = (operand >> 7) & 0b1;
@@ -757,7 +757,7 @@ u8 Core::cb_op() {
                 msb = carry_flag;
             }
             if (dst == 6) {
-                mem->write(hl, (u8)((operand << 1) + msb));
+                mem.write(hl, (u8)((operand << 1) + msb));
             } else {
                 registers.gpr.r[dst] = (operand << 1) + msb;
             }
@@ -772,7 +772,7 @@ u8 Core::cb_op() {
                 lsb = carry_flag;
             }
             if (dst == 6) {
-                mem->write(hl, (u8)((operand >> 1) + (lsb << 7)));
+                mem.write(hl, (u8)((operand >> 1) + (lsb << 7)));
             } else {
                 registers.gpr.r[dst] = (operand >> 1) + (lsb << 7);
             }
@@ -783,10 +783,10 @@ u8 Core::cb_op() {
         if ((byte2 >> 3) == 0b00110) { // swap
             registers.flags &= 0b10001111; // reset all flags except zero
             if (dst == 6) {
-                u8 operand = mem->read(hl);
+                u8 operand = mem.read(hl);
                 u8 lower = operand & 0xF;
                 u8 higher = operand >> 4;
-                mem->write(hl, (u8)((lower << 4) + higher));
+                mem.write(hl, (u8)((lower << 4) + higher));
                 if (operand == 0) registers.flags |= 0b10000000;
                 else registers.flags &= 0b01111111;
 
@@ -802,13 +802,13 @@ u8 Core::cb_op() {
             registers.flags &= 0b10011111; // set subtraction and half carry
             u8 operand = 0;
             if (dst == 6) {
-                operand = mem->read(hl);
+                operand = mem.read(hl);
             } else operand = registers.gpr.r[dst];
             u8 msb = (operand >> 7) & 0b1;
             if (msb == 1) registers.flags |= 0b00010000;
             else registers.flags &= 0b11101111;
             if (dst == 6) {
-                mem->write(hl, (u8)((operand << 1)));
+                mem.write(hl, (u8)((operand << 1)));
             } else {
                 registers.gpr.r[dst] = (operand << 1);
             }
@@ -819,7 +819,7 @@ u8 Core::cb_op() {
             registers.flags &= 0b10011111; // set subtraction and half carry
             u8 operand = 0;
             if (dst == 6) {
-                operand = mem->read(hl);
+                operand = mem.read(hl);
             } else operand = registers.gpr.r[dst];
             u8 lsb = operand & 0b1;
             if (lsb == 1) registers.flags |= 0b00010000;
@@ -830,7 +830,7 @@ u8 Core::cb_op() {
                 operand &= 0b01111111;
             }
             if (dst == 6) {
-                mem->write(hl, (u8)((operand)));
+                mem.write(hl, (u8)((operand)));
             } else {
                 registers.gpr.r[dst] = (operand);
             }
