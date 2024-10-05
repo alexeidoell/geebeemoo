@@ -1,4 +1,4 @@
-
+build/
 testroms/
 compile_commands.json
 .cache/
