@@ -167,7 +167,7 @@ u8 APU::period_clock() {
     } else {
         ch1.period_timer += 1;
     }
-    for (int i = 0; i < 2; ++i) {
+    for (auto i = 0; i < 2; ++i) {
         if (ch3.period_timer == 0x7FF) {
             ch3.period_timer = mem.ppu_read(0xFF1D) + ((mem.ppu_read(0xFF1E) & 0b111) << 8);
             if (ch3.duty_step == 31) ch3.duty_step = 0;

@@ -89,7 +89,7 @@ void GB::runEmu(char* filename) {
         SDL_PauseAudioDevice(dev, 0);
     
     frameStart = std::chrono::high_resolution_clock::now();
-    const static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
+    constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
@@ -140,7 +140,7 @@ void GB::runEmu(char* filename) {
         }
         SDL_UpdateWindowSurface(window);
         frameTime = std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();
-        if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
+        //if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
         frame += 1;
         frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";

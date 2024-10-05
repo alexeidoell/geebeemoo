@@ -1,5 +1,4 @@
 #include <bit>
-#include <memory>
 #include <lib/types.h>
 #include <mmu.h>
 #include <core.h>

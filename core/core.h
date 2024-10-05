@@ -2,7 +2,6 @@
 
 #include <lib/types.h>
 #include <mmu.h>
-#include <memory>
 
 union GPRRegs {
     struct {
