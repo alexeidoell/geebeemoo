@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstring>
 
-u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
+void PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
     u16 line = 0;
     u16 mask = 0;
     line = 0;
@@ -66,7 +66,6 @@ u16 PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object
 
         }
     }
-    return 0;
 }
 
 u8 PPU::getTileByte(u16 index) { // 2 dots
@@ -112,7 +111,7 @@ u16 PPU::winPixelFetcher() {
     return tileAddress;
 }
 
-u8 PPU::ppuLoop(u8 ticks) {
+void PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
     statInterruptHandler();
     u8 currentLine = mem.ppu_read(0xFF44); // ly register 
@@ -289,7 +288,6 @@ u8 PPU::ppuLoop(u8 ticks) {
     //std::cout << (int)currentLineDots << " " << (int)mem.ppu_read(0xFF44) << " " << ppuState << '\n';
     mem.ppu_write(0xFF41, (u8)((mem.ppu_read(0xFF41) & (u8)0b11111100) | (u8)ppuState));
     //assert(finishedLineDots == currentLineDots);
-    return 0;
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {
@@ -309,11 +307,7 @@ u8 PPU::pixelPicker() {
     }
 }
 
-u8 PPU::modeSwitch() {
-    return 0;
-}
-
-u8 PPU::oamScan(u16 address) { // 2 dots
+void PPU::oamScan(u16 address) { // 2 dots
     u8 currentLine = mem.ppu_read(0xFF44); // ly register    
     u8 objY_pos = mem.ppu_read(address);
     Object obj(objY_pos, mem.ppu_read(address + 1), mem.ppu_read(address + 2), mem.ppu_read(address + 3), address - 0xFE00);
@@ -333,7 +327,6 @@ u8 PPU::oamScan(u16 address) { // 2 dots
             }
         }
     }
-    return 0;
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
@@ -344,7 +337,7 @@ void PPU::setPixel(u8 w, u8 h, u8 pixel) {
     *pixelAddress = colors[pixel];
 }
 
-u8 PPU::statInterruptHandler() {
+void PPU::statInterruptHandler() {
     bool prevIRQ = statIRQ;
     if (mem.ppu_read(0xFF45) == 0 && mem.ppu_read(0xFF44) == 153 && currentLineDots > 4 && (mem.ppu_read(0xFF41) & 0b1000000) > 0) {
             statIRQ = true;
@@ -370,5 +363,4 @@ u8 PPU::statInterruptHandler() {
     if (!prevIRQ && statIRQ) {
         mem.ppu_write(0xFF0F, (u8)(mem.ppu_read(0xFF0F) | 0b10));
     }
-    return 0;
 }

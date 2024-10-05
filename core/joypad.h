@@ -9,5 +9,5 @@ private:
 public:
     u8 getButton();
     u8 getDpad();
-    u8 pollPresses(SDL_Event& event);
+    void pollPresses(SDL_Event& event);
 };

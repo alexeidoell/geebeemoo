@@ -77,17 +77,17 @@ private:
     u8 ch4_tick = 0;
 public:
     APU(MMU& mem) : mem(mem) {};
-    u8 period_clock();
-    u8 initAPU();
-    u8 triggerCH2();
-    u8 triggerCH1();
-    u8 triggerCH3();
-    u8 triggerCH4();
+    void period_clock();
+    void initAPU();
+    void triggerCH2();
+    void triggerCH1();
+    void triggerCH3();
+    void triggerCH4();
     float getSample();
     u8 getNibble();
-    u8 lfsrClock();
-    u8 envelopeAdjust();
-    u8 lengthAdjust();
-    u8 periodSweep();
-    u8 disableChannel(u8 channel);
+    void lfsrClock();
+    void envelopeAdjust();
+    void lengthAdjust();
+    void periodSweep();
+    void disableChannel(u8 channel);
 };

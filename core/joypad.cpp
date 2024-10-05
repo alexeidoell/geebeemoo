@@ -1,7 +1,7 @@
 #include <joypad.h>
 #include <SDL2/SDL_events.h>
 
-u8 Joypad::pollPresses(SDL_Event& event) {
+void Joypad::pollPresses(SDL_Event& event) {
     if (event.type == SDL_KEYDOWN) {
         switch (event.key.keysym.sym) {
         case SDLK_DOWN:
@@ -61,7 +61,6 @@ u8 Joypad::pollPresses(SDL_Event& event) {
             break;
         }
     }
-    return 0;
 }
 
 u8 Joypad::getButton() {

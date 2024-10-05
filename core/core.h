@@ -25,7 +25,7 @@ public: // need to change a lot of these to private
     bool halt_bug = false;
     gbRegisters registers; 
     MMU& mem;
-    u8 bootup();
+    void bootup();
     u8 op_tree();
     u8 cb_op();
     Core(MMU& mem) : mem(mem) {};

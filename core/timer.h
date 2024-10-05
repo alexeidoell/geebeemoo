@@ -10,6 +10,6 @@ class Timer {
     public:
         Timer(MMU& mem) 
             : mem(mem) {}
-        u8 div_inc();
+        void div_inc();
         s8 tima_inc();
 };

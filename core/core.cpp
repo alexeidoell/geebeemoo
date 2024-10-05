@@ -4,7 +4,7 @@
 #include <core.h>
 
 
-u8 Core::bootup() {
+void Core::bootup() {
     // set registers and memory to 0x100 state
     registers.gpr.n.a = 0x01;
     registers.flags = 0xB0;
@@ -24,6 +24,10 @@ u8 Core::bootup() {
     mem.write(0xFF07, (u8)0xF8);
     mem.write(0xFF47, (u8)0xFC);
     mem.write(0xFF48, (u16)0x0000);
+
+    // need to add the rest of the boot up process
+    // maybe memmove a static const array based on
+    // dmg or cgb?
 
     mem.write(0xFF10, (u8)0x80);
     mem.write(0xFF11, (u8)0xBF);
@@ -46,8 +50,6 @@ u8 Core::bootup() {
     mem.write(0xFF24, (u8)0x77);
     mem.write(0xFF25, (u8)0xF3);
     mem.write(0xFF26, (u8)0xF1);
-
-    return 0;
 }
 
 u8 Core::op_tree() {

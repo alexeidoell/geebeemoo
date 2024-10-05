@@ -8,7 +8,7 @@ constexpr u32 MAX_BUFFER = 4096;
 
 
 // digusting code
-u8 APU::period_clock() {
+void APU::period_clock() {
     float sample = 0;
     float volume = mem.ppu_read(0xFF24) & 0b111; // currently only taking right ear volume into account
     volume = (volume + 1) / 8;
@@ -192,7 +192,6 @@ u8 APU::period_clock() {
     } else {
         ch4_tick += 1;
     }
-    return 0;
 }
 
 float APU::getSample() {
@@ -217,15 +216,14 @@ float APU::getSample() {
     return sample;
 }
 
-u8 APU::initAPU() {
+void APU::initAPU() {
     triggerCH1();
     triggerCH2();
     triggerCH3();
     triggerCH4();
-    return 0;
 }
 
-u8 APU::triggerCH2() {
+void APU::triggerCH2() {
     ch2.enabled = true;
     mem.ppu_write(0xFF26, (u8)(mem.ppu_read(0xFF26) | 0b10));
     ch2.internal_volume = mem.ppu_read(0xFF17) >> 4;
@@ -233,10 +231,9 @@ u8 APU::triggerCH2() {
     ch2.env_dir = 1 & (mem.ppu_read(0xFF17) >> 3);
     ch2.env_sweep_tick = 0;
     ch2.duty_step = 0;
-    return 0;
 }
 
-u8 APU::triggerCH1() {
+void APU::triggerCH1() {
     ch1.enabled = true;
     mem.ppu_write(0xFF26, (u8)(mem.ppu_read(0xFF26) | 0b1));
     ch1.internal_volume = mem.ppu_read(0xFF12) >> 4;
@@ -245,19 +242,17 @@ u8 APU::triggerCH1() {
     ch1.env_dir = 1 & (mem.ppu_read(0xFF12) >> 3);
     ch1.env_sweep_tick = 0;
     ch1.duty_step = 0;
-    return 0;
 }
 
-u8 APU::triggerCH3() {
+void APU::triggerCH3() {
     ch3.enabled = true;
     mem.ppu_write(0xFF26, (u8)(mem.ppu_read(0xFF26) | 0b100));
     ch3.internal_volume = mem.ppu_read(0xFF1C) >> 5;
     ch3.length_timer = mem.ppu_read(0xFF1B);
     ch3.duty_step = 1;
-    return 0;
 }
 
-u8 APU::triggerCH4() {
+void APU::triggerCH4() {
     ch4.enabled = true;
     mem.ppu_write(0xFF26, (u8)(mem.ppu_read(0xFF26) | 0b1000));
     ch4.internal_volume = mem.ppu_read(0xFF21) >> 4;
@@ -272,10 +267,9 @@ u8 APU::triggerCH4() {
     ch4.lfsr = 0;
     ch4.duty_step = 0;
     ch4.output = 0;
-    return 0;
 }
 
-u8 APU::envelopeAdjust() {
+void APU::envelopeAdjust() {
     apu_div = 0;
     ch4.env_sweep_tick += 1;
     ch2.env_sweep_tick += 1;
@@ -305,10 +299,9 @@ u8 APU::envelopeAdjust() {
         }
     }
 
-    return 0;
 }
 
-u8 APU::lengthAdjust() {
+void APU::lengthAdjust() {
     if ((mem.ppu_read(0xFF14) & 0b1000000) > 0) {
         ch1.length_timer -= 1;
         if (ch1.length_timer == 0) {
@@ -334,10 +327,9 @@ u8 APU::lengthAdjust() {
         }
     }
 
-    return 0;
 }
 
-u8 APU::periodSweep() {
+void APU::periodSweep() {
     ch1.pulse_timer += 1;
     if (ch1.pulse_timer != 0 && ch1.pulse_timer == ch1.pulse_pace) {
         u16 current_period =  mem.ppu_read(0xFF13) + ((mem.ppu_read(0xFF14) & 0b111) << 8);
@@ -357,10 +349,9 @@ u8 APU::periodSweep() {
         ch1.pulse_pace = mem.ppu_read(0xFF10) >> 4;
         ch1.pulse_timer = 0;
     }
-    return 0;
 }
 
-u8 APU::disableChannel(u8 channel) {
+void APU::disableChannel(u8 channel) {
     switch (channel) {
         case 1:
             ch1.enabled = false;
@@ -379,7 +370,6 @@ u8 APU::disableChannel(u8 channel) {
             mem.ppu_write(0xFF26, (u8)(mem.ppu_read(0xFF26) & 0b11110111));
             break;
     }
-    return 0;
 }
 
 u8 APU::getNibble() {
@@ -392,7 +382,7 @@ u8 APU::getNibble() {
     return byte;
 }
 
-u8 APU::lfsrClock() {
+void APU::lfsrClock() {
     u8 bit0 = 0, bit1 = 0, new_bit = 0;
     bit0 = ch4.lfsr & 0b1;
     bit1 = (ch4.lfsr >> 1) & 0b1;
@@ -409,7 +399,5 @@ u8 APU::lfsrClock() {
     } else {
         ch4.output = ch4.internal_volume;
     }
-
     ch4.lfsr >>= 1;
-    return 0;
 }

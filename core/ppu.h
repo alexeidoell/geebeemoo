@@ -54,9 +54,8 @@ class PPU {
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
-        u16 combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object);
+        void combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object);
         u8 pixelPicker();
-        u8 modeSwitch();
         PPUState& ppuState;
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
@@ -67,13 +66,13 @@ class PPU {
         FIFO fifoFlags;
         Window window;
         std::array<u8, 23040> frameBuffer = { 0 };
-        u8 oamScan(u16 address);
+        void oamScan(u16 address);
         bool firstTile = true;
         void setPixel(u8 w, u8 h, u8 pixel);
         SDL_Surface *surface;
         bool newTile = true;
         s16 finishedLineDots = 0;
-        u8 statInterruptHandler();
+        void statInterruptHandler();
         bool statIRQ = false;
     public:
         s16 currentLineDots = 0; // need to keep track of state between
@@ -85,6 +84,6 @@ class PPU {
         PPU(MMU& mem, SDL_Surface* surface) 
         :mem(mem), ppuState(mem.ppuState), surface(surface) {
         } // this feels gross
-        u8 ppuLoop(u8 ticks);
+        void ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer();
 };
