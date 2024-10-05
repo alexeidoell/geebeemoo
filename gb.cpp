@@ -82,7 +82,7 @@ void GB::runEmu(char* filename) {
     want.freq = 48000;
     want.format = AUDIO_F32;
     want.channels = 1;
-    want.samples = 4096;
+    want.samples = 1024;
     want.callback = &callback;
     want.userdata = &apu;
 

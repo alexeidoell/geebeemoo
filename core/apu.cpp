@@ -4,6 +4,8 @@
 #include <mmu.h>
 #include <types.h>
 
+constexpr u32 MAX_BUFFER = 4096;
+
 
 // digusting code
 u8 APU::period_clock() {
@@ -85,16 +87,16 @@ u8 APU::period_clock() {
     u8 ch1_wave_duty = mem->ppu_read(0xFF11) >> 6;
     sample_counter += 48000;
     if (sample_counter >= 1048576) {
-        if (ch2.buffer.size() >= 8192) {
+        if (ch2.buffer.size() >= MAX_BUFFER) {
             ch2.buffer.pop();
         }
-        if (ch1.buffer.size() >= 8192) {
+        if (ch1.buffer.size() >= MAX_BUFFER) {
             ch1.buffer.pop();
         }
-        if (ch3.buffer.size() >= 8192) {
+        if (ch3.buffer.size() >= MAX_BUFFER) {
             ch3.buffer.pop();
         }
-        if (ch4.buffer.size() >= 8192) {
+        if (ch4.buffer.size() >= MAX_BUFFER) {
             ch4.buffer.pop();
         }
         if ((mem->ppu_read(0xFF26) & 0b10000000) == 0) {
