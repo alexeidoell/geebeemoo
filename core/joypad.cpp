@@ -3,40 +3,62 @@
 
 u8 Joypad::pollPresses(SDL_Event& event) {
     if (event.type == SDL_KEYDOWN) {
-        if (event.key.keysym.sym == SDLK_DOWN) {
-            dpadState &= 0b0111;
-        } else if (event.key.keysym.sym == SDLK_UP) {
-            dpadState &= 0b1011;
-        } else if (event.key.keysym.sym == SDLK_LEFT) {
-            dpadState &= 0b1101;
-        } else if (event.key.keysym.sym == SDLK_RIGHT) {
-            dpadState &= 0b1110;
-        } else if (event.key.keysym.sym == SDLK_x) {
-            buttonState &= 0b1110;
-        } else if (event.key.keysym.sym == SDLK_z) {
-            buttonState &= 0b1101;
-        } else if (event.key.keysym.sym == SDLK_m) {
-            buttonState &= 0b1011;
-        } else if (event.key.keysym.sym == SDLK_n) {
-            buttonState &= 0b0111;
+        switch (event.key.keysym.sym) {
+        case SDLK_DOWN:
+             dpadState &= 0b0111;
+             break;
+        case SDLK_UP:
+             dpadState &= 0b1011;
+             break;
+        case SDLK_LEFT:
+             dpadState &= 0b1101;
+             break;
+        case SDLK_RIGHT:
+             dpadState &= 0b1110;
+             break;
+        case SDLK_x:
+             buttonState &= 0b1110;
+             break;
+        case SDLK_z:
+             buttonState &= 0b1101;
+             break;
+        case SDLK_m:
+             buttonState &= 0b1011;
+             break;
+        case SDLK_n:
+             buttonState &= 0b0111;
+             break;
+        default:
+             break;
         }
     } else if (event.type == SDL_KEYUP) {
-         if (event.key.keysym.sym == SDLK_DOWN) {
+        switch (event.key.keysym.sym) {
+        case SDLK_DOWN:
             dpadState |= 0b1000;
-        } else if (event.key.keysym.sym == SDLK_UP) {
+            break;
+        case SDLK_UP:
             dpadState |= 0b0100;
-        } else if (event.key.keysym.sym == SDLK_LEFT) {
+            break;
+        case SDLK_LEFT:
             dpadState |= 0b0010;
-        } else if (event.key.keysym.sym == SDLK_RIGHT) {
+            break;
+        case SDLK_RIGHT:
             dpadState |= 0b0001;
-        } else if (event.key.keysym.sym == SDLK_x) {
+            break;
+        case SDLK_x:
             buttonState |= 0b0001;
-        } else if (event.key.keysym.sym == SDLK_z) {
+            break;
+        case SDLK_z:
             buttonState |= 0b0010;
-        } else if (event.key.keysym.sym == SDLK_m) {
+            break;
+        case SDLK_m:
             buttonState |= 0b0100;
-        } else if (event.key.keysym.sym == SDLK_n) {
+            break;
+        case SDLK_n:
             buttonState |= 0b1000;
+            break;
+        default:
+            break;
         }
     }
     return 0;

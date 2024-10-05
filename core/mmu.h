@@ -1,6 +1,5 @@
 #pragma once
 #include <array>
-#include <fstream>
 #include <memory>
 #include <string_view>
 #include <vector>
@@ -26,14 +25,14 @@ private:
     bool oam_state = false;
     u8 oam_offset = 0;
     u16 oam_address = 0;
-    std::shared_ptr<Joypad> joypad;
+    Joypad& joypad;
     std::unique_ptr<MBC> mbc;
     std::string save_file;
     std::string temp_file;
 public:
     u8 channel_trigger = 0;
 
-    MMU(std::shared_ptr<Joypad> joypad) : joypad(std::move(joypad)) {};
+    MMU(Joypad& joypad) : joypad(joypad) {};
 
     PPUState ppuState = mode2;
     u32 load_cart(std::string_view filename);

@@ -4,12 +4,12 @@
 
 class Timer {
     private:
-        std::shared_ptr<MMU> mem;
+        MMU& mem;
         bool tima_flag = false;
         u8 tima_val = 0;
     public:
-        Timer(std::shared_ptr<MMU> memPtr) 
-            : mem(std::move(memPtr)) {}
+        Timer(MMU& mem) 
+            : mem(mem) {}
         u8 div_inc();
         s8 tima_inc();
 };

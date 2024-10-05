@@ -25,10 +25,10 @@ public: // need to change a lot of these to private
     bool halt_flag = false;
     bool halt_bug = false;
     gbRegisters registers; 
-    std::shared_ptr<MMU> mem;
+    MMU& mem;
     u8 bootup();
     u8 op_tree();
     u8 cb_op();
-    Core(std::shared_ptr<MMU> memPtr) : mem(std::move(memPtr)) {};
+    Core(MMU& mem) : mem(mem) {};
 };
 
