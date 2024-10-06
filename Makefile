@@ -14,7 +14,7 @@ BUILD_DIR = build/
 all: $(EXECUTABLES)
 
 clean:
-	rm -rf $(EXECUTABLES) build/
+	rm -rf $(EXECUTABLES) log.txt build/
 
 $(BUILD_DIR) :
 	mkdir -p $@
