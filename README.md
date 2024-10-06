@@ -11,7 +11,7 @@ Gameboy emulator written in C++ using SDL2.
 | MBC1 support | :white_check_mark: |
 | Cycle (mostly) accurate PPU emulation | :white_check_mark: |
 | Support for battery backed SRAM | :white_check_mark: |
-| Audio support | :interrobang: |
+| Audio support | :white_check_mark: |
 | CGB emulation | :white_square_button: |
 | Further MBC support | :white_square_button: |
 | GUI built in Qt | :white_square_button: |
