@@ -24,29 +24,31 @@ u8 Core::op_tree() {
 	3,3,2,0,0,4,2,4,4,1,4,0,0,0,2,4,
 	3,3,2,1,0,4,2,4,3,2,4,1,0,0,2,4 };
 
-    u8 byte1 = mem.read(registers.pc++);
-    u8 ticks = tick_chart[byte1] * 4;
-    u8 operand;
-    u8 result;
-    u8 imm_byte1;
-    u8 imm_byte2;
-    u8 msb;
-    u8 lsb;
-    u16 hl;
-    u16 dword_operand;
-    u16 dword_result;
-    u16 address;
-    s8 offset;
-    bool zero_flag;
-    bool carry_flag;
-    bool half_carry_flag;
-    bool subtraction_flag;
+    u8 byte1 = 0;
+    u8 ticks = 4;
+    u8 operand = 0;
+    u8 result = 0;
+    u8 imm_byte1 = 0;
+    u8 imm_byte2 = 0;
+    u8 msb = 0;
+    u8 lsb = 0;
+    u16 hl = 0;
+    u16 dword_operand = 0;
+    u16 dword_result = 0;
+    u16 address = 0;
+    s8 offset = 0;
+    bool zero_flag = false;
+    bool carry_flag = false;
+    bool half_carry_flag = false;;
+    bool subtraction_flag = false;
+    bool ei_op = false;
 
     // halt handling
 
 
     // interrupt handling
-    //bool ei_op = false;
+    ticks = tick_chart[byte1] * 4;
+    byte1 = mem.read(registers.pc++);
 
     switch (byte1) { // is this even worth it...
     case 0x00: // NOP
