@@ -96,7 +96,7 @@ u8 Core::op_tree() {
         registers.gpr.n.a = (registers.gpr.n.a << 1) + msb;
         break;
     case 0x08: // LD [a16], SP
-        u16 address = mem.read(registers.pc++);
+        address = mem.read(registers.pc++);
         address = address + (mem.read(registers.pc++) << 8);
         mem.write(address, registers.sp);
         break;
