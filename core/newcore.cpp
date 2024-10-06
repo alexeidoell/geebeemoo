@@ -26,7 +26,21 @@ u8 Core::op_tree() {
 
     u8 byte1 = mem.read(registers.pc++);
     u8 ticks = tick_chart[byte1] * 4;
-
+    u8 operand;
+    u8 result;
+    u8 imm_byte1;
+    u8 imm_byte2;
+    u8 msb;
+    u8 lsb;
+    u16 hl;
+    u16 dword_operand;
+    u16 dword_result;
+    u16 address;
+    s8 offset;
+    bool zero_flag;
+    bool carry_flag;
+    bool half_carry_flag;
+    bool subtraction_flag;
 
     // halt handling
 
@@ -36,132 +50,441 @@ u8 Core::op_tree() {
 
     switch (byte1) { // is this even worth it...
     case 0x00: // NOP
+        registers.pc++;
         break;
     case 0x01: // LD BC, n16
+        imm_byte1 = mem.read(registers.pc++);
+        imm_byte2 = mem.read(registers.pc++);
+        registers.gpr.n.c = imm_byte1;
+        registers.gpr.n.b = imm_byte2;
         break;
     case 0x02: // LD [BC], A
+        address = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0x03: // INC BC
+        dword_result = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+        dword_result += 1;
+        registers.gpr.n.b = dword_result >> 8;
+        registers.gpr.n.c = dword_result & 0xFF;
         break;
     case 0x04: // INC B
+        registers.flags &= 0b10111111; // set subtraction flag
+        if ((registers.gpr.n.b & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.b += 1;
+        if ((registers.gpr.n.b & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.b &= 0xFF;
         break;
     case 0x05: // DEC B
+        registers.flags |= 0b01000000; // set subtraction flag
+        if ((registers.gpr.n.b & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.b -= 1;
+        if ((registers.gpr.n.b & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.b &= 0xFF;
         break;
     case 0x06: // LD B, n8
+        registers.gpr.n.b = mem.read(registers.pc++);
         break;
     case 0x07: // RLCA
+        msb = (registers.gpr.n.a >> 7) & 0b1;
+        if (msb == 1) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.a = (registers.gpr.n.a << 1) + msb;
         break;
     case 0x08: // LD [a16], SP
+        u16 address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
+        mem.write(address, registers.sp);
         break;
     case 0x09: // ADD HL, BC 
+        registers.flags &= 0b10111111; // set subtraction flag
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        dword_operand = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+        dword_result = hl + dword_operand;
+        if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if ((hl + dword_operand) > 0xFFFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.l = dword_result & 0xFF;
+        registers.gpr.n.h = dword_result >> 8;
         break;
     case 0x0A: // LD A, [BC]
+        address = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0x0B: // DEC BC
+        dword_result = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+        dword_result -= 1;
+        registers.gpr.n.b = dword_result >> 8;
+        registers.gpr.n.c = dword_result & 0xFF;
         break;
     case 0x0C: // INC C
+        registers.flags &= 0b10111111; // set subtraction flag
+        if ((registers.gpr.n.c & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.c += 1;
+        if ((registers.gpr.n.c & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.c &= 0xFF;
         break;
     case 0x0D: // DEC C
+        registers.flags |= 0b01000000; // set subtraction flag
+        if ((registers.gpr.n.c & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.c -= 1;
+        if ((registers.gpr.n.c & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.c &= 0xFF;
         break;
     case 0x0E: // LD C, n8
+        registers.gpr.n.c = mem.read(registers.pc++);
         break;
     case 0x0F: // RRCA
+        lsb = registers.gpr.n.a & 0b1;
+        if (lsb == 1) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.a = (registers.gpr.n.a >> 1) + (lsb << 7);
         break;
     case 0x10: // STOP
+        registers.pc++;
         break;
     case 0x11: // LD DE, n16
+        imm_byte1 = mem.read(registers.pc++);
+        imm_byte2 = mem.read(registers.pc++);
+        registers.gpr.n.e = imm_byte1;
+        registers.gpr.n.d = imm_byte2;
         break;
     case 0x12: // LD [DE], A
+        address = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0x13: // INC DE
+        dword_result = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+        dword_result += 1;
+        registers.gpr.n.d = dword_result >> 8;
+        registers.gpr.n.e = dword_result & 0xFF;
         break;
     case 0x14: // INC D
+        registers.flags &= 0b10111111; // set subtraction flag
+        if ((registers.gpr.n.d & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.d += 1;
+        if ((registers.gpr.n.d & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.d &= 0xFF;
         break;
     case 0x15: // DEC D
+        registers.flags |= 0b01000000; // set subtraction flag
+        if ((registers.gpr.n.d & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.d -= 1;
+        if ((registers.gpr.n.d & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.d &= 0xFF;
         break;
     case 0x16: // LD D, n8
+        registers.gpr.n.d = mem.read(registers.pc++);
         break;
     case 0x17: // RLA
+        msb = (registers.gpr.n.a >> 7) & 0b1;
+        carry_flag = (registers.flags >> 4) & 0b1;
+        if (msb == 1) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.a = (registers.gpr.n.a << 1) + carry_flag;
         break;
     case 0x18: // JR e8
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        registers.pc += offset;
         break;
     case 0x19: // ADD HL, DE 
+        registers.flags &= 0b10111111; // set subtraction flag
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        dword_operand = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+        dword_result = hl + dword_operand;
+        if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if ((hl + dword_operand) > 0xFFFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.l = dword_result & 0xFF;
+        registers.gpr.n.h = dword_result >> 8;
         break;
     case 0x1A: // LD A, [DE]
+        address = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0x1B: // DEC DE
+        dword_result = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+        dword_result -= 1;
+        registers.gpr.n.d = dword_result >> 8;
+        registers.gpr.n.e = dword_result & 0xFF;
         break;
     case 0x1C: // INC E
+        registers.flags &= 0b10111111; // set subtraction flag
+        if ((registers.gpr.n.e & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.e += 1;
+        if ((registers.gpr.n.e & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.e &= 0xFF;
         break;
     case 0x1D: // DEC E
+        registers.flags |= 0b01000000; // set subtraction flag
+        if ((registers.gpr.n.e & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.e -= 1;
+        if ((registers.gpr.n.e & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.e &= 0xFF;
         break;
     case 0x1E: // LD E, n8
+        registers.gpr.n.e = mem.read(registers.pc++);
         break;
     case 0x1F: // RRA
+        lsb = registers.gpr.n.a & 0b1;
+        carry_flag = (registers.flags >> 4) & 0b1;
+        if (lsb == 1) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.a = (registers.gpr.n.a >> 1) + (carry_flag << 7);
         break;
     case 0x20: // JR NZ, e8
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (!zero_flag) {
+            registers.pc += offset;
+        }
         break;
     case 0x21: // LD HL, n16
+        imm_byte1 = mem.read(registers.pc++);
+        imm_byte2 = mem.read(registers.pc++);
+        registers.gpr.n.l = imm_byte1;
+        registers.gpr.n.h = imm_byte2;
         break;
     case 0x22: // LD [HL+], A
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        address = hl;
+        hl += 1;
+        registers.gpr.n.h = hl >> 8;
+        registers.gpr.n.l = hl & 0xFF;
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0x23: // INC HL
+        dword_result = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        dword_result += 1;
+        registers.gpr.n.h = dword_result >> 8;
+        registers.gpr.n.l = dword_result & 0xFF;
         break;
     case 0x24: // INC H
+        registers.flags &= 0b10111111;
+        if ((registers.gpr.n.h & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.h += 1;
+        if ((registers.gpr.n.h & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.h &= 0xFF;
         break;
     case 0x25: // DEC H
+        registers.flags |= 0b01000000;
+        if ((registers.gpr.n.h & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.h -= 1;
+        if ((registers.gpr.n.h & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.h &= 0xFF;
         break;
     case 0x26: // LD H, n8
+        registers.gpr.n.h = mem.read(registers.pc++);
         break;
     case 0x27: // DAA
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        half_carry_flag = ((registers.flags >> 5) & 0b1) == 1;
+        subtraction_flag = ((registers.flags >> 6) & 0b1) == 1;
+        if (!subtraction_flag) { // addition adjust
+            if (carry_flag || registers.gpr.n.a > 0x99) { 
+                registers.flags |= 0b00010000;
+                registers.gpr.n.a += 0x60;
+            } 
+            if (half_carry_flag || (registers.gpr.n.a & 0x0F) > 0x9) registers.gpr.n.a += 0x6;
+        } else { // subtraction adjust
+            if (carry_flag) registers.gpr.n.a -= 0x60;
+            if (half_carry_flag) registers.gpr.n.a -= 0x6;
+        }
+        if (registers.gpr.n.a == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.flags &= 0b11011111; 
         break;
     case 0x28: // JR Z, e8
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (zero_flag) {
+            registers.pc += offset;
+        }
         break;
     case 0x29: // ADD HL, HL 
+        registers.flags &= 0b10111111; // set subtraction flag
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        dword_operand = hl;
+        dword_result = hl + dword_operand;
+        if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if ((hl + dword_operand) > 0xFFFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.l = dword_result & 0xFF;
+        registers.gpr.n.h = dword_result >> 8;
         break;
     case 0x2A: // LD A, [HL+]
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        address = hl;
+        hl += 1;
+        registers.gpr.n.h = hl >> 8;
+        registers.gpr.n.l = hl & 0xFF;
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0x2B: // DEC HL
+        dword_result = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        dword_result -= 1;
+        registers.gpr.n.h = dword_result >> 8;
+        registers.gpr.n.l = dword_result & 0xFF;
         break;
     case 0x2C: // INC L
+        registers.flags &= 0b10111111;
+        if ((registers.gpr.n.l & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.l += 1;
+        if ((registers.gpr.n.l & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.l &= 0xFF;
         break;
     case 0x2D: // DEC L
+        registers.flags |= 0b01000000;
+        if ((registers.gpr.n.l & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.l -= 1;
+        if ((registers.gpr.n.l & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.l &= 0xFF;
         break;
     case 0x2E: // LD L, n8
+        registers.gpr.n.l = mem.read(registers.pc++);
         break;
     case 0x2F: // CPL
+        registers.gpr.n.a = ~registers.gpr.n.a; 
+        registers.flags |= 0b01100000;
         break;
     case 0x30: // JR NC, e8
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (!carry_flag) {
+            registers.pc += offset;
+        }
         break;
     case 0x31: // LD SP, n16
+        imm_byte1 = mem.read(registers.pc++);
+        imm_byte2 = mem.read(registers.pc++);
+        registers.sp = (imm_byte2 << 8) + imm_byte1;
         break;
     case 0x32: // LD [HL-], A
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        address = hl;
+        hl -= 1;
+        registers.gpr.n.h = hl >> 8;
+        registers.gpr.n.l = hl & 0xFF;
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0x33: // INC SP
+        registers.sp += 1;
         break;
     case 0x34: // INC [HL]
+        registers.flags &= 0b10111111;
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        operand = mem.read(hl);
+        if ((operand & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        operand += 1;
+        if ((operand & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        operand &= 0xFF;
+        mem.write(hl, operand);
         break;
     case 0x35: // DEC [HL]
+        registers.flags |= 0b01000000;
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        operand = mem.read(hl);
+        if ((operand & 0xF) == 0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        operand -= 1;
+        if ((operand & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        operand &= 0xFF;
+        mem.write(hl, operand);
         break;
     case 0x36: // LD [HL], n8
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        mem.write(hl, mem.read(registers.pc++));
         break;
     case 0x37: // SCF
+        registers.flags &= 0b10011111;
+        registers.flags |= 0b00010000;
         break;
     case 0x38: // JR C, e8
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (carry_flag) {
+            registers.pc += offset;
+        }
         break;
     case 0x39: // ADD HL, SP 
+        registers.flags &= 0b10111111; // set subtraction flag
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        dword_operand = registers.sp;
+        dword_result = hl + dword_operand;
+        if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if ((hl + dword_operand) > 0xFFFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        registers.gpr.n.l = dword_result & 0xFF;
+        registers.gpr.n.h = dword_result >> 8;
         break;
     case 0x3A: // LD A, [HL-]
+        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
+        address = hl;
+        hl -= 1;
+        registers.gpr.n.h = hl >> 8;
+        registers.gpr.n.l = hl & 0xFF;
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0x3B: // DEC SP
+        registers.sp -= 1;
         break;
     case 0x3C: // INC A
+        registers.flags &= 0b10111111;
+        if ((registers.gpr.n.a & 0xF) == 0xF) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.a += 1;
+        if ((registers.gpr.n.a & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a &= 0xFF;
         break;
     case 0x3D: // DEC A
+        registers.flags |= 0b01000000;
+        if ((registers.gpr.n.a & 0xF) == 0x0) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        registers.gpr.n.a -= 1;
+        if ((registers.gpr.n.a & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a &= 0xFF;
         break;
     case 0x3E: // LD A, n8
+        registers.gpr.n.a = mem.read(registers.pc++);
         break;
     case 0x3F: // CCF
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        registers.flags &= 0b10011111;
+        if (carry_flag) registers.flags &= 0b11101111;
+        else registers.flags |= 0b00010000;
         break;
     case 0x40: // LD B, B
         break;
