@@ -72,7 +72,7 @@ void GB::runEmu(char* filename) {
     bool first_frame = true;
     bool white = false;
 
-    std::ofstream log("log.txt", std::ofstream::trunc);
+    std::ofstream log("log2.txt", std::ofstream::trunc);
     u32 frame = 1;
     std::chrono::duration<double, std::micro> frameavg{};
 
@@ -102,7 +102,7 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
-            //doctor_log(frame, current_ticks, log, core, *mem);
+            doctor_log(frame, current_ticks, log, core, mem);
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem.get_oam()) {
@@ -140,7 +140,7 @@ void GB::runEmu(char* filename) {
         }
         SDL_UpdateWindowSurface(window);
         frameTime = std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();
-        //if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
+        if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
         frame += 1;
         frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
