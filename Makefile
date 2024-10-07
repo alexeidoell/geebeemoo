@@ -1,9 +1,10 @@
 CC = g++
 CPPFLAGS = -I.
-CFLAGS = -std=gnu++23 -Wall -pedantic -g -fPIC -Og -DDEBUG
+CFLAGS = -std=gnu++23 -Wall -pedantic -g -fPIC -Og
+# CFLAGS += -DDEBUG
 INCLUDES = -I. -Icore/ -Ilib/
 
-EXECUTABLES = oldmain
+EXECUTABLES = main
 
 CORE_FILES = mmu.cpp timer.cpp ppu.cpp joypad.cpp mbc.cpp apu.cpp
 CORE = $(CORE_FILES:%.cpp=build/%.o)

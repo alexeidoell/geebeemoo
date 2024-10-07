@@ -136,12 +136,11 @@ u8 Core::op_tree() {
     }
 
     // interrupt handling
-    ticks = tick_chart[byte1] * 4;
     byte1 = mem.read(registers.pc++);
+    ticks = tick_chart[byte1] * 4;
 
     switch (byte1) { // is this even worth it...
     case 0x00: // NOP
-        registers.pc++;
         break;
     case 0x01: // LD BC, n16
         imm_byte1 = mem.read(registers.pc++);
@@ -181,6 +180,7 @@ u8 Core::op_tree() {
         registers.gpr.n.b = mem.read(registers.pc++);
         break;
     case 0x07: // RLCA
+        registers.flags &= 0b00011111;
         msb = (registers.gpr.n.a >> 7) & 0b1;
         if (msb == 1) registers.flags |= 0b00010000;
         else registers.flags &= 0b11101111;
@@ -234,6 +234,7 @@ u8 Core::op_tree() {
         registers.gpr.n.c = mem.read(registers.pc++);
         break;
     case 0x0F: // RRCA
+        registers.flags &= 0b00011111;
         lsb = registers.gpr.n.a & 0b1;
         if (lsb == 1) registers.flags |= 0b00010000;
         else registers.flags &= 0b11101111;
@@ -280,6 +281,7 @@ u8 Core::op_tree() {
         registers.gpr.n.d = mem.read(registers.pc++);
         break;
     case 0x17: // RLA
+        registers.flags &= 0b00011111;
         msb = (registers.gpr.n.a >> 7) & 0b1;
         carry_flag = (registers.flags >> 4) & 0b1;
         if (msb == 1) registers.flags |= 0b00010000;
@@ -333,6 +335,7 @@ u8 Core::op_tree() {
         registers.gpr.n.e = mem.read(registers.pc++);
         break;
     case 0x1F: // RRA
+        registers.flags &= 0b00011111; // set all except carry to 0
         lsb = registers.gpr.n.a & 0b1;
         carry_flag = (registers.flags >> 4) & 0b1;
         if (lsb == 1) registers.flags |= 0b00010000;
@@ -343,6 +346,7 @@ u8 Core::op_tree() {
         offset = std::bit_cast<s8>(mem.read(registers.pc++));
         zero_flag = ((registers.flags >> 7) & 0b1) == 1;
         if (!zero_flag) {
+            ticks += 4;
             registers.pc += offset;
         }
         break;
@@ -408,6 +412,7 @@ u8 Core::op_tree() {
         offset = std::bit_cast<s8>(mem.read(registers.pc++));
         zero_flag = ((registers.flags >> 7) & 0b1) == 1;
         if (zero_flag) {
+            ticks += 4;
             registers.pc += offset;
         }
         break;
@@ -464,6 +469,7 @@ u8 Core::op_tree() {
         offset = std::bit_cast<s8>(mem.read(registers.pc++));
         carry_flag = ((registers.flags >> 4) & 0b1) == 1;
         if (!carry_flag) {
+            ticks += 4;
             registers.pc += offset;
         }
         break;
@@ -515,6 +521,7 @@ u8 Core::op_tree() {
         offset = std::bit_cast<s8>(mem.read(registers.pc++));
         carry_flag = ((registers.flags >> 4) & 0b1) == 1;
         if (carry_flag) {
+            ticks += 4;
             registers.pc += offset;
         }
         break;
@@ -971,7 +978,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x91: // SUB A, C
         registers.flags |= 0b01000000;
@@ -983,7 +990,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x92: // SUB A, D
         registers.flags |= 0b01000000;
@@ -995,7 +1002,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x93: // SUB A, E
         registers.flags |= 0b01000000;
@@ -1007,7 +1014,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x94: // SUB A, H
         registers.flags |= 0b01000000;
@@ -1019,7 +1026,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x95: // SUB A, L
         registers.flags |= 0b01000000;
@@ -1031,7 +1038,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x96: // SUB A, [HL]
         registers.flags |= 0b01000000;
@@ -1043,7 +1050,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x97: // SUB A, A
         registers.flags |= 0b01000000;
@@ -1055,7 +1062,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x98: // SBC A, B
         registers.flags |= 0b01000000;
@@ -1068,7 +1075,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x99: // SBC A, C
         registers.flags |= 0b01000000;
@@ -1081,7 +1088,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x9A: // SBC A, D
         registers.flags |= 0b01000000;
@@ -1094,7 +1101,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x9B: // SBC A, E
         registers.flags |= 0b01000000;
@@ -1107,7 +1114,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x9C: // SBC A, H
         registers.flags |= 0b01000000;
@@ -1120,7 +1127,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x9D: // SBC A, L
         registers.flags |= 0b01000000;
@@ -1133,7 +1140,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x9E: // SBC A, [HL]
         registers.flags |= 0b01000000;
@@ -1146,7 +1153,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0x9F: // SBC A, A
         registers.flags |= 0b01000000;
@@ -1159,7 +1166,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0xA0: // AND A, B
         registers.flags &= 0b10101111; // set subtraction and carry flag
@@ -1464,9 +1471,9 @@ u8 Core::op_tree() {
         break;
     case 0xC2: // JP NZ, a16
         zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (!zero_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             ticks += 4;
             registers.pc = address;
         }
@@ -1478,9 +1485,9 @@ u8 Core::op_tree() {
         break;
     case 0xC4: // CALL NZ, a16
         zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (!zero_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             ticks += 12;
@@ -1525,9 +1532,9 @@ u8 Core::op_tree() {
         break;
     case 0xCA: // JP Z, a16
         zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (zero_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             ticks += 4;
             registers.pc = address;
         }
@@ -1537,9 +1544,9 @@ u8 Core::op_tree() {
         break;
     case 0xCC: // CALL Z, a16
         zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (zero_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             ticks += 12;
@@ -1586,9 +1593,9 @@ u8 Core::op_tree() {
         break;
     case 0xD2: // JP NC, a16
         carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (!carry_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             ticks += 4;
             registers.pc = address;
         }
@@ -1597,9 +1604,9 @@ u8 Core::op_tree() {
         break;
     case 0xD4: // CALL NC, a16
         carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (!carry_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             ticks += 12;
@@ -1621,7 +1628,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0xD7: // RST $10
         registers.sp -= 2;
@@ -1645,9 +1652,9 @@ u8 Core::op_tree() {
         break;
     case 0xDA: // JP C, a16
         carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (carry_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             ticks += 4;
             registers.pc = address;
         }
@@ -1656,9 +1663,9 @@ u8 Core::op_tree() {
         break;
     case 0xDC: // CALL C, a16
         carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
         if (carry_flag) {
-            address = mem.read(registers.pc++);
-            address = address + (mem.read(registers.pc++) << 8);
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             ticks += 12;
@@ -1678,7 +1685,7 @@ u8 Core::op_tree() {
         else registers.flags &= 0b11101111;
         if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
         else registers.flags &= 0b01111111;
-        registers.gpr.n.a = result & 0xFF;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0xDF: // RST $18
         registers.sp -= 2;
@@ -1809,8 +1816,8 @@ u8 Core::op_tree() {
             if (((registers.sp & 0xFF) + (u8)offset) > 0xFF) registers.flags |= 0b00010000;
             else registers.flags &= 0b11101111;
         }
-        registers.gpr.n.l = result & 0xFF;
-        registers.gpr.n.h = result >> 8;
+        registers.gpr.n.l = dword_result & 0xFF;
+        registers.gpr.n.h = dword_result >> 8;
         break;
     case 0xF9: // LD SP, HL
         registers.sp = hl;

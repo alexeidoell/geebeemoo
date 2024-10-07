@@ -2,5 +2,6 @@ build/
 testroms/
 compile_commands.json
 .cache/
-log.txt
+newlog.txt
+oldlog.txt
 main
