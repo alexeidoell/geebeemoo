@@ -3,6 +3,53 @@
 #include <mmu.h>
 #include <core.h>
 
+void Core::bootup() {
+    // set registers and memory to 0x100 state
+    registers.gpr.n.a = 0x01;
+    registers.flags = 0xB0;
+    registers.gpr.n.b = 0x00;
+    registers.gpr.n.c = 0x13;
+    registers.gpr.n.d = 0x00;
+    registers.gpr.n.e = 0xD8;
+    registers.gpr.n.h = 0x01;
+    registers.gpr.n.l = 0x4D;
+    registers.pc  = 0x0100;
+    registers.sp  = 0xFFFE;
+    mem.write(0xFF00, (u8)0xCF);
+    mem.write(0xFF03, (u16)0xABCC);
+    mem.write(0xFF0F, (u8)0xE1);
+    mem.write(0xFF40, (u8)0x91);
+    mem.write(0xFF41, (u8)0x81);
+    mem.write(0xFF07, (u8)0xF8);
+    mem.write(0xFF47, (u8)0xFC);
+    mem.write(0xFF48, (u16)0x0000);
+
+    // need to add the rest of the boot up process
+    // maybe memmove a static const array based on
+    // dmg or cgb?
+
+    mem.write(0xFF10, (u8)0x80);
+    mem.write(0xFF11, (u8)0xBF);
+    mem.write(0xFF12, (u8)0xF3);
+    mem.write(0xFF13, (u8)0xFF);
+    mem.write(0xFF14, (u8)0xBF);
+    mem.write(0xFF16, (u8)0x3F);
+    mem.write(0xFF17, (u8)0x00);
+    mem.write(0xFF18, (u8)0xFF);
+    mem.write(0xFF19, (u8)0xBF);
+    mem.write(0xFF1A, (u8)0x7F);
+    mem.write(0xFF1B, (u8)0xFF);
+    mem.write(0xFF1C, (u8)0x9F);
+    mem.write(0xFF1D, (u8)0xFF);
+    mem.write(0xFF1E, (u8)0xBF);
+    mem.write(0xFF20, (u8)0xFF);
+    mem.write(0xFF21, (u8)0x00);
+    mem.write(0xFF22, (u8)0x00);
+    mem.write(0xFF23, (u8)0xBF);
+    mem.write(0xFF24, (u8)0x77);
+    mem.write(0xFF25, (u8)0xF3);
+    mem.write(0xFF26, (u8)0xF1);
+}
 
 u8 Core::op_tree() {
 
@@ -46,6 +93,47 @@ u8 Core::op_tree() {
 
     // halt handling
 
+    if (halt_bug) {
+
+    }
+
+    if (halt_flag) {
+        if (((mem.read(0xFFFF) & mem.read(0xFF0F)) != 0)) { // interrupt to be handled
+            halt_flag = false;
+        } else return ticks;
+    }
+
+    if (ime && (mem.read(0xFFFF) & mem.read(0xFF0F)) != 0) { // interrupt handling
+        ticks += 16;
+        if (((mem.read(0xFF0F) & 0b1) & (mem.read(0xFFFF) & 0b1)) != 0) { // vblank interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111110));
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            registers.pc = 0x40;
+        } else if (((mem.read(0xFF0F) & 0b10) & (mem.read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111101));
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            registers.pc = 0x48;
+        } else if (((mem.read(0xFF0F) & 0b100) & (mem.read(0xFFFF) & 0b100)) != 0) { // timer interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111011));
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            registers.pc = 0x50;
+        } else if (((mem.read(0xFF0F) & 0b1000) & (mem.read(0xFFFF) & 0b1000)) != 0) { // serial interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11110111));
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            registers.pc = 0x58;
+        } else if (((mem.read(0xFF0F) & 0b10000) & (mem.read(0xFFFF) & 0b10000)) != 0) { // joypad interrupt
+            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11101111));
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            registers.pc = 0x60;
+        }
+        ime = false;
+        return ticks;
+    }
 
     // interrupt handling
     ticks = tick_chart[byte1] * 4;
@@ -1362,90 +1450,297 @@ u8 Core::op_tree() {
         else registers.flags &= 0b01111111;
         break;
     case 0xC0: // RET NZ
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (!zero_flag) {
+            address = mem.read(registers.sp++);
+            address = address + (mem.read(registers.sp++) << 8);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xC1: // POP BC
+        registers.gpr.n.c = mem.read(registers.sp++);
+        registers.gpr.n.b = mem.read(registers.sp++);
         break;
     case 0xC2: // JP NZ, a16
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (!zero_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            ticks += 4;
+            registers.pc = address;
+        }
         break;
     case 0xC3: // JP a16
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
+        registers.pc = address;
         break;
     case 0xC4: // CALL NZ, a16
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (!zero_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xC5: // PUSH BC
+        dword_result = (registers.gpr.n.b << 8) + registers.gpr.n.c;
+        registers.sp -= 2;
+        mem.write(registers.sp, dword_result);
         break;
     case 0xC6: // ADD A, n8
+        registers.flags &= 0b10111111;
+        operand = mem.read(registers.pc++);
+        dword_result = registers.gpr.n.a + operand;
+        if ((((registers.gpr.n.a & 0xF) + (operand & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (dword_result > 0xFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0xC7: // RST $00
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x00;
         break;
     case 0xC8: // RET Z
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (zero_flag) {
+            address = mem.read(registers.sp++);
+            address = address + (mem.read(registers.sp++) << 8);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xC9: // RET
+        address = mem.read(registers.sp++);
+        address = address + (mem.read(registers.sp++) << 8);
+        registers.pc = address;
         break;
     case 0xCA: // JP Z, a16
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (zero_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            ticks += 4;
+            registers.pc = address;
+        }
         break;
     case 0xCB: // CB PREFIX
+        ticks += cb_op();
         break;
     case 0xCC: // CALL Z, a16
+        zero_flag = ((registers.flags >> 7) & 0b1) == 1;
+        if (zero_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xCD: // CALL a16
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = address;
         break;
     case 0xCE: // ADC A, n8
+        registers.flags &= 0b10111111;
+        operand = mem.read(registers.pc++);
+        carry_value = (registers.flags >> 4) & 0b1;
+        dword_result = registers.gpr.n.a + operand + carry_value;
+        if ((((registers.gpr.n.a & 0xF) + (operand & 0xF) + carry_value) > 0xF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (dword_result > 0xFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = dword_result & 0xFF;
         break;
     case 0xCF: // RST $08
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x08;
         break;
     case 0xD0: // RET NC
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (!carry_flag) {
+            address = mem.read(registers.sp++);
+            address = address + (mem.read(registers.sp++) << 8);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xD1: // POP DE
+        registers.gpr.n.e = mem.read(registers.sp++);
+        registers.gpr.n.d = mem.read(registers.sp++);
         break;
     case 0xD2: // JP NC, a16
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (!carry_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            ticks += 4;
+            registers.pc = address;
+        }
         break;
     case 0xD3: // invalid
         break;
     case 0xD4: // CALL NC, a16
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (!carry_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xD5: // PUSH DE
+        dword_result = (registers.gpr.n.d << 8) + registers.gpr.n.e;
+        registers.sp -= 2;
+        mem.write(registers.sp, dword_result);
         break;
     case 0xD6: // SUB A, n8
+        registers.flags |= 0b01000000;
+        operand = mem.read(registers.pc++);
+        dword_result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (dword_result > 0xFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xD7: // RST $10
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x10;
         break;
     case 0xD8: // RET C
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (carry_flag) {
+            address = mem.read(registers.sp++);
+            address = address + (mem.read(registers.sp++) << 8);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xD9: // RETI
+        address = mem.read(registers.sp++);
+        address = address + (mem.read(registers.sp++) << 8);
+        ime = true;
+        registers.pc = address;
         break;
     case 0xDA: // JP C, a16
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (carry_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            ticks += 4;
+            registers.pc = address;
+        }
         break;
     case 0xDB: // invalid
         break;
     case 0xDC: // CALL C, a16
+        carry_flag = ((registers.flags >> 4) & 0b1) == 1;
+        if (carry_flag) {
+            address = mem.read(registers.pc++);
+            address = address + (mem.read(registers.pc++) << 8);
+            registers.sp -= 2;
+            mem.write(registers.sp, registers.pc);
+            ticks += 12;
+            registers.pc = address;
+        }
         break;
     case 0xDD: // invalid
         break;
     case 0xDE: // SBC A, n8
+        registers.flags |= 0b01000000;
+        operand = mem.read(registers.pc++);
+        carry_value = (registers.flags >> 4) & 0b1;
+        dword_result = registers.gpr.n.a - operand - carry_value;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF) + carry_value))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (dword_result > 0xFF) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((dword_result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xDF: // RST $18
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x18;
         break;
     case 0xE0: // LDH [a8], A
+        address = 0xFF00 + mem.read(registers.pc++);
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0xE1: // POP HL
+        registers.gpr.n.l = mem.read(registers.sp++);
+        registers.gpr.n.h = mem.read(registers.sp++);
         break;
     case 0xE2: // LD [C], A
+        address = 0xFF00 + registers.gpr.n.c;
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0xE3: // invalid
         break;
     case 0xE4: // invalid
         break;
     case 0xE5: // PUSH HL
+        registers.sp -= 2;
+        mem.write(registers.sp, hl);
         break;
     case 0xE6: // AND A, n8
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = mem.read(registers.pc++);
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xE7: // RST $20
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x20;
         break;
     case 0xE8: // ADD SP, e8
+        registers.flags &= 0b00111111;
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        dword_result = registers.sp + offset;
+        if ((((registers.sp & 0xF) + (offset & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (offset >= 0) {
+            if (((registers.sp & 0xFF) + offset) > 0xFF) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+        } else { // negative operand I HATE THIS
+            if (((registers.sp & 0xFF) + (u8)offset) > 0xFF) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+        }
+        registers.sp = dword_result;
         break;
     case 0xE9: // JP HL
+        registers.pc = hl;
         break;
     case 0xEA: // LD [a16], A
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
+        mem.write(address, registers.gpr.n.a);
         break;
     case 0xEB: // invalid
         break;
@@ -1454,43 +1749,275 @@ u8 Core::op_tree() {
     case 0xED: // invalid
         break;
     case 0xEE: // XOR A, n8
+        registers.flags &= 0b10001111;
+        operand = mem.read(registers.pc++);
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xEF: // RST $28
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x28;
         break;
     case 0xF0: // LDH A, [a8]
+        address = 0xFF00 + mem.read(registers.pc++);
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0xF1: // POP AF
+        registers.flags = mem.read(registers.sp++);
+        registers.gpr.n.a = mem.read(registers.sp++);
         break;
     case 0xF2: // LD A, [C]
+        address = 0xFF00 + registers.gpr.n.c;
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0xF3: // DI
+        ime = false;
         break;
     case 0xF4: // invalid
         break;
     case 0xF5: // PUSH AF
+        dword_result = (registers.gpr.n.a << 8) + registers.flags;
+        registers.sp -= 2;
+        mem.write(registers.sp, dword_result);
         break;
     case 0xF6: // OR A, n8
+        registers.flags &= 0b10001111;
+        operand = mem.read(registers.pc++);
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xF7: // RST $30
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x30;
         break;
     case 0xF8: // LD HL, SP + e8
+        registers.flags &= 0b00111111; // set zero and subtraction flags
+        offset = std::bit_cast<s8>(mem.read(registers.pc++));
+        dword_result = registers.sp + offset;
+        if ((((registers.sp & 0xF) + (offset & 0xF)) > 0xF)) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (offset >= 0) {
+            if (((registers.sp & 0xFF) + offset) > 0xFF) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+        } else { // negative operand I HATE THIS
+            if (((registers.sp & 0xFF) + (u8)offset) > 0xFF) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+        }
+        registers.gpr.n.l = result & 0xFF;
+        registers.gpr.n.h = result >> 8;
         break;
     case 0xF9: // LD SP, HL
+        registers.sp = hl;
         break;
     case 0xFA: // LD A, [a16]
+        address = mem.read(registers.pc++);
+        address = address + (mem.read(registers.pc++) << 8);
+        registers.gpr.n.a = mem.read(address);
         break;
     case 0xFB: // EI
+        ei_op = true;
+        ei_set = true;
         break;
     case 0xFC: // invalid
         break;
     case 0xFD: // invalid
         break;
     case 0xFE: // CP A, n8
+        registers.flags |= 0b01000000;
+        operand = mem.read(registers.pc++);
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xFF: // RST $38
+        registers.sp -= 2;
+        mem.write(registers.sp, registers.pc);
+        registers.pc = 0x38;
         break;
     default:
             __builtin_unreachable();
     }
+
+    registers.flags &= 0xF0;
+    if (ei_set && !ei_op) {
+        ime = true;
+        ei_set = false;
+    }
     return ticks;
+}
+
+u8 Core::cb_op() {
+    u8 byte2 = mem.read(registers.pc++);
+    u8 dst = byte2 & 0b111;
+    u16 hl = 0;
+    if (dst == 6) {
+        hl = ((u16)registers.gpr.n.h << 8) + registers.gpr.n.l;
+    }
+
+    if ((byte2 >> 6) > 0) { // individual bit operations
+        if ((byte2 >> 6) == 1) { // bit test
+            registers.flags |= 0b00100000;
+            registers.flags &= 0b10111111;
+            u8 bit = (byte2 >> 3) & 0b111;
+            u8 check = 0;
+            if (dst != 6) {
+                check = (registers.gpr.r[dst] >> bit) & 0b1;
+            } else {
+                check = (mem.read(hl) >> bit) & 0b1;
+            }
+            if (check == 0) {
+                registers.flags |= 0b10000000;
+            } else registers.flags &= 0b01111111;
+        } else if ((byte2 >> 6) == 2) { // reset bit
+            u8 bit = (byte2 >> 3) & 0b111;
+            u8 mask = 0b11111110;
+            for (int i = 0; i < bit; ++i) {
+                mask <<= 1;
+                mask += 1;
+            }
+            if (dst != 6) {
+                registers.gpr.r[dst] &= mask;
+            } else {
+                u8 operand = mem.read(hl);
+                operand &= mask;
+                mem.write(hl, operand);
+            }
+        } else { // set bit
+            u8 bit = (byte2 >> 3) & 0b111;
+            u8 mask = 0b00000001 << bit;
+            if (dst != 6) {
+                registers.gpr.r[dst] |= mask;
+            } else {
+                u8 operand = mem.read(hl);
+                operand |= mask;
+                mem.write(hl, operand);
+            }
+        }
+    } else if ((byte2 >> 5) == 0) { // rotates
+            registers.flags &= 0b10011111; // set subtraction and half carry
+            u8 operand = 0;
+            if (dst == 6) {
+                operand = mem.read(hl);
+            } else operand = registers.gpr.r[dst];
+        if (((byte2 >> 3) & 0b1) == 0) { // left rotate
+            u8 msb = (operand >> 7) & 0b1;
+            u8 carry_flag = (registers.flags >> 4) & 0b1;
+            if (msb == 1) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            if ((byte2 >> 4) == 1) { // non carry rotate
+                msb = carry_flag;
+            }
+            if (dst == 6) {
+                mem.write(hl, (u8)((operand << 1) + msb));
+            } else {
+                registers.gpr.r[dst] = (operand << 1) + msb;
+            }
+            if ((((operand << 1) + msb) & 0xFF) == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+        } else { // right rotate
+            u8 lsb = operand & 0b1;
+            u8 carry_flag = (registers.flags >> 4) & 0b1;
+            if (lsb == 1) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            if ((byte2 >> 4) == 1) { // non carry rotate
+                lsb = carry_flag;
+            }
+            if (dst == 6) {
+                mem.write(hl, (u8)((operand >> 1) + (lsb << 7)));
+            } else {
+                registers.gpr.r[dst] = (operand >> 1) + (lsb << 7);
+            }
+            if ((((operand >> 1) + (lsb << 7)) & 0xFF) == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+        }
+    } else { // shifts and swap
+        if ((byte2 >> 3) == 0b00110) { // swap
+            registers.flags &= 0b10001111; // reset all flags except zero
+            if (dst == 6) {
+                u8 operand = mem.read(hl);
+                u8 lower = operand & 0xF;
+                u8 higher = operand >> 4;
+                mem.write(hl, (u8)((lower << 4) + higher));
+                if (operand == 0) registers.flags |= 0b10000000;
+                else registers.flags &= 0b01111111;
+
+            } else {
+                u8 lower = registers.gpr.r[dst] & 0xF;
+                u8 higher = registers.gpr.r[dst] >> 4;
+                registers.gpr.r[dst] = (lower << 4) + higher;
+                if (registers.gpr.r[dst] == 0) registers.flags |= 0b10000000;
+                else registers.flags &= 0b01111111;
+
+            }
+        } else if ((byte2 >> 3) == 0b00100) { // left shift
+            registers.flags &= 0b10011111; // set subtraction and half carry
+            u8 operand = 0;
+            if (dst == 6) {
+                operand = mem.read(hl);
+            } else operand = registers.gpr.r[dst];
+            u8 msb = (operand >> 7) & 0b1;
+            if (msb == 1) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            if (dst == 6) {
+                mem.write(hl, (u8)((operand << 1)));
+            } else {
+                registers.gpr.r[dst] = (operand << 1);
+            }
+            if (((operand << 1) & 0xFF) == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+
+        } else { // right shifts
+            registers.flags &= 0b10011111; // set subtraction and half carry
+            u8 operand = 0;
+            if (dst == 6) {
+                operand = mem.read(hl);
+            } else operand = registers.gpr.r[dst];
+            u8 lsb = operand & 0b1;
+            if (lsb == 1) registers.flags |= 0b00010000;
+            else registers.flags &= 0b11101111;
+            
+            operand = (s8)operand >> 1;
+            if (((byte2 >> 4) & 0b1) == 1) { // logical right shift
+                operand &= 0b01111111;
+            }
+            if (dst == 6) {
+                mem.write(hl, (u8)((operand)));
+            } else {
+                registers.gpr.r[dst] = (operand);
+            }
+            if (operand == 0) registers.flags |= 0b10000000;
+            else registers.flags &= 0b01111111;
+        }
+            
+
+    }
+    std::array<u8,0x100> tick_chart = {
+    2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,3,2,2,2,2,2,2,2,3,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2,
+	2,2,2,2,2,2,4,2,2,2,2,2,2,2,4,2 };
+
+    return tick_chart[byte2] * 4;
 }
