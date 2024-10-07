@@ -49,10 +49,9 @@ void GB::runEmu(char* filename) {
         return;
     }
 
-    SDL_Init(SDL_INIT_EVERYTHING);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
-
-    SDL_Window* window = SDL_CreateWindow("test window", SDL_WINDOWPOS_UNDEFINED,
+    SDL_Window* window = SDL_CreateWindow("Geebeemoo", SDL_WINDOWPOS_UNDEFINED,
                 SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
