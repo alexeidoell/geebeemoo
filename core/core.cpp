@@ -32,7 +32,7 @@ u8 Core::op_tree() {
     u8 imm_byte2 = 0;
     u8 msb = 0;
     u8 lsb = 0;
-    u16 hl = 0;
+    u16 hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
     u16 dword_operand = 0;
     u16 dword_result = 0;
     u16 address = 0;
@@ -104,7 +104,6 @@ u8 Core::op_tree() {
         break;
     case 0x09: // ADD HL, BC 
         registers.flags &= 0b10111111; // set subtraction flag
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         dword_operand = (registers.gpr.n.b << 8) + registers.gpr.n.c;
         dword_result = hl + dword_operand;
         if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
@@ -204,7 +203,6 @@ u8 Core::op_tree() {
         break;
     case 0x19: // ADD HL, DE 
         registers.flags &= 0b10111111; // set subtraction flag
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         dword_operand = (registers.gpr.n.d << 8) + registers.gpr.n.e;
         dword_result = hl + dword_operand;
         if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
@@ -266,7 +264,6 @@ u8 Core::op_tree() {
         registers.gpr.n.h = imm_byte2;
         break;
     case 0x22: // LD [HL+], A
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         address = hl;
         hl += 1;
         registers.gpr.n.h = hl >> 8;
@@ -327,7 +324,6 @@ u8 Core::op_tree() {
         break;
     case 0x29: // ADD HL, HL 
         registers.flags &= 0b10111111; // set subtraction flag
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         dword_operand = hl;
         dword_result = hl + dword_operand;
         if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
@@ -338,7 +334,6 @@ u8 Core::op_tree() {
         registers.gpr.n.h = dword_result >> 8;
         break;
     case 0x2A: // LD A, [HL+]
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         address = hl;
         hl += 1;
         registers.gpr.n.h = hl >> 8;
@@ -389,7 +384,6 @@ u8 Core::op_tree() {
         registers.sp = (imm_byte2 << 8) + imm_byte1;
         break;
     case 0x32: // LD [HL-], A
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         address = hl;
         hl -= 1;
         registers.gpr.n.h = hl >> 8;
@@ -401,7 +395,6 @@ u8 Core::op_tree() {
         break;
     case 0x34: // INC [HL]
         registers.flags &= 0b10111111;
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         operand = mem.read(hl);
         if ((operand & 0xF) == 0xF) registers.flags |= 0b00100000;
         else registers.flags &= 0b11011111;
@@ -413,7 +406,6 @@ u8 Core::op_tree() {
         break;
     case 0x35: // DEC [HL]
         registers.flags |= 0b01000000;
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         operand = mem.read(hl);
         if ((operand & 0xF) == 0) registers.flags |= 0b00100000;
         else registers.flags &= 0b11011111;
@@ -424,7 +416,6 @@ u8 Core::op_tree() {
         mem.write(hl, operand);
         break;
     case 0x36: // LD [HL], n8
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         mem.write(hl, mem.read(registers.pc++));
         break;
     case 0x37: // SCF
@@ -440,7 +431,6 @@ u8 Core::op_tree() {
         break;
     case 0x39: // ADD HL, SP 
         registers.flags &= 0b10111111; // set subtraction flag
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         dword_operand = registers.sp;
         dword_result = hl + dword_operand;
         if ((((hl & 0x0FFF) + (dword_operand & 0x0FFF)) > 0xFFF)) registers.flags |= 0b00100000;
@@ -451,7 +441,6 @@ u8 Core::op_tree() {
         registers.gpr.n.h = dword_result >> 8;
         break;
     case 0x3A: // LD A, [HL-]
-        hl = (registers.gpr.n.h << 8) + registers.gpr.n.l;
         address = hl;
         hl -= 1;
         registers.gpr.n.h = hl >> 8;
@@ -489,132 +478,199 @@ u8 Core::op_tree() {
         else registers.flags |= 0b00010000;
         break;
     case 0x40: // LD B, B
+        registers.gpr.n.b = registers.gpr.n.b; // idk if this is necessary
         break;
     case 0x41: // LD B, C
+        registers.gpr.n.b = registers.gpr.n.c;
         break;
     case 0x42: // LD B, D
+        registers.gpr.n.b = registers.gpr.n.d;
         break;
     case 0x43: // LD B, E
+        registers.gpr.n.b = registers.gpr.n.e;
         break;
     case 0x44: // LD B, H
+        registers.gpr.n.b = registers.gpr.n.h;
         break;
     case 0x45: // LD B, L
+        registers.gpr.n.b = registers.gpr.n.h;
         break;
     case 0x46: // LD B, [HL]
+        registers.gpr.n.b = mem.read(hl);
         break;
     case 0x47: // LD B, A
+        registers.gpr.n.b = registers.gpr.n.a;
         break;
     case 0x48: // LD C, B
+        registers.gpr.n.c = registers.gpr.n.b;
         break;
     case 0x49: // LD C, C
+        registers.gpr.n.c = registers.gpr.n.c;
         break;
     case 0x4A: // LD C, D
+        registers.gpr.n.c = registers.gpr.n.d;
         break;
     case 0x4B: // LD C, E
+        registers.gpr.n.c = registers.gpr.n.e;
         break;
     case 0x4C: // LD C, H
+        registers.gpr.n.c = registers.gpr.n.h;
         break;
     case 0x4D: // LD C, L
+        registers.gpr.n.c = registers.gpr.n.l;
         break;
     case 0x4E: // LD C, [HL]
+        registers.gpr.n.c = mem.read(hl);
         break;
     case 0x4F: // LD C, A
+        registers.gpr.n.c = registers.gpr.n.a;
         break;
     case 0x50: // LD D, B
+        registers.gpr.n.d = registers.gpr.n.b;
         break;
     case 0x51: // LD D, C
+        registers.gpr.n.d = registers.gpr.n.c;
         break;
     case 0x52: // LD D, D
+        registers.gpr.n.d = registers.gpr.n.d;
         break;
     case 0x53: // LD D, E
+        registers.gpr.n.d = registers.gpr.n.e;
         break;
     case 0x54: // LD D, H
+        registers.gpr.n.d = registers.gpr.n.h;
         break;
     case 0x55: // LD D, L
+        registers.gpr.n.d = registers.gpr.n.l;
         break;
     case 0x56: // LD D, [HL]
+        registers.gpr.n.d = mem.read(hl);
         break;
     case 0x57: // LD D, A
+        registers.gpr.n.d = registers.gpr.n.a;
         break;
     case 0x58: // LD E, B
+        registers.gpr.n.e = registers.gpr.n.b;
         break;
     case 0x59: // LD E, C
+        registers.gpr.n.e = registers.gpr.n.c;
         break;
     case 0x5A: // LD E, D
+        registers.gpr.n.e = registers.gpr.n.d;
         break;
     case 0x5B: // LD E, E
+        registers.gpr.n.e = registers.gpr.n.e;
         break;
     case 0x5C: // LD E, H
+        registers.gpr.n.e = registers.gpr.n.h;
         break;
     case 0x5D: // LD E, L
+        registers.gpr.n.e = registers.gpr.n.l;
         break;
     case 0x5E: // LD E, [HL]
+        registers.gpr.n.e = mem.read(hl);
         break;
     case 0x5F: // LD E, A
+        registers.gpr.n.e = registers.gpr.n.a;
         break;
     case 0x60: // LD H, B
+        registers.gpr.n.h = registers.gpr.n.b;
         break;
     case 0x61: // LD H, C
+        registers.gpr.n.h = registers.gpr.n.c;
         break;
     case 0x62: // LD H, D
+        registers.gpr.n.h = registers.gpr.n.d;
         break;
     case 0x63: // LD H, E
+        registers.gpr.n.h = registers.gpr.n.e;
         break;
     case 0x64: // LD H, H
+        registers.gpr.n.h = registers.gpr.n.h;
         break;
     case 0x65: // LD H, L
+        registers.gpr.n.h = registers.gpr.n.l;
         break;
     case 0x66: // LD H, [HL]
+        registers.gpr.n.h = mem.read(hl);
         break;
     case 0x67: // LD H, A
+        registers.gpr.n.h = registers.gpr.n.a;
         break;
     case 0x68: // LD L, B
+        registers.gpr.n.l = registers.gpr.n.b;
         break;
     case 0x69: // LD L, C
+        registers.gpr.n.l = registers.gpr.n.c;
         break;
     case 0x6A: // LD L, D
+        registers.gpr.n.l = registers.gpr.n.d;
         break;
     case 0x6B: // LD L, E
+        registers.gpr.n.l = registers.gpr.n.e;
         break;
     case 0x6C: // LD L, H
+        registers.gpr.n.l = registers.gpr.n.h;
         break;
     case 0x6D: // LD L, L
+        registers.gpr.n.l = registers.gpr.n.l;
         break;
     case 0x6E: // LD L, [HL]
+        registers.gpr.n.l = mem.read(hl);
         break;
     case 0x6F: // LD L, A
+        registers.gpr.n.l = registers.gpr.n.a;
         break;
     case 0x70: // LD [HL], B
+        mem.write(hl, registers.gpr.n.b);
         break;
     case 0x71: // LD [HL], C
+        mem.write(hl, registers.gpr.n.c);
         break;
     case 0x72: // LD [HL], D
+        mem.write(hl, registers.gpr.n.d);
         break;
     case 0x73: // LD [HL], E
+        mem.write(hl, registers.gpr.n.e);
         break;
     case 0x74: // LD [HL], H
+        mem.write(hl, registers.gpr.n.h);
         break;
     case 0x75: // LD [HL], L
+        mem.write(hl, registers.gpr.n.l);
         break;
     case 0x76: // HALT
+        // idk if this halt implementation is correct at all tbh
+        if (!ime && (mem.read(0xFFFF) & mem.read(0xFF0F)) != 0) { 
+            halt_bug = true;
+        } else halt_flag = true;           
         break;
     case 0x77: // LD [HL], A
+        mem.write(hl, registers.gpr.n.a);
         break;
     case 0x78: // LD A, B
+        registers.gpr.n.a = registers.gpr.n.b;
         break;
     case 0x79: // LD A, C
+        registers.gpr.n.a = registers.gpr.n.c;
         break;
     case 0x7A: // LD A, D
+        registers.gpr.n.a = registers.gpr.n.d;
         break;
     case 0x7B: // LD A, E
+        registers.gpr.n.a = registers.gpr.n.e;
         break;
     case 0x7C: // LD A, H
+        registers.gpr.n.a = registers.gpr.n.h;
         break;
     case 0x7D: // LD A, L
+        registers.gpr.n.a = registers.gpr.n.l;
         break;
     case 0x7E: // LD A, [HL]
+        registers.gpr.n.a = mem.read(hl);
         break;
     case 0x7F: // LD A, A
+        registers.gpr.n.a = registers.gpr.n.a;
         break;
     case 0x80: // ADD A, B
         break;
