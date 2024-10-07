@@ -54,7 +54,7 @@ u32 MMU::load_cart(std::string_view filename) {
         return cart_file.gcount();
     }
 }
-u8 MMU::read(u16 address) {
+u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
     if (address < 0x8000) {
         return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
     }

@@ -3,6 +3,8 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_video.h>
 #include <chrono>
 #include <lib/types.h>
 #include <core/mmu.h>
@@ -52,11 +54,12 @@ void GB::runEmu(char* filename) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
     SDL_Window* window = SDL_CreateWindow("Geebeemoo", SDL_WINDOWPOS_UNDEFINED,
-                SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
+                SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
     }
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_Surface* surface = SDL_GetWindowSurface(window);
     SDL_Event event;
 
