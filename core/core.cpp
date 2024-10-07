@@ -1074,68 +1074,292 @@ u8 Core::op_tree() {
         registers.gpr.n.a = result & 0xFF;
         break;
     case 0xA0: // AND A, B
+        registers.flags &= 0b10101111; // set subtraction and carry flag
+        registers.flags |= 0b00100000; // set half carry flag
+        operand = registers.gpr.n.b;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000; // zero flag
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA1: // AND A, C
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = registers.gpr.n.c;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA2: // AND A, D
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = registers.gpr.n.d;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA3: // AND A, E
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = registers.gpr.n.e;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA4: // AND A, H
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = registers.gpr.n.h;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA5: // AND A, L
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = registers.gpr.n.l;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA6: // AND A, [HL]
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = mem.read(hl);
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA7: // AND A, A
+        registers.flags &= 0b10101111;
+        registers.flags |= 0b00100000;
+        operand = registers.gpr.n.a;
+        result = registers.gpr.n.a & operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result;
         break;
     case 0xA8: // XOR A, B
+        registers.flags &= 0b10001111; // set subtraction, hc and carry flag
+        operand = registers.gpr.n.b;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000; // zero flag
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xA9: // XOR A, C
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.c;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xAA: // XOR A, D
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.d;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xAB: // XOR A, E
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.e;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xAC: // XOR A, H
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.h;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xAD: // XOR A, L
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.l;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xAE: // XOR A, [HL]
+        registers.flags &= 0b10001111;
+        operand = mem.read(hl);
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xAF: // XOR A, A
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.a;
+        result = registers.gpr.n.a ^ operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB0: // OR A, B
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.b;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB1: // OR A, C
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.c;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB2: // OR A, D
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.d;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB3: // OR A, E
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.e;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB4: // OR A, H
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.h;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB5: // OR A, L
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.l;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB6: // OR A, [HL]
+        registers.flags &= 0b10001111;
+        operand = mem.read(hl);
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB7: // OR A, A
+        registers.flags &= 0b10001111;
+        operand = registers.gpr.n.a;
+        result = registers.gpr.n.a | operand;
+        if (result == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
+        registers.gpr.n.a = result & 0xFF;
         break;
     case 0xB8: // CP A, B
+        registers.flags |= 0b01000000; // subtraction bit
+        operand = registers.gpr.n.b;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000; // carry bit
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000; // zero bit
+        else registers.flags &= 0b01111111;
         break;
     case 0xB9: // CP A, C
+        registers.flags |= 0b01000000;
+        operand = registers.gpr.n.c;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xBA: // CP A, D
+        registers.flags |= 0b01000000;
+        operand = registers.gpr.n.d;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xBB: // CP A, E
+        registers.flags |= 0b01000000;
+        operand = registers.gpr.n.e;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xBC: // CP A, H
+        registers.flags |= 0b01000000;
+        operand = registers.gpr.n.h;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xBD: // CP A, L
+        registers.flags |= 0b01000000;
+        operand = registers.gpr.n.l;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xBE: // CP A, [HL]
+        registers.flags |= 0b01000000;
+        operand = mem.read(hl);
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xBF: // CP A, A
+        registers.flags |= 0b01000000;
+        operand = registers.gpr.n.a;
+        result = registers.gpr.n.a - operand;
+        if ((((registers.gpr.n.a & 0xF) < (operand & 0xF)))) registers.flags |= 0b00100000;
+        else registers.flags &= 0b11011111;
+        if (operand > registers.gpr.n.a) registers.flags |= 0b00010000;
+        else registers.flags &= 0b11101111;
+        if ((result & 0xFF) == 0) registers.flags |= 0b10000000;
+        else registers.flags &= 0b01111111;
         break;
     case 0xC0: // RET NZ
         break;
