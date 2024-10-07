@@ -72,7 +72,11 @@ void GB::runEmu(char* filename) {
     bool first_frame = true;
     bool white = false;
 
-    std::ofstream log("log2.txt", std::ofstream::trunc);
+#ifdef OLD
+    std::ofstream log("oldlog.txt", std::ofstream::trunc);
+#else
+    std::ofstream log("newlog.txt", std::ofstream::trunc);
+#endif
     u32 frame = 1;
     std::chrono::duration<double, std::micro> frameavg{};
 
@@ -102,7 +106,9 @@ void GB::runEmu(char* filename) {
         while (current_ticks < maxTicks) {
             u16 div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
             u8 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
+#ifdef DEBUG
             doctor_log(frame, current_ticks, log, core, mem);
+#endif
             operation_ticks = core.op_tree();
             current_ticks += operation_ticks;
             if (mem.get_oam()) {
