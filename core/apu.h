@@ -1,3 +1,4 @@
+#include <SDL2/SDL_mutex.h>
 #include <algorithm>
 #include <condition_variable>
 #include <memory>
@@ -66,18 +67,20 @@ private:
         u16 clock_pace = 0;
         std::queue<float> buffer;
     } ch4;
-    std::mutex buffer_mutex;
+    SDL_mutex* buffer_lock;
     u32 sample_counter = 0;
     bool div_raised = false;
     u8 apu_div = 0;
     bool ch3_tick = false;
     u8 ch4_tick = 0;
     u32 buffer_size = 0;
-    std::condition_variable awaiting_buffer;
 public:
-    APU(MMU& mem) : mem(mem) {};
+    APU(MMU& mem) : mem(mem) {
+        buffer_lock = SDL_CreateMutex();
+    };
     ~APU() {
-        awaiting_buffer.notify_all();
+        // signal awaiting_buffer
+        SDL_DestroyMutex(buffer_lock);
     }
     void period_clock();
     void initAPU();
@@ -85,17 +88,14 @@ public:
     void triggerCH1();
     void triggerCH3();
     void triggerCH4();
-    float getSample(std::unique_lock<std::mutex>& lock);
+    float getSample();
     u8 getNibble();
     void lfsrClock();
     void envelopeAdjust();
     void lengthAdjust();
     void periodSweep();
     void disableChannel(u8 channel);
-    std::mutex& getMutex() {
-        return buffer_mutex;
-    }
-    std::condition_variable& getCond() {
-        return awaiting_buffer;
+    SDL_mutex* getMutex() {
+        return buffer_lock;
     }
 };

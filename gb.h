@@ -17,6 +17,7 @@ class GB {
     SDL_Window* window;
     SDL_Surface* surface;
     SDL_Event event;
+    SDL_AudioDeviceID dev;
 public:
     void runEmu(char* filename);
     void doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& mem);

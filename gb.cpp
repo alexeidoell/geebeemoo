@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_audio.h>
 #include <SDL2/SDL_events.h>
+#include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_opengl.h>
@@ -33,7 +34,7 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem) {
 }
 
 GB::~GB() {
-    apu.getCond().notify_all();
+    SDL_PauseAudioDevice(dev, 1);
     SDL_Quit();
 }
 
@@ -42,11 +43,12 @@ void callback(void* apu_ptr, u8* stream, int len) {
     float sample = 0;
     APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
     len /= sizeof(float); // LOL!!
-    std::unique_lock<std::mutex> lock(apu.getMutex());
+    SDL_LockMutex(apu.getMutex());
     for (auto i = 0; i < len; ++i) {
-        sample = apu.getSample(lock);
+        sample = apu.getSample();
         float_stream[i] = 0.1f * sample;
     }
+    SDL_UnlockMutex(apu.getMutex());
 
 }
 
@@ -88,7 +90,7 @@ void GB::runEmu(char* filename) {
     want.callback = &callback;
     want.userdata = &apu;
 
-    SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
+    dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
     SDL_PauseAudioDevice(dev, 0);
 
     core.bootup();
@@ -144,13 +146,13 @@ void GB::runEmu(char* filename) {
         } else if (white) {
             SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
-        SDL_UpdateWindowSurface(window);
         frameTime = std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();
         if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
         frame += 1;
         frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem.read(0xFF44) >= 153);
+        SDL_UpdateWindowSurface(window);
         frameStart = std::chrono::high_resolution_clock::now();
 
     } 
