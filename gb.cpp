@@ -19,7 +19,7 @@
 #include <bit>
 #include <thread>
 
-GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem) {
+GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_CreateMutex()) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
     window = SDL_CreateWindow("Geebeemoo", SDL_WINDOWPOS_UNDEFINED,
@@ -35,6 +35,7 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem) {
 
 GB::~GB() {
     SDL_PauseAudioDevice(dev, 1);
+    SDL_DestroyMutex(apu.getMutex());
     SDL_Quit();
 }
 

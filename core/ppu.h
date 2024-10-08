@@ -69,7 +69,7 @@ class PPU {
         void oamScan(u16 address);
         bool firstTile = true;
         void setPixel(u8 w, u8 h, u8 pixel);
-        SDL_Surface* surface;
+        SDL_Surface* surface = nullptr;
         bool newTile = true;
         s16 finishedLineDots = 0;
         void statInterruptHandler();

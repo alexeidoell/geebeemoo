@@ -146,7 +146,6 @@ void APU::period_clock() {
                 ch3.buffer.push(0);
             }
             if (ch4.enabled && ch4.dac) {
-                sample = ch4.output;
                 sample = 0 - (ch4.output * (1.0/0xF));
                 ch4.buffer.push(volume * sample);
             } else if (ch1.dac) {

@@ -7,7 +7,7 @@
 #include <types.h>
 #include <mmu.h>
 
-#define SDL_BUFFER_SIZE 1024
+constexpr u16 SDL_BUFFER_SIZE = 1024;
 
 constexpr float duty_cycle[4][8] = { // NOLINT
     {1,1,1,1,1,1,1,-1},
@@ -67,7 +67,7 @@ private:
         u16 clock_pace = 0;
         std::queue<float> buffer;
     } ch4;
-    SDL_mutex* buffer_lock;
+    SDL_mutex* buffer_lock = NULL;
     u32 sample_counter = 0;
     bool div_raised = false;
     u8 apu_div = 0;
@@ -75,13 +75,7 @@ private:
     u8 ch4_tick = 0;
     u32 buffer_size = 0;
 public:
-    APU(MMU& mem) : mem(mem) {
-        buffer_lock = SDL_CreateMutex();
-    };
-    ~APU() {
-        // signal awaiting_buffer
-        SDL_DestroyMutex(buffer_lock);
-    }
+    APU(MMU& mem, SDL_mutex* mutex) : mem(mem), buffer_lock(mutex) {};
     void period_clock();
     void initAPU();
     void triggerCH2();
