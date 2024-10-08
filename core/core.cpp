@@ -98,35 +98,35 @@ u8 Core::op_tree() {
     }
 
     if (halt_flag) {
-        if (((mem.read(0xFFFF) & mem.read(0xFF0F)) != 0)) { // interrupt to be handled
+        if (((mem.read(IE) & mem.read(IF)) != 0)) { // interrupt to be handled
             halt_flag = false;
         } else return ticks;
     }
 
-    if (ime && (mem.read(0xFFFF) & mem.read(0xFF0F)) != 0) { // interrupt handling
+    if (ime && (mem.read(IE) & mem.read(IF)) != 0) { // interrupt handling
         ticks += 16;
-        if (((mem.read(0xFF0F) & 0b1) & (mem.read(0xFFFF) & 0b1)) != 0) { // vblank interrupt
-            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111110));
+        if (((mem.read(IF) & 0b1) & (mem.read(IE) & 0b1)) != 0) { // vblank interrupt
+            mem.write(IF, (u8)(mem.read(IF) & 0b11111110));
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             registers.pc = 0x40;
-        } else if (((mem.read(0xFF0F) & 0b10) & (mem.read(0xFFFF) & 0b10)) != 0) { // lcd interrupt
-            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111101));
+        } else if (((mem.read(IF) & 0b10) & (mem.read(IE) & 0b10)) != 0) { // lcd interrupt
+            mem.write(IF, (u8)(mem.read(IF) & 0b11111101));
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             registers.pc = 0x48;
-        } else if (((mem.read(0xFF0F) & 0b100) & (mem.read(0xFFFF) & 0b100)) != 0) { // timer interrupt
-            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11111011));
+        } else if (((mem.read(IF) & 0b100) & (mem.read(IE) & 0b100)) != 0) { // timer interrupt
+            mem.write(IF, (u8)(mem.read(IF) & 0b11111011));
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             registers.pc = 0x50;
-        } else if (((mem.read(0xFF0F) & 0b1000) & (mem.read(0xFFFF) & 0b1000)) != 0) { // serial interrupt
-            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11110111));
+        } else if (((mem.read(IF) & 0b1000) & (mem.read(IE) & 0b1000)) != 0) { // serial interrupt
+            mem.write(IF, (u8)(mem.read(IF) & 0b11110111));
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             registers.pc = 0x58;
-        } else if (((mem.read(0xFF0F) & 0b10000) & (mem.read(0xFFFF) & 0b10000)) != 0) { // joypad interrupt
-            mem.write(0xFF0F, (u8)(mem.read(0xFF0F) & 0b11101111));
+        } else if (((mem.read(IF) & 0b10000) & (mem.read(IE) & 0b10000)) != 0) { // joypad interrupt
+            mem.write(IF, (u8)(mem.read(IF) & 0b11101111));
             registers.sp -= 2;
             mem.write(registers.sp, registers.pc);
             registers.pc = 0x60;
@@ -737,7 +737,7 @@ u8 Core::op_tree() {
         break;
     case 0x76: // HALT
         // idk if this halt implementation is correct at all tbh
-        if (!ime && (mem.read(0xFFFF) & mem.read(0xFF0F)) != 0) { 
+        if (!ime && (mem.read(IE) & mem.read(IF)) != 0) { 
             halt_bug = true;
         } else halt_flag = true;           
         break;

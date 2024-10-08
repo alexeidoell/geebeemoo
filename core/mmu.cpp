@@ -1,7 +1,4 @@
 #include <bit>
-#include <bitset>
-#include <cmath>
-#include <cstdio>
 #include <filesystem>
 #include <lib/types.h>
 #include <mmu.h>
@@ -72,7 +69,7 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
     if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
         return 0xFF;
     }
-    if (address == 0xFF00) {
+    if (address == JOYP) {
         u8 inputReg = mem[address];
         if ((inputReg & 0x30) == 0x10) { // buttons
             inputReg &= 0xF0;
@@ -89,16 +86,14 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
         }
         return inputReg | 0xC0;
     }
-    if (address == 0xFF01) {
+    if (address == SB) {
         return 0xFF;
     }
-    if (address == 0xFF23) {
+    if (address == NR44) {
         return ppu_read(0xFF23) | 0xBF;
     }
-    if (address == 0xFF4D) {
+    if (address == 0xFF4D) { // CGB speed switch
         return 0xFF;
-    }
-    if (address == 0xFF02) {
     }
     return mem[address];
 
@@ -129,36 +124,36 @@ u8 MMU::write(u16 address, u8 word) {
     } else if (address >= 0xFE00 && address < 0xFEA0 && (ppuState == mode2 || ppuState == mode3)) { 
         return 0;
     }
-    if (address == 0xFF19) {
+    if (address == NR24) {
         if (word > 0x70) {
             channel_trigger = 2;
         }
     }
-    if (address == 0xFF14) {
+    if (address == NR14) {
         if (word > 0x70) {
             channel_trigger = 1;
         }
     }
-    if (address == 0xFF23) {
+    if (address == NR44) {
         if (word > 0x70) {
             channel_trigger = 4;
         }
     }
-    if (address == 0xFF1E) {
+    if (address == NR34) {
         if (word > 0x70) {
             channel_trigger = 3;
         }
     }
-    if (address == 0xFF02) {
+    if (address == SC) {
            //std::cout << (char) mem[0xFF01];
     }
-    else if (address == 0xFF04) { // div register
+    else if (address == DIV) { // div register
                                   // this prevents normal writes
                                   // but the timer uses double writes 
                                   // so still has permission
-        write(0xFF03, (u16)0x00);
+        write(DIV_HIDDEN, (u16)0x00);
     }
-    else if (address == 0xFF46) {
+    else if (address == DMA_TRIGGER) {
         if (!oam_state) {
             oam_state = true;
             oam_address = word << 8;
@@ -198,7 +193,7 @@ u8 MMU::write(u16 address, u16 dword) {
     if (address == 0x2000) { 
         return 0;
     }
-    if (address == 0xFF46) {
+    if (address == DMA_TRIGGER) {
         // start oam transfer process
 
     } else {
