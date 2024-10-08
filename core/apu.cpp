@@ -87,6 +87,7 @@ void APU::period_clock() {
     u8 ch1_wave_duty = mem.ppu_read(NR11) >> 6;
     sample_counter += 48000;
     if (sample_counter >= 1048576) {
+        buffer_lock.lock();
         if (ch2.buffer.size() >= MAX_BUFFER) {
             ch2.buffer.pop();
         }
@@ -152,6 +153,7 @@ void APU::period_clock() {
             }
         }
         sample_counter -= 1048576;
+        buffer_lock.unlock();
     }
     if (ch2.period_timer == 0x7FF) {
         ch2.period_timer = mem.ppu_read(NR23) + ((mem.ppu_read(NR24) & 0b111) << 8);
@@ -195,6 +197,7 @@ void APU::period_clock() {
 }
 
 float APU::getSample() {
+    buffer_lock.lock();
     float sample = 0;
     if (ch2.buffer.size() > 0) {
         sample += ch2.buffer.front();
@@ -213,6 +216,7 @@ float APU::getSample() {
         ch4.buffer.pop();
     }
     sample /= 4;
+    buffer_lock.unlock();
     return sample;
 }
 

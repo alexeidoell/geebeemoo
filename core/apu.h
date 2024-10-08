@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <memory>
+#include <mutex>
 #include <queue>
 #include <types.h>
 #include <mmu.h>
@@ -61,10 +63,9 @@ struct channel4 {
     std::queue<float> buffer;
 };
 
-
-
 class APU {
 private:
+    std::mutex buffer_lock;
     u32 sample_counter = 0;
     channel1 ch1;
     channel2 ch2;
@@ -76,7 +77,8 @@ private:
     bool ch3_tick = false;
     u8 ch4_tick = 0;
 public:
-    APU(MMU& mem) : mem(mem) {};
+    APU(MMU& mem) : mem(mem) {
+    };
     void period_clock();
     void initAPU();
     void triggerCH2();
