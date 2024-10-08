@@ -59,7 +59,7 @@ void GB::runEmu(char* filename) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
     }
-    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    //SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     SDL_Surface* surface = SDL_GetWindowSurface(window);
     SDL_Event event;
 
