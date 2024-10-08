@@ -7,7 +7,24 @@
 #include <joypad.h>
 #include <mbc.h>
 
-enum DMG_HW_Registers {
+enum MEM_BLOCKS {
+    ROM_BANK_0 = 0x0,
+    ROM_BANK_N = 0x4,
+    VRAM = 0x8,
+    EXTERN_RAM = 0xA,
+    WRAM_BANK_0 = 0xC,
+    WRAM_BANK_N = 0xD
+};
+
+enum UPPER_MEM_BLOCKS {
+    ECHO_RAM = 0xE000,
+    OAM = 0xFE00,
+    UNUSABLE = 0xFEA0,
+    IO_REGS = 0xFF00,
+    HRAM = 0xFF80
+};
+
+enum DMG_HW_REGISTERS {
     JOYP = 0xFF00,
     SB = 0xFF01,
     SC = 0xFF02,
@@ -83,13 +100,11 @@ public:
     PPUState ppuState = mode2;
     u32 load_cart(std::string_view filename);
     u8 read(u16 address);
-    u8 write(u16 address, u8 word);
-    u8 write(u16 address, u16 dword);
+    void write(u16 address, u8 word);
+    void write(u16 address, u16 dword);
     u8 ppu_read(u16 address);
-    u8 ppu_write(u16 address, u8 word);
-    u8 ppu_write(u16 address, u16 dword);
-    u8 div_inc();
-    u8 tima_inc();
+    void ppu_write(u16 address, u8 word);
+    void ppu_write(u16 address, u16 dword);
     bool tima_tick = false;
     bool get_oam();
     u8 oam_transfer(u8 ticks);

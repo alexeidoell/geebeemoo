@@ -52,146 +52,178 @@ u32 MMU::load_cart(std::string_view filename) {
     }
 }
 u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
-    if (address < 0x8000) {
-        return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
-    }
-    if (address < 0xC000 && address >= 0xA000) {
-        if (!mbc->ram_enable) {
-            return 0xFF;
-        } else return cartridge.ram[mbc->mapper(address)];
-    }
-    if (address < 0xFF80 && oam_state) {
+    u8 word = 0;
+    if (address < HRAM && oam_state) {
         return 0xFF;
+    }
+    if (address >= OAM && address < UNUSABLE && (ppuState == mode2 || ppuState == mode3)) {
+        return 0xFF;
+    }
+    switch (address >> 12) {
+        case ROM_BANK_0:
+        case ROM_BANK_0 + 1:
+        case ROM_BANK_0 + 2:
+        case ROM_BANK_0 + 3:
+        case ROM_BANK_N:
+        case ROM_BANK_N + 1:
+        case ROM_BANK_N + 2:
+        case ROM_BANK_N + 3:
+            return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
+        case EXTERN_RAM:
+            if (!mbc->ram_enable) {
+                return 0xFF;
+            } else return cartridge.ram[mbc->mapper(address)];
+        case VRAM:
+        case VRAM + 1:
+            if (ppuState == mode3) {
+                return 0xFF;
+            } else {
+                return mem[address];
+            }
+        case WRAM_BANK_0:
+        case WRAM_BANK_N:
+            return mem[address];
+        default:
+            break;
+    }
+    switch (address) { // special registers
+        case JOYP:
+            word = mem[address];
+            if ((word & 0x30) == 0x10) { // buttons
+                word &= 0xF0;
+                word += joypad.getButton();
+            } else { // dpad
+                word &= 0xF0;
+                word += joypad.getDpad();
+                if ((word & 0b11) == 0) {
+                    word += 0b11;
+                }
+                if ((word & 0b1100) == 0) {
+                    word += 0b1100;
+                }
+            }
+            return word | 0xC0;
+        case SB:
+        case 0xFF4D: // CGB speed switch
+            return 0xFF;
+        case NR44:
+            return mem[NR44] | 0xBF;
+        default:
+            return mem[address];
+    }
+}
+void MMU::write(u16 address, u8 word) {
+    if (address < HRAM && oam_state) {
+        return;
+    } else if (address >= OAM && address < UNUSABLE && (ppuState == mode2 || ppuState == mode3)) { 
+        return;
+    }
+    switch (address >> 12) {
+        case ROM_BANK_0:
+        case ROM_BANK_0 + 1:
+        case ROM_BANK_0 + 2:
+        case ROM_BANK_0 + 3:
+        case ROM_BANK_N:
+        case ROM_BANK_N + 1:
+        case ROM_BANK_N + 2:
+        case ROM_BANK_N + 3:
+            if (1 == mbc->mbc_write(address, word)) { // ram disabled
+                                                      // this functionality should be moved into
+                                                      // the mbc so i can use composition for
+                                                      // different mbc features with 1 mbc model
+                std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
+                temp_save.write(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
+                std::filesystem::rename(temp_file, save_file);
+            }
+            return;
+        case EXTERN_RAM:
+            if (!mbc->ram_enable) {
+                return;
+            } else { 
+                u16 mapped_address = mbc->mapper(address);
+                cartridge.ram[mapped_address] = word;
+                return;
+            }
+        case VRAM:
+        case VRAM + 1:
+            if (ppuState == mode3) {
+                return;
+            }
+        case WRAM_BANK_0:
+        case WRAM_BANK_N:
+            mem[address] = word;
+            return;
+        default:
+            break;
+    }
+    switch (address) { // special cases
+        case NR14:
+            if (word > 0x7F) {
+                channel_trigger = 1;
+            }
+            mem[address] = word | 0x80;
+            return;
+        case NR24:
+            if (word > 0x7F) {
+                channel_trigger = 2;
+            }
+            mem[address] = word | 0x80;
+            return;
+        case NR34:
+            if (word > 0x7F) {
+                channel_trigger = 3;
+            }
+            mem[address] = word | 0x80;
+            return;
+        case NR44:
+            if (word > 0x7F) {
+                channel_trigger = 4;
+            }
+            mem[address] = word | 0x80;
+            return;
+        case SC:
+            //std::cout << (char) mem[0xFF01];
+            return;
+        case DIV:
+            write(DIV_HIDDEN, (u16)0x00);
+            return;
+        case DMA_TRIGGER:
+            if (!oam_state) {
+                oam_state = true;
+                oam_address = word << 8;
+            }
+            return;
+        default:
+            mem[address] = word;
+            return;
+    }
+}
+
+void MMU::write(u16 address, u16 dword) {
+    if (address < 0xFF80 && oam_state) {
+        return;
     }
     if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
-        return 0xFF;
+        return;
     }
     if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
-        return 0xFF;
+        return;
     }
-    if (address == JOYP) {
-        u8 inputReg = mem[address];
-        if ((inputReg & 0x30) == 0x10) { // buttons
-            inputReg &= 0xF0;
-            inputReg += joypad.getButton();
-        } else { // dpad
-            inputReg &= 0xF0;
-            inputReg += joypad.getDpad();
-            if ((inputReg & 0b11) == 0) {
-                inputReg += 0b11;
-            }
-            if ((inputReg & 0b1100) == 0) {
-                inputReg += 0b1100;
-            }
-        }
-        return inputReg | 0xC0;
+    if (address == 0x2000) { 
+        return;
     }
-    if (address == SB) {
-        return 0xFF;
-    }
-    if (address == NR44) {
-        return ppu_read(0xFF23) | 0xBF;
-    }
-    if (address == 0xFF4D) { // CGB speed switch
-        return 0xFF;
-    }
-    return mem[address];
-
-}
-u8 MMU::write(u16 address, u8 word) {
     if (address < 0x8000) { // mbc read
-        if (1 == mbc->mbc_write(address, word)) { // ram disabled
-            std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
-            temp_save.write(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
-            std::filesystem::rename(temp_file, save_file);
-        }
-        return 0;
+        return;
     }
     if (address < 0xC000 && address >= 0xA000) {
         if (!mbc->ram_enable) {
-            return 0;
-        } else { 
-            u16 mapped_address = mbc->mapper(address);
-            cartridge.ram[mapped_address] = word;
-            return 0;
-        }
-    }
-    if (address < 0xFF80 && oam_state) {
-        return 0;
-    }
-    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
-        return 0;
-    } else if (address >= 0xFE00 && address < 0xFEA0 && (ppuState == mode2 || ppuState == mode3)) { 
-        return 0;
-    }
-    if (address == NR24) {
-        if (word > 0x70) {
-            channel_trigger = 2;
-        }
-    }
-    if (address == NR14) {
-        if (word > 0x70) {
-            channel_trigger = 1;
-        }
-    }
-    if (address == NR44) {
-        if (word > 0x70) {
-            channel_trigger = 4;
-        }
-    }
-    if (address == NR34) {
-        if (word > 0x70) {
-            channel_trigger = 3;
-        }
-    }
-    if (address == SC) {
-           //std::cout << (char) mem[0xFF01];
-    }
-    else if (address == DIV) { // div register
-                                  // this prevents normal writes
-                                  // but the timer uses double writes 
-                                  // so still has permission
-        write(DIV_HIDDEN, (u16)0x00);
-    }
-    else if (address == DMA_TRIGGER) {
-        if (!oam_state) {
-            oam_state = true;
-            oam_address = word << 8;
-        }
-
-    }
-    else if (address == 0x2000) { // mbc 1 register
-
-    }
-    else mem[address] = word;
-    return 0;
-}
-
-u8 MMU::write(u16 address, u16 dword) {
-    if (address < 0x8000) { // mbc read
-        return 0;
-    }
-    if (address < 0xC000 && address >= 0xA000) {
-        if (!mbc->ram_enable) {
-            return 0;
+            return;
         } else { 
             u16 mapped_address = mbc->mapper(address);
             cartridge.ram[mapped_address] = (u8) dword & 0xFF;
             cartridge.ram[mapped_address + 1] = (u8) (dword >> 8);
-            return 0;
+            return;
         }
-    }
-    if (address < 0xFF80 && oam_state) {
-        return -1;
-    }
-    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
-        return 0;
-    }
-    if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
-        return 0;
-    }
-    if (address == 0x2000) { 
-        return 0;
     }
     if (address == DMA_TRIGGER) {
         // start oam transfer process
@@ -200,7 +232,7 @@ u8 MMU::write(u16 address, u16 dword) {
         mem[address] = (u8) (dword & 0xFF);
         mem[address + 1] = (u8) (dword >> 8);
     }
-    return 0;
+    return;
 }
 
 u8 MMU::ppu_read(u16 address) {
@@ -214,15 +246,13 @@ u8 MMU::ppu_read(u16 address) {
     }
     return mem[address];
 }
-u8 MMU::ppu_write(u16 address, u8 word) {
+void MMU::ppu_write(u16 address, u8 word) {
     mem[address] = word;
-    return 0;
 }
 
-u8 MMU::ppu_write(u16 address, u16 dword) {
+void MMU::ppu_write(u16 address, u16 dword) {
     mem[address] = (u8) (dword & 0xFF);
     mem[address + 1] = (u8) (dword >> 8);
-    return 0;
 }
 
 bool MMU::get_oam() {

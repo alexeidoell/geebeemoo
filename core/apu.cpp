@@ -4,7 +4,7 @@
 #include <mmu.h>
 #include <types.h>
 
-constexpr u32 MAX_BUFFER = 4096;
+constexpr u32 MAX_BUFFER = 8192;
 
 
 // digusting code

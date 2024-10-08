@@ -1,5 +1,3 @@
-#include <ios>
-#include <iostream>
 #include <lib/types.h>
 #include <mbc.h>
 
@@ -24,7 +22,7 @@ u8 MBC1::mbc_write(u16 address, u8 word) {
 u32 MBC1::mapper(u16 base_address)  {
     u32 mapped_address = 0;
     if (base_address < 0x4000) {
-        base_address = base_address & ~(((u16)0b11) << 14); // idk if this should be 13
+        base_address = base_address & ~(((u16)0b11) << 14);
         if (banking_mode == 1) {
             mapped_address += ((u32)ram_bank << 19);
         }
