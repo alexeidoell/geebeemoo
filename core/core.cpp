@@ -15,40 +15,40 @@ void Core::bootup() {
     registers.gpr.n.l = 0x4D;
     registers.pc  = 0x0100;
     registers.sp  = 0xFFFE;
-    mem.write(0xFF00, (u8)0xCF);
-    mem.write(0xFF03, (u16)0xABCC);
-    mem.write(0xFF0F, (u8)0xE1);
-    mem.write(0xFF40, (u8)0x91);
-    mem.write(0xFF41, (u8)0x81);
-    mem.write(0xFF07, (u8)0xF8);
-    mem.write(0xFF47, (u8)0xFC);
-    mem.write(0xFF48, (u16)0x0000);
+    mem.write(0xFF00, 0xCF);
+    mem.dwrite(0xFF03, 0xABCC);
+    mem.write(0xFF0F, 0xE1);
+    mem.write(0xFF40, 0x91);
+    mem.write(0xFF41, 0x81);
+    mem.write(0xFF07, 0xF8);
+    mem.write(0xFF47, 0xFC);
+    mem.dwrite(0xFF48, 0x0000);
 
     // need to add the rest of the boot up process
     // maybe memmove a static const array based on
     // dmg or cgb?
 
-    mem.write(0xFF10, (u8)0x80);
-    mem.write(0xFF11, (u8)0xBF);
-    mem.write(0xFF12, (u8)0xF3);
-    mem.write(0xFF13, (u8)0xFF);
-    mem.write(0xFF14, (u8)0xBF);
-    mem.write(0xFF16, (u8)0x3F);
-    mem.write(0xFF17, (u8)0x00);
-    mem.write(0xFF18, (u8)0xFF);
-    mem.write(0xFF19, (u8)0xBF);
-    mem.write(0xFF1A, (u8)0x7F);
-    mem.write(0xFF1B, (u8)0xFF);
-    mem.write(0xFF1C, (u8)0x9F);
-    mem.write(0xFF1D, (u8)0xFF);
-    mem.write(0xFF1E, (u8)0xBF);
-    mem.write(0xFF20, (u8)0xFF);
-    mem.write(0xFF21, (u8)0x00);
-    mem.write(0xFF22, (u8)0x00);
-    mem.write(0xFF23, (u8)0xBF);
-    mem.write(0xFF24, (u8)0x77);
-    mem.write(0xFF25, (u8)0xF3);
-    mem.write(0xFF26, (u8)0xF1);
+    mem.write(0xFF10, 0x80);
+    mem.write(0xFF11, 0xBF);
+    mem.write(0xFF12, 0xF3);
+    mem.write(0xFF13, 0xFF);
+    mem.write(0xFF14, 0xBF);
+    mem.write(0xFF16, 0x3F);
+    mem.write(0xFF17, 0x00);
+    mem.write(0xFF18, 0xFF);
+    mem.write(0xFF19, 0xBF);
+    mem.write(0xFF1A, 0x7F);
+    mem.write(0xFF1B, 0xFF);
+    mem.write(0xFF1C, 0x9F);
+    mem.write(0xFF1D, 0xFF);
+    mem.write(0xFF1E, 0xBF);
+    mem.write(0xFF20, 0xFF);
+    mem.write(0xFF21, 0x00);
+    mem.write(0xFF22, 0x00);
+    mem.write(0xFF23, 0xBF);
+    mem.write(0xFF24, 0x77);
+    mem.write(0xFF25, 0xF3);
+    mem.write(0xFF26, 0xF1);
 }
 
 u8 Core::op_tree() {
@@ -108,27 +108,27 @@ u8 Core::op_tree() {
         if (((mem.read(IF) & 0b1) & (mem.read(IE) & 0b1)) != 0) { // vblank interrupt
             mem.write(IF, (u8)(mem.read(IF) & 0b11111110));
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             registers.pc = 0x40;
         } else if (((mem.read(IF) & 0b10) & (mem.read(IE) & 0b10)) != 0) { // lcd interrupt
             mem.write(IF, (u8)(mem.read(IF) & 0b11111101));
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             registers.pc = 0x48;
         } else if (((mem.read(IF) & 0b100) & (mem.read(IE) & 0b100)) != 0) { // timer interrupt
             mem.write(IF, (u8)(mem.read(IF) & 0b11111011));
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             registers.pc = 0x50;
         } else if (((mem.read(IF) & 0b1000) & (mem.read(IE) & 0b1000)) != 0) { // serial interrupt
             mem.write(IF, (u8)(mem.read(IF) & 0b11110111));
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             registers.pc = 0x58;
         } else if (((mem.read(IF) & 0b10000) & (mem.read(IE) & 0b10000)) != 0) { // joypad interrupt
             mem.write(IF, (u8)(mem.read(IF) & 0b11101111));
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             registers.pc = 0x60;
         }
         ime = false;
@@ -189,7 +189,7 @@ u8 Core::op_tree() {
     case 0x08: // LD [a16], SP
         address = mem.read(registers.pc++);
         address = address + (mem.read(registers.pc++) << 8);
-        mem.write(address, registers.sp);
+        mem.dwrite(address, registers.sp);
         break;
     case 0x09: // ADD HL, BC 
         registers.flags &= 0b10111111; // set subtraction flag
@@ -1489,7 +1489,7 @@ u8 Core::op_tree() {
         address = address + (mem.read(registers.pc++) << 8);
         if (!zero_flag) {
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             ticks += 12;
             registers.pc = address;
         }
@@ -1497,7 +1497,7 @@ u8 Core::op_tree() {
     case 0xC5: // PUSH BC
         dword_result = (registers.gpr.n.b << 8) + registers.gpr.n.c;
         registers.sp -= 2;
-        mem.write(registers.sp, dword_result);
+        mem.dwrite(registers.sp, dword_result);
         break;
     case 0xC6: // ADD A, n8
         registers.flags &= 0b10111111;
@@ -1513,7 +1513,7 @@ u8 Core::op_tree() {
         break;
     case 0xC7: // RST $00
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x00;
         break;
     case 0xC8: // RET Z
@@ -1548,7 +1548,7 @@ u8 Core::op_tree() {
         address = address + (mem.read(registers.pc++) << 8);
         if (zero_flag) {
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             ticks += 12;
             registers.pc = address;
         }
@@ -1557,7 +1557,7 @@ u8 Core::op_tree() {
         address = mem.read(registers.pc++);
         address = address + (mem.read(registers.pc++) << 8);
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = address;
         break;
     case 0xCE: // ADC A, n8
@@ -1575,7 +1575,7 @@ u8 Core::op_tree() {
         break;
     case 0xCF: // RST $08
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x08;
         break;
     case 0xD0: // RET NC
@@ -1608,7 +1608,7 @@ u8 Core::op_tree() {
         address = address + (mem.read(registers.pc++) << 8);
         if (!carry_flag) {
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             ticks += 12;
             registers.pc = address;
         }
@@ -1616,7 +1616,7 @@ u8 Core::op_tree() {
     case 0xD5: // PUSH DE
         dword_result = (registers.gpr.n.d << 8) + registers.gpr.n.e;
         registers.sp -= 2;
-        mem.write(registers.sp, dword_result);
+        mem.dwrite(registers.sp, dword_result);
         break;
     case 0xD6: // SUB A, n8
         registers.flags |= 0b01000000;
@@ -1632,7 +1632,7 @@ u8 Core::op_tree() {
         break;
     case 0xD7: // RST $10
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x10;
         break;
     case 0xD8: // RET C
@@ -1667,7 +1667,7 @@ u8 Core::op_tree() {
         address = address + (mem.read(registers.pc++) << 8);
         if (carry_flag) {
             registers.sp -= 2;
-            mem.write(registers.sp, registers.pc);
+            mem.dwrite(registers.sp, registers.pc);
             ticks += 12;
             registers.pc = address;
         }
@@ -1689,7 +1689,7 @@ u8 Core::op_tree() {
         break;
     case 0xDF: // RST $18
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x18;
         break;
     case 0xE0: // LDH [a8], A
@@ -1710,7 +1710,7 @@ u8 Core::op_tree() {
         break;
     case 0xE5: // PUSH HL
         registers.sp -= 2;
-        mem.write(registers.sp, hl);
+        mem.dwrite(registers.sp, hl);
         break;
     case 0xE6: // AND A, n8
         registers.flags &= 0b10101111;
@@ -1723,7 +1723,7 @@ u8 Core::op_tree() {
         break;
     case 0xE7: // RST $20
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x20;
         break;
     case 0xE8: // ADD SP, e8
@@ -1765,7 +1765,7 @@ u8 Core::op_tree() {
         break;
     case 0xEF: // RST $28
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x28;
         break;
     case 0xF0: // LDH A, [a8]
@@ -1788,7 +1788,7 @@ u8 Core::op_tree() {
     case 0xF5: // PUSH AF
         dword_result = (registers.gpr.n.a << 8) + registers.flags;
         registers.sp -= 2;
-        mem.write(registers.sp, dword_result);
+        mem.dwrite(registers.sp, dword_result);
         break;
     case 0xF6: // OR A, n8
         registers.flags &= 0b10001111;
@@ -1800,7 +1800,7 @@ u8 Core::op_tree() {
         break;
     case 0xF7: // RST $30
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x30;
         break;
     case 0xF8: // LD HL, SP + e8
@@ -1848,7 +1848,7 @@ u8 Core::op_tree() {
         break;
     case 0xFF: // RST $38
         registers.sp -= 2;
-        mem.write(registers.sp, registers.pc);
+        mem.dwrite(registers.sp, registers.pc);
         registers.pc = 0x38;
         break;
     default:

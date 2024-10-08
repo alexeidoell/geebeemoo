@@ -56,7 +56,7 @@ class PPU {
         u8 getTileByte(u16 index);
         void combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object);
         u8 pixelPicker();
-        PPUState& ppuState;
+        PPUState& ppu_state;
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
@@ -82,7 +82,7 @@ class PPU {
                              // resume the state it was at in the current
                              // line
         PPU(MMU& mem, SDL_Surface* surface) 
-        :mem(mem), ppuState(mem.ppuState), surface(surface) {
+        :mem(mem), ppu_state(mem.ppu_state), surface(surface) {
         } // this feels gross
         void ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer();

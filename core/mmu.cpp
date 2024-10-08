@@ -27,7 +27,7 @@ u32 MMU::load_cart(std::string_view filename) {
     const static std::array<u8,6> ram_sizes = {0, 0, 8, 32, 128, 64};
     cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
     cartridge.ram.resize(cartridge.ram_size);
-    save_file  = std::string_view(filename).substr(0, filename.length() - 2);
+    save_file  = std::string_view(filename).substr(0, filename.find_last_of(".") + 1);
     temp_file = save_file + "tmp";
     save_file += "sav";
     std::cout << save_file << "\n";
@@ -56,7 +56,7 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
     if (address < HRAM && oam_state) {
         return 0xFF;
     }
-    if (address >= OAM && address < UNUSABLE && (ppuState == mode2 || ppuState == mode3)) {
+    if (address >= OAM && address < UNUSABLE && (ppu_state == mode2 || ppu_state == mode3)) {
         return 0xFF;
     }
     switch (address >> 12) {
@@ -75,7 +75,7 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             } else return cartridge.ram[mbc->mapper(address)];
         case VRAM:
         case VRAM + 1:
-            if (ppuState == mode3) {
+            if (ppu_state == mode3) {
                 return 0xFF;
             } else {
                 return mem[address];
@@ -115,7 +115,7 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
 void MMU::write(u16 address, u8 word) {
     if (address < HRAM && oam_state) {
         return;
-    } else if (address >= OAM && address < UNUSABLE && (ppuState == mode2 || ppuState == mode3)) { 
+    } else if (address >= OAM && address < UNUSABLE && (ppu_state == mode2 || ppu_state == mode3)) { 
         return;
     }
     switch (address >> 12) {
@@ -146,7 +146,7 @@ void MMU::write(u16 address, u8 word) {
             }
         case VRAM:
         case VRAM + 1:
-            if (ppuState == mode3) {
+            if (ppu_state == mode3) {
                 return;
             }
         case WRAM_BANK_0:
@@ -199,13 +199,13 @@ void MMU::write(u16 address, u8 word) {
     }
 }
 
-void MMU::write(u16 address, u16 dword) {
+void MMU::dwrite(u16 address, u16 dword) {
     if (address < HRAM && oam_state) {
         return;
-    } else if (address >= OAM && address < UNUSABLE && (ppuState == mode2 || ppuState == mode3)) { 
+    } else if (address >= OAM && address < UNUSABLE && (ppu_state == mode2 || ppu_state == mode3)) { 
         return;
     }
-    if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
+    if (address >= 0x8000 && address < 0xA000 && ppu_state == mode3) {
         return;
     }
     switch (address >> 12) {

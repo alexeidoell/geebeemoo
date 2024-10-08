@@ -116,11 +116,11 @@ void GB::runEmu(char* filename) {
             if (mem.get_oam()) {
                 mem.oam_transfer(current_ticks);
             }
-            if ((mem.ppu_read(0xFF40) & 0x80) == 0x80) {
+            if ((mem.hw_read(0xFF40) & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
             } else { // lcd disable
-                mem.ppu_write(0xFF44, (u8)0);
-                mem.ppu_write(0xFF41, (u8)((mem.ppu_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
+                mem.hw_write(0xFF44, (u8)0);
+                mem.hw_write(0xFF41, (u8)((mem.hw_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
                 ppu.currentLineDots = 0;
                 white = true;
             }
@@ -174,7 +174,7 @@ void GB::doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& m
     log << " H:" <<  std::setw(2) << (int) core.registers.gpr.n.h;
     log << " L:" <<  std::setw(2) << (int) core.registers.gpr.n.l;
     log << " SP:" <<  std::setw(4) << (int) core.registers.sp;
-    log << " SPMEM:" <<  std::setw(4) << (int) ((mem.ppu_read(core.registers.sp + 1) << 8) + mem.ppu_read(core.registers.sp));
+    log << " SPMEM:" <<  std::setw(4) << (int) ((mem.hw_read(core.registers.sp + 1) << 8) + mem.hw_read(core.registers.sp));
     log << " PC:" <<  std::setw(4) << (int) core.registers.pc;
     log << " PCMEM:" <<  std::setw(2) << (int) mem.read(core.registers.pc) << ",";
     log <<  std::setw(2) << (int) mem.read(core.registers.pc + 1) << ",";

@@ -97,16 +97,16 @@ private:
 public:
     u8 channel_trigger = 0;
     MMU(Joypad& joypad) : joypad(joypad) {};
-    PPUState ppuState = mode2;
+    PPUState ppu_state = mode2;
     u32 load_cart(std::string_view filename);
     u8 read(u16 address);
     void write(u16 address, u8 word);
-    void write(u16 address, u16 dword);
+    void dwrite(u16 address, u16 dword);
     bool tima_tick = false;
     u8 oam_transfer(u8 ticks);
 
     // inlines
-    u8 ppu_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
+    u8 hw_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
         if (address < 0x8000) {
             return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
         }
@@ -117,10 +117,10 @@ public:
         }
         return mem[address];
     }
-    void ppu_write(u16 address, u8 word) {
+    void hw_write(u16 address, u8 word) {
         mem[address] = word;
     }
-    void ppu_write(u16 address, u16 dword) {
+    void hw_dwrite(u16 address, u16 dword) {
         mem[address] = (u8) (dword & 0xFF);
         mem[address + 1] = (u8) (dword >> 8);
     }
