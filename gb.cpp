@@ -1,5 +1,4 @@
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_mutex.h>
 #include <chrono>
 #include <lib/types.h>
 #include <core/mmu.h>
@@ -16,7 +15,7 @@
 GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_CreateMutex()) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
-    window = SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("geebeemoo", 160, 144, 0);
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
