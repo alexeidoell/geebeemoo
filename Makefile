@@ -1,6 +1,6 @@
 CC = g++
 CPPFLAGS = -I.
-CFLAGS = -std=gnu++23 -Wall -pedantic -g -flto=auto -O3 -fno-exceptions
+CFLAGS = -std=gnu++23 -Wall -pedantic -g -flto=auto -Og -fno-exceptions
 # CFLAGS += -DDEBUG
 INCLUDES = -I. -Icore/ -Ilib/
 
