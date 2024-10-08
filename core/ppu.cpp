@@ -362,3 +362,7 @@ void PPU::statInterruptHandler() {
         mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b10));
     }
 }
+
+void PPU::setSurface(SDL_Surface* new_surface) {
+    surface = new_surface;
+}

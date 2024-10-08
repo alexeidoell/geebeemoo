@@ -11,7 +11,6 @@
 #include <core/timer.h>
 #include <core/core.h>
 #include <core/ppu.h>
-#include <core/apu.h>
 #include <gb.h>
 #include <iostream>
 #include <iomanip>
@@ -19,14 +18,33 @@
 #include <bit>
 #include <thread>
 
-void callback(void* apu_ptr, u8* stream, int len) {
+GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem) {
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
+    window = SDL_CreateWindow("Geebeemoo", SDL_WINDOWPOS_UNDEFINED,
+            SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
+    if (!window) {
+        std::cout << "error creating window " << SDL_GetError() << "\n"; 
+        exit(-1);
+    }
+    //SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    surface = SDL_GetWindowSurface(window);
+    ppu.setSurface(surface);
+}
+
+GB::~GB() {
+    apu.getCond().notify_all();
+    SDL_Quit();
+}
+
+void callback(void* apu_ptr, u8* stream, int len) {
     auto* float_stream{std::bit_cast<float*>(stream)};
     float sample = 0;
     APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
     len /= sizeof(float); // LOL!!
+    std::unique_lock<std::mutex> lock(apu.getMutex());
     for (auto i = 0; i < len; ++i) {
-        sample = apu.getSample();
+        sample = apu.getSample(lock);
         float_stream[i] = 0.1f * sample;
     }
 
@@ -43,33 +61,12 @@ void GB::runEmu(char* filename) {
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;
-    
-    Joypad joypad{};
-    MMU mem(joypad);
+
+    // these should probably actually be member variables
     if (0 == mem.load_cart(filename)) {
         std::cout << "emu quitting due to rom not existing\n";
         return;
     }
-
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
-
-    SDL_Window* window = SDL_CreateWindow("Geebeemoo", SDL_WINDOWPOS_UNDEFINED,
-                SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
-    if (!window) {
-        std::cout << "error creating window " << SDL_GetError() << "\n"; 
-        exit(-1);
-    }
-    //SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-    SDL_Surface* surface = SDL_GetWindowSurface(window);
-    SDL_Event event;
-
-    Core core(mem);
-    Timer timer(mem);
-    PPU ppu(mem, surface);
-    APU apu(mem);
-    core.bootup();
-    apu.initAPU();
-
     bool running = true;
     bool first_frame = true;
     bool white = false;
@@ -87,13 +84,16 @@ void GB::runEmu(char* filename) {
     want.freq = 48000;
     want.format = AUDIO_F32;
     want.channels = 1;
-    want.samples = 1024;
+    want.samples = SDL_BUFFER_SIZE;
     want.callback = &callback;
     want.userdata = &apu;
 
     SDL_AudioDeviceID dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-        SDL_PauseAudioDevice(dev, 0);
-    
+    SDL_PauseAudioDevice(dev, 0);
+
+    core.bootup();
+    apu.initAPU();
+
     frameStart = std::chrono::high_resolution_clock::now();
     constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
@@ -138,12 +138,10 @@ void GB::runEmu(char* filename) {
                 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
             }
         }
-        surface = SDL_GetWindowSurface(window);
         if (first_frame) {
             first_frame = false;
             SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
-        }
-        if (white) {
+        } else if (white) {
             SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
         }
         SDL_UpdateWindowSurface(window);
@@ -159,7 +157,6 @@ void GB::runEmu(char* filename) {
     std::cout << "\n" << frameavg.count() / 1000 / frame << " avg ms per frame\n";
     std::cout << 1000000 / frameavg.count() * frame << " avg fps\n";
     std::cout << "closing gbemu\n";
-    SDL_Quit();
 }
 
 void GB::doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& mem) {
@@ -182,4 +179,3 @@ void GB::doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& m
     log <<  std::setw(2) << (int) mem.read(core.registers.pc + 3);
     log << "\n";
 }
-

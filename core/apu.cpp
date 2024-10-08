@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <apu.h>
 #include <bitset>
 #include <iostream>
@@ -154,6 +155,10 @@ void APU::period_clock() {
             }
         }
         sample_counter -= 1048576;
+        if (ch1.buffer.size() >= SDL_BUFFER_SIZE) {
+            awaiting_buffer.notify_all();
+        }
+
     }
     if (ch2.period_timer == 0x7FF) {
         ch2.period_timer = mem.hw_read(NR23) + ((mem.hw_read(NR24) & 0b111) << 8);
@@ -196,9 +201,11 @@ void APU::period_clock() {
     }
 }
 
-float APU::getSample() {
-    std::unique_lock<std::mutex> lock(buffer_mutex);       
+float APU::getSample(std::unique_lock<std::mutex>& lock) {
     float sample = 0;
+    if (ch1.buffer.size() < SDL_BUFFER_SIZE) {
+        awaiting_buffer.wait(lock);
+    }
     if (ch2.buffer.size() > 0) {
         sample += ch2.buffer.front();
         ch2.buffer.pop();

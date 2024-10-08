@@ -69,7 +69,7 @@ class PPU {
         void oamScan(u16 address);
         bool firstTile = true;
         void setPixel(u8 w, u8 h, u8 pixel);
-        SDL_Surface *surface;
+        SDL_Surface* surface;
         bool newTile = true;
         s16 finishedLineDots = 0;
         void statInterruptHandler();
@@ -81,9 +81,10 @@ class PPU {
                              // the next call of the ppu loop that will
                              // resume the state it was at in the current
                              // line
-        PPU(MMU& mem, SDL_Surface* surface) 
-        :mem(mem), ppu_state(mem.ppu_state), surface(surface) {
+        PPU(MMU& mem) 
+        :mem(mem), ppu_state(mem.ppu_state) {
         } // this feels gross
         void ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer();
+        void setSurface(SDL_Surface* new_surface);
 };

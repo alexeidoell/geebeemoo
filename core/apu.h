@@ -1,9 +1,12 @@
 #include <algorithm>
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <queue>
 #include <types.h>
 #include <mmu.h>
+
+#define SDL_BUFFER_SIZE 1024
 
 constexpr float duty_cycle[4][8] = { // NOLINT
     {1,1,1,1,1,1,1,-1},
@@ -69,19 +72,30 @@ private:
     u8 apu_div = 0;
     bool ch3_tick = false;
     u8 ch4_tick = 0;
+    u32 buffer_size = 0;
+    std::condition_variable awaiting_buffer;
 public:
     APU(MMU& mem) : mem(mem) {};
+    ~APU() {
+        awaiting_buffer.notify_all();
+    }
     void period_clock();
     void initAPU();
     void triggerCH2();
     void triggerCH1();
     void triggerCH3();
     void triggerCH4();
-    float getSample();
+    float getSample(std::unique_lock<std::mutex>& lock);
     u8 getNibble();
     void lfsrClock();
     void envelopeAdjust();
     void lengthAdjust();
     void periodSweep();
     void disableChannel(u8 channel);
+    std::mutex& getMutex() {
+        return buffer_mutex;
+    }
+    std::condition_variable& getCond() {
+        return awaiting_buffer;
+    }
 };
