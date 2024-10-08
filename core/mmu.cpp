@@ -200,65 +200,39 @@ void MMU::write(u16 address, u8 word) {
 }
 
 void MMU::write(u16 address, u16 dword) {
-    if (address < 0xFF80 && oam_state) {
+    if (address < HRAM && oam_state) {
+        return;
+    } else if (address >= OAM && address < UNUSABLE && (ppuState == mode2 || ppuState == mode3)) { 
         return;
     }
     if (address >= 0x8000 && address < 0xA000 && ppuState == mode3) {
         return;
     }
-    if (address >= 0xFE00 && address < 0xFEA0 && ppuState == mode2) {
-        return;
-    }
-    if (address == 0x2000) { 
-        return;
-    }
-    if (address < 0x8000) { // mbc read
-        return;
-    }
-    if (address < 0xC000 && address >= 0xA000) {
-        if (!mbc->ram_enable) {
+    switch (address >> 12) {
+        case ROM_BANK_0:
+        case ROM_BANK_0 + 1:
+        case ROM_BANK_0 + 2:
+        case ROM_BANK_0 + 3:
+        case ROM_BANK_N:
+        case ROM_BANK_N + 1:
+        case ROM_BANK_N + 2:
+        case ROM_BANK_N + 3:
             return;
-        } else { 
-            u16 mapped_address = mbc->mapper(address);
-            cartridge.ram[mapped_address] = (u8) dword & 0xFF;
-            cartridge.ram[mapped_address + 1] = (u8) (dword >> 8);
+        case EXTERN_RAM:
+            if (!mbc->ram_enable) {
+                return;
+            } else { 
+                u16 mapped_address = mbc->mapper(address);
+                cartridge.ram[mapped_address] = (u8) dword & 0xFF;
+                cartridge.ram[mapped_address + 1] = (u8) (dword >> 8);
+                return;
+            }
+        default:
+            mem[address] = (u8) (dword & 0xFF);
+            mem[address + 1] = (u8) (dword >> 8);
             return;
-        }
     }
-    if (address == DMA_TRIGGER) {
-        // start oam transfer process
-
-    } else {
-        mem[address] = (u8) (dword & 0xFF);
-        mem[address + 1] = (u8) (dword >> 8);
-    }
-    return;
 }
-
-u8 MMU::ppu_read(u16 address) {
-    if (address < 0x8000) {
-        return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
-    }
-    if (address < 0xC000 && address >= 0xA000) {
-        if (!mbc->ram_enable) {
-            return 0xFF;
-        } else return cartridge.ram[mbc->mapper(address)];
-    }
-    return mem[address];
-}
-void MMU::ppu_write(u16 address, u8 word) {
-    mem[address] = word;
-}
-
-void MMU::ppu_write(u16 address, u16 dword) {
-    mem[address] = (u8) (dword & 0xFF);
-    mem[address + 1] = (u8) (dword >> 8);
-}
-
-bool MMU::get_oam() {
-    return oam_state;
-}
-
 u8 MMU::oam_transfer(u8 ticks) {
     for (auto i = 0; i < ticks; i += 4) {
         if (oam_offset == 160){
