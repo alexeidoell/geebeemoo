@@ -185,7 +185,7 @@ void MMU::write(u16 address, u8 word) {
             //std::cout << (char) mem[0xFF01];
             return;
         case DIV:
-            write(DIV_HIDDEN, (u16)0x00);
+            dwrite(DIV_HIDDEN, 0x00);
             return;
         case DMA_TRIGGER:
             if (!oam_state) {
