@@ -1,7 +1,6 @@
 #include <ppu.h>
 #include <mmu.h>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_surface.h>
+#include <SDL3/SDL.h>
 #include <cassert>
 
 void PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {

@@ -71,7 +71,6 @@ enum DMG_HW_REGISTERS {
     IE = 0xFFFF
 };
 
-
 enum PPUState { mode0 = 0, mode1, mode2, mode3 };
 
 struct Cartridge {

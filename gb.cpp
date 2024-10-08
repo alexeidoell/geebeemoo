@@ -1,11 +1,5 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_audio.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_surface.h>
-#include <SDL2/SDL_timer.h>
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_mutex.h>
 #include <chrono>
 #include <lib/types.h>
 #include <core/mmu.h>
@@ -22,8 +16,7 @@
 GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_CreateMutex()) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
-    window = SDL_CreateWindow("Geebeemoo", SDL_WINDOWPOS_UNDEFINED,
-            SDL_WINDOWPOS_UNDEFINED, 160, 144, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_OPENGL);
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
@@ -34,7 +27,7 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_
 }
 
 GB::~GB() {
-    SDL_PauseAudioDevice(dev, 1);
+    SDL_PauseAudioDevice(dev);
     SDL_DestroyMutex(apu.getMutex());
     SDL_Quit();
 }
@@ -82,17 +75,14 @@ void GB::runEmu(char* filename) {
     u32 frame = 1;
     std::chrono::duration<double, std::micro> frameavg{};
 
-    SDL_AudioSpec want, have;
+    SDL_AudioSpec want;
     SDL_zero(want);
     want.freq = 48000;
-    want.format = AUDIO_F32;
+    want.format = SDL_AUDIO_F32LE;
     want.channels = 1;
-    want.samples = SDL_BUFFER_SIZE;
-    want.callback = &callback;
-    want.userdata = &apu;
 
-    dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
-    SDL_PauseAudioDevice(dev, 0);
+    dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &want);
+    SDL_PauseAudioDevice(dev);
 
     core.bootup();
     apu.initAPU();
@@ -103,7 +93,7 @@ void GB::runEmu(char* filename) {
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) {
+            if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             } else joypad.pollPresses(event);
         }
@@ -143,9 +133,9 @@ void GB::runEmu(char* filename) {
         }
         if (first_frame) {
             first_frame = false;
-            SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
+            SDL_FillSurfaceRect(surface, nullptr, 0xFFFFFFFF);
         } else if (white) {
-            SDL_FillRect(surface, nullptr, 0xFFFFFFFF);
+            SDL_FillSurfaceRect(surface, nullptr, 0xFFFFFFFF);
         }
         frameTime = std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();
         if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));

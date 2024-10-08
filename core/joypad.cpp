@@ -1,9 +1,9 @@
+#include <SDL3/SDL.h>
 #include <joypad.h>
-#include <SDL2/SDL_events.h>
 
 void Joypad::pollPresses(SDL_Event& event) {
-    if (event.type == SDL_KEYDOWN) {
-        switch (event.key.keysym.sym) {
+    if (event.type == SDL_EVENT_KEY_DOWN) {
+        switch (event.key.key) {
         case SDLK_DOWN:
              dpadState &= 0b0111;
              break;
@@ -16,23 +16,23 @@ void Joypad::pollPresses(SDL_Event& event) {
         case SDLK_RIGHT:
              dpadState &= 0b1110;
              break;
-        case SDLK_x:
+        case SDLK_X :
              buttonState &= 0b1110;
              break;
-        case SDLK_z:
+        case SDLK_Z :
              buttonState &= 0b1101;
              break;
-        case SDLK_m:
+        case SDLK_M :
              buttonState &= 0b1011;
              break;
-        case SDLK_n:
+        case SDLK_N :
              buttonState &= 0b0111;
              break;
         default:
              break;
         }
-    } else if (event.type == SDL_KEYUP) {
-        switch (event.key.keysym.sym) {
+    } else if (event.type == SDL_EVENT_KEY_UP) {
+        switch (event.key.key) {
         case SDLK_DOWN:
             dpadState |= 0b1000;
             break;
@@ -45,16 +45,16 @@ void Joypad::pollPresses(SDL_Event& event) {
         case SDLK_RIGHT:
             dpadState |= 0b0001;
             break;
-        case SDLK_x:
+        case SDLK_X :
             buttonState |= 0b0001;
             break;
-        case SDLK_z:
+        case SDLK_Z :
             buttonState |= 0b0010;
             break;
-        case SDLK_m:
+        case SDLK_M :
             buttonState |= 0b0100;
             break;
-        case SDLK_n:
+        case SDLK_N :
             buttonState |= 0b1000;
             break;
         default:

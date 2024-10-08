@@ -1,8 +1,10 @@
 CC = g++
-CPPFLAGS = -I.
-CFLAGS = -std=gnu++23 -Wall -pedantic -g -flto=auto -Og -fno-exceptions
-# CFLAGS += -DDEBUG
 INCLUDES = -I. -Icore/ -Ilib/
+CFLAGS = -std=gnu++23 -Wall -pedantic -g -Og -fno-exceptions
+CFLAGS += $(shell pkg-config sdl3 --cflags)
+# CFLAGS += -DDEBUG
+LDFLAGS = -flto=auto
+LDFLAGS = $(shell pkg-config sdl3 --libs)
 
 EXECUTABLES = main
 
@@ -37,7 +39,7 @@ build/ppu.o : core/ppu.cpp core/ppu.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 build/joypad.o : core/joypad.cpp core/joypad.h | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -lSDL2main -lSDL2 -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 build/mbc.o : core/mbc.cpp core/mbc.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
@@ -49,14 +51,14 @@ build/main.o : main.cpp | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 build/oldgb.o : gb.cpp gb.h | $(BUILD_DIR)
-	$(CC) $(CFLAGS) -DOLD $(INCLUDES) -c $< -lSDL2main -lSDL2 -o $@
+	$(CC) $(CFLAGS) -DOLD $(INCLUDES) -c $< -o $@
 
 build/gb.o : gb.cpp gb.h | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -lSDL2main -lSDL2 -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 oldmain : $(CORE) build/oldcore.o build/main.o build/oldgb.o
-	$(CC) $(CFLAGS) $(INCLUDES) $^ -lSDL2main -lSDL2 -o $@
+	$(CC) $(LDFLAGS) $(INCLUDES) $^ -o $@
 
 main : $(CORE) build/core.o build/main.o build/gb.o
-	$(CC) $(CFLAGS) $(INCLUDES) $^ -lSDL2main -lSDL2 -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS)
 

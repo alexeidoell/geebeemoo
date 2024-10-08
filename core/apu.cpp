@@ -1,10 +1,7 @@
-#include <SDL2/SDL_mutex.h>
-#include <algorithm>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_mutex.h>
 #include <apu.h>
-#include <bitset>
-#include <iostream>
 #include <mmu.h>
-#include <mutex>
 #include <types.h>
 
 constexpr u32 MAX_BUFFER = 8192;
