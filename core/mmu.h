@@ -102,36 +102,30 @@ public:
     u8 read(u16 address);
     void write(u16 address, u8 word);
     void write(u16 address, u16 dword);
-    u8 ppu_read(u16 address);
-    void ppu_write(u16 address, u8 word);
-    void ppu_write(u16 address, u16 dword);
     bool tima_tick = false;
-    bool get_oam();
     u8 oam_transfer(u8 ticks);
+
+    // inlines
+    u8 ppu_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
+        if (address < 0x8000) {
+            return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
+        }
+        if (address < 0xC000 && address >= 0xA000) {
+            if (!mbc->ram_enable) {
+                return 0xFF;
+            } else return cartridge.ram[mbc->mapper(address)];
+        }
+        return mem[address];
+    }
+    void ppu_write(u16 address, u8 word) {
+        mem[address] = word;
+    }
+    void ppu_write(u16 address, u16 dword) {
+        mem[address] = (u8) (dword & 0xFF);
+        mem[address + 1] = (u8) (dword >> 8);
+    }
+    bool get_oam() {
+        return oam_state;
+    }
 };
-
-inline u8 MMU::ppu_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
-    if (address < 0x8000) {
-        return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
-    }
-    if (address < 0xC000 && address >= 0xA000) {
-        if (!mbc->ram_enable) {
-            return 0xFF;
-        } else return cartridge.ram[mbc->mapper(address)];
-    }
-    return mem[address];
-}
-
-inline void MMU::ppu_write(u16 address, u8 word) {
-    mem[address] = word;
-}
-
-inline void MMU::ppu_write(u16 address, u16 dword) {
-    mem[address] = (u8) (dword & 0xFF);
-    mem[address + 1] = (u8) (dword >> 8);
-}
-
-inline bool MMU::get_oam() {
-    return oam_state;
-}
 
