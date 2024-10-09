@@ -1,6 +1,7 @@
 #include <ppu.h>
 #include <mmu.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_surface.h>
 #include <cassert>
 
 void PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
@@ -327,8 +328,10 @@ void PPU::oamScan(u16 address) { // 2 dots
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
+
+    constexpr static std::array<u32,4> colors = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
+
     u32* pixelAddress = std::bit_cast<u32*>(surface->pixels);
-    const static std::array<u32,4> colors = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
     pixelAddress += surface->w * h + w;
 
     *pixelAddress = colors[pixel];

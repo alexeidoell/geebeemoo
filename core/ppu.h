@@ -1,9 +1,9 @@
 #pragma once
 #include <lib/types.h>
 #include <mmu.h>
-#include <SDL2/SDL_surface.h>
 #include <array>
-#include <memory>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_surface.h>
 #include <queue>
 
 struct Pixel {

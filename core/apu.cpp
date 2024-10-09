@@ -197,6 +197,7 @@ void APU::period_clock() {
 
 float APU::getSample() {
     float sample = 0;
+    SDL_LockMutex(buffer_lock);
     if (ch2.buffer.size() > 0) {
         sample += ch2.buffer.front();
         ch2.buffer.pop();
@@ -213,6 +214,7 @@ float APU::getSample() {
         sample += ch4.buffer.front();
         ch4.buffer.pop();
     }
+    SDL_UnlockMutex(buffer_lock);
     sample /= 4;
     return sample;
 }

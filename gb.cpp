@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_video.h>
 #include <chrono>
 #include <lib/types.h>
 #include <core/mmu.h>
@@ -22,12 +23,18 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_
     }
     //SDL_GLContext gl_context = SDL_GL_CreateContext(window);
     surface = SDL_GetWindowSurface(window);
+    if (!surface) {
+        std::cout << "error creating surface " << SDL_GetError() << "\n"; 
+        exit(-1);
+    }
+
     ppu.setSurface(surface);
 }
 
 GB::~GB() {
     SDL_PauseAudioDevice(dev);
     SDL_DestroyMutex(apu.getMutex());
+    SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
@@ -36,12 +43,10 @@ void callback(void* apu_ptr, u8* stream, int len) {
     float sample = 0;
     APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
     len /= sizeof(float); // LOL!!
-    SDL_LockMutex(apu.getMutex());
     for (auto i = 0; i < len; ++i) {
         sample = apu.getSample();
         float_stream[i] = 0.1f * sample;
     }
-    SDL_UnlockMutex(apu.getMutex());
 
 }
 
