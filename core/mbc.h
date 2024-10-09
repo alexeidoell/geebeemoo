@@ -13,11 +13,11 @@ public:
 };
 
 class MBC0 : public MBC { // no mbc
-    u8 mbc_write(u16 address, u8 word) override;
-    u32 mapper(u16 base_address) override;
+    u8 mbc_write(u16 address, u8 word) final;
+    u32 mapper(u16 base_address) final;
 };
 
 class MBC1 : public MBC {
-    u8 mbc_write(u16 address, u8 word) override;
-    u32 mapper(u16 base_address) override;
+    u8 mbc_write(u16 address, u8 word) final;
+    u32 mapper(u16 base_address) final;
 };
