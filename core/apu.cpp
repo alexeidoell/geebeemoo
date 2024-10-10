@@ -133,7 +133,7 @@ void APU::period_clock() {
             if (ch4.enabled && ch4.dac) {
                 sample = 0 - (ch4.output * (1.0/0xF));
                 ch4.sample = volume * sample;
-            } else if (ch1.dac) {
+            } else if (ch4.dac) {
                 ch4.sample = volume * sample;
             } else {
                 ch4.sample = 0;
@@ -184,14 +184,9 @@ void APU::period_clock() {
 }
 
 void APU::putSample() {
-    static int counter = 0;
     float sample = ch1.sample + ch2.sample + ch3.sample + ch4.sample;
     sample /= 4;
-    sample_buffer.at(counter++) = sample;
-    if (counter >= buffer_len) {
-        counter = 0;
-        SDL_PutAudioStreamData(audio_stream, sample_buffer.data(), 4 * buffer_len);
-    }
+    SDL_PutAudioStreamData(audio_stream, &sample, 4);
 }
 
 void APU::initAPU() {
