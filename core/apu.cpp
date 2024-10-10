@@ -188,7 +188,7 @@ void APU::putSample() {
     float sample = ch1.sample + ch2.sample + ch3.sample + ch4.sample;
     sample /= 4;
     sample_buffer.at(counter++) = sample;
-    if (counter >= 1024) {
+    if (counter >= buffer_len) {
         counter = 0;
         SDL_PutAudioStreamData(audio_stream, sample_buffer.data(), 4 * buffer_len);
     }
