@@ -67,9 +67,7 @@ private:
     u32 sample_counter = 0;
     bool div_raised = false;
     u8 apu_div = 0;
-    bool ch3_tick = false;
     u8 ch4_tick = 0;
-    u32 buffer_size = 0;
     SDL_Mutex* buffer_lock = nullptr;
     SDL_AudioStream* audio_stream = nullptr;
 public:

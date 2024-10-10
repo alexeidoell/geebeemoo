@@ -86,7 +86,7 @@ void APU::period_clock() {
 
     u8 ch2_wave_duty = mem.hw_read(NR21) >> 6;
     u8 ch1_wave_duty = mem.hw_read(NR11) >> 6;
-    sample_counter += 48000;
+    sample_counter += 262144;
     if (sample_counter >= 1048576) {
         if ((mem.hw_read(NR52) & 0b10000000) == 0) {
             ch1.duty_step = 0;

@@ -42,7 +42,7 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_
 
     dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &want);
 
-    constexpr SDL_AudioSpec src = { SDL_AUDIO_F32, 1, 48000 };
+    constexpr SDL_AudioSpec src = { SDL_AUDIO_F32, 1, 262144 };
     constexpr SDL_AudioSpec dst = { SDL_AUDIO_F32, 1, 48000 };
 
     audio_stream = SDL_CreateAudioStream(&src, &dst);
@@ -60,7 +60,6 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_
 GB::~GB() {
     SDL_DestroyAudioStream(audio_stream);
     SDL_CloseAudioDevice(dev);
-    SDL_DestroyMutex(apu.getMutex());
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
@@ -171,6 +170,18 @@ void GB::runEmu(char* filename) {
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem.read(0xFF44) >= 153);
         SDL_UpdateWindowSurface(window);
+        
+        /*
+        if (SDL_GetAudioStreamAvailable(audio_stream) >= 4 * 48000) {
+            std::array<float, 48000> buffer{};
+            SDL_GetAudioStreamData(audio_stream, &buffer[0], 4 * 48000);
+            for (auto sample : buffer) {
+                std::cout << sample << "\n";
+            }
+            exit(0);
+        }
+        */
+        
         frameStart = std::chrono::high_resolution_clock::now();
     } 
     std::cout << SDL_GetError();
