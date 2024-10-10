@@ -16,7 +16,7 @@
 #include <fstream>
 #include <thread>
 
-GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_CreateMutex()),
+GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
     window(SDL_CreateWindow("geebeemoo", 160, 144, 0)) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 

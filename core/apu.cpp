@@ -94,49 +94,49 @@ void APU::period_clock() {
             ch3.duty_step = 0;
             ch4.duty_step = 0;
             ch4.lfsr = 0;
-            ch2.buffer.push(0);
-            ch1.buffer.push(0);
-            ch3.buffer.push(0);
-            ch4.buffer.push(0);
+            ch1.sample = 0;
+            ch2.sample = 0;
+            ch3.sample = 0;
+            ch4.sample = 0;
         } else {
             if (ch2.enabled && ch2.dac) {
                 sample = duty_cycle[ch2_wave_duty][ch2.duty_step] * ch2.internal_volume;
                 sample = 0 - (sample * (1.0/0xF));
-                ch2.buffer.push(volume * sample);
+                ch2.sample = volume * sample;
             } else if (ch2.dac) {
-                ch2.buffer.push(volume * 1.0);
+                ch2.sample = volume * 1.0;
             } else {
-                ch2.buffer.push(0);
+                ch2.sample = 0;
             }
             if (ch1.enabled && ch1.dac) {
                 sample = duty_cycle[ch1_wave_duty][ch1.duty_step] * ch1.internal_volume;
                 sample = 0 - (sample * (1.0/0xF));
-                ch1.buffer.push(volume * sample);
+                ch1.sample = volume * sample;
             } else if (ch1.dac) {
-                ch1.buffer.push(volume * 1.0);
+                ch1.sample = volume * 1.0;
             } else {
-                ch1.buffer.push(0);
+                ch1.sample = 0;
             }
             if (ch3.internal_volume == 0) {
-                ch3.buffer.push(0);
+                ch3.sample = 0;
             } else if (ch3.enabled && ch3.dac) {
                 sample = getNibble();
                 sample -= 7.5;
                 sample /= 7.5;
                 sample /= 1 << (ch3.internal_volume - 1);
-                ch3.buffer.push(volume * sample);
+                ch3.sample = volume * sample;
             } else if (ch3.dac) {
-                ch3.buffer.push(volume * 1.0);
+                ch3.sample = volume * 1.0;
             } else {
-                ch3.buffer.push(0);
+                ch3.sample = 0;
             }
             if (ch4.enabled && ch4.dac) {
                 sample = 0 - (ch4.output * (1.0/0xF));
-                ch4.buffer.push(volume * sample);
+                ch4.sample = volume * sample;
             } else if (ch1.dac) {
-                ch4.buffer.push(volume * 1.0);
+                ch4.sample = volume * sample;
             } else {
-                ch4.buffer.push(0);
+                ch4.sample = 0;
             }
         }
         sample_counter -= 1048576;
@@ -184,32 +184,18 @@ void APU::period_clock() {
 }
 
 void APU::putSample() {
-    float sample = 0;
-    if (ch2.buffer.size() > 0) {
-        sample += ch2.buffer.front();
-        ch2.buffer.pop();
-    }
-    if (ch1.buffer.size() > 0) {
-        sample += ch1.buffer.front();
-        ch1.buffer.pop();
-    }
-    if (ch3.buffer.size() > 0) {
-        sample += ch3.buffer.front();
-        ch3.buffer.pop();
-    }
-    if (ch4.buffer.size() > 0) {
-        sample += ch4.buffer.front();
-        ch4.buffer.pop();
-    }
+    float sample = ch1.sample + ch2.sample + ch3.sample + ch4.sample;
     sample /= 4;
     SDL_PutAudioStreamData(audio_stream, &sample, 4);
 }
 
 void APU::initAPU() {
+    /*
     triggerCH1();
     triggerCH2();
     triggerCH3();
     triggerCH4();
+    */
 }
 
 void APU::triggerCH2() {

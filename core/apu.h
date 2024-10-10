@@ -28,7 +28,7 @@ private:
         u8 env_dir = 0;
         u8 pulse_timer = 0;
         u8 pulse_pace = 0;
-        std::queue<float> buffer;
+        float sample = 0;
     } ch1;
     struct {
         bool enabled = true;
@@ -39,7 +39,7 @@ private:
         u8 length_timer = 0;
         u8 env_dir = 0;
         u8 env_sweep_tick = 0;
-        std::queue<float> buffer;
+        float sample = 0;
     } ch2;
     struct {
         bool enabled = true;
@@ -48,7 +48,7 @@ private:
         u8 duty_step = 0;
         u8 internal_volume = 0;
         u16 length_timer = 0;
-        std::queue<float> buffer;
+        float sample = 0;
     } ch3;
     struct {
         bool enabled = true;
@@ -62,16 +62,15 @@ private:
         u16 lfsr = 0;
         u8 output = 0;
         u16 clock_pace = 0;
-        std::queue<float> buffer;
+        float sample = 0;
     } ch4;
     u32 sample_counter = 0;
     bool div_raised = false;
     u8 apu_div = 0;
     u8 ch4_tick = 0;
-    SDL_Mutex* buffer_lock = nullptr;
     SDL_AudioStream* audio_stream = nullptr;
 public:
-    APU(MMU& mem, SDL_Mutex* mutex) : mem(mem), buffer_lock(mutex) {};
+    APU(MMU& mem) : mem(mem) {};
     void period_clock();
     void initAPU();
     void triggerCH2();
@@ -85,8 +84,5 @@ public:
     void lengthAdjust();
     void periodSweep();
     void disableChannel(u8 channel);
-    SDL_Mutex* getMutex() {
-        return buffer_lock;
-    }
     void setAudioStream(SDL_AudioStream* new_stream);
 };
