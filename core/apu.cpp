@@ -1,11 +1,12 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_mutex.h>
+#include <SDL3/SDL_stdinc.h>
+#include <algorithm>
 #include <apu.h>
+#include <iostream>
 #include <mmu.h>
 #include <types.h>
-
-constexpr u32 MAX_BUFFER = 8192;
-
 
 // digusting code
 void APU::period_clock() {
@@ -87,19 +88,6 @@ void APU::period_clock() {
     u8 ch1_wave_duty = mem.hw_read(NR11) >> 6;
     sample_counter += 48000;
     if (sample_counter >= 1048576) {
-        SDL_LockMutex(buffer_lock);
-        if (ch2.buffer.size() >= MAX_BUFFER) {
-            ch2.buffer.pop();
-        }
-        if (ch1.buffer.size() >= MAX_BUFFER) {
-            ch1.buffer.pop();
-        }
-        if (ch3.buffer.size() >= MAX_BUFFER) {
-            ch3.buffer.pop();
-        }
-        if (ch4.buffer.size() >= MAX_BUFFER) {
-            ch4.buffer.pop();
-        }
         if ((mem.hw_read(NR52) & 0b10000000) == 0) {
             ch1.duty_step = 0;
             ch2.duty_step = 0;
@@ -152,7 +140,7 @@ void APU::period_clock() {
             }
         }
         sample_counter -= 1048576;
-        SDL_UnlockMutex(buffer_lock);
+        putSample();
     }
     if (ch2.period_timer == 0x7FF) {
         ch2.period_timer = mem.hw_read(NR23) + ((mem.hw_read(NR24) & 0b111) << 8);
@@ -195,9 +183,8 @@ void APU::period_clock() {
     }
 }
 
-float APU::getSample() {
+void APU::putSample() {
     float sample = 0;
-    SDL_LockMutex(buffer_lock);
     if (ch2.buffer.size() > 0) {
         sample += ch2.buffer.front();
         ch2.buffer.pop();
@@ -214,9 +201,8 @@ float APU::getSample() {
         sample += ch4.buffer.front();
         ch4.buffer.pop();
     }
-    SDL_UnlockMutex(buffer_lock);
     sample /= 4;
-    return sample;
+    SDL_PutAudioStreamData(audio_stream, &sample, 4);
 }
 
 void APU::initAPU() {
@@ -403,4 +389,8 @@ void APU::lfsrClock() {
         ch4.output = ch4.internal_volume;
     }
     ch4.lfsr >>= 1;
+}
+
+void APU::setAudioStream(SDL_AudioStream* new_stream) {
+    audio_stream = new_stream;
 }

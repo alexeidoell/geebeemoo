@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
 #include <queue>
 #include <types.h>
 #include <mmu.h>
@@ -63,13 +64,14 @@ private:
         u16 clock_pace = 0;
         std::queue<float> buffer;
     } ch4;
-    SDL_Mutex* buffer_lock = NULL;
     u32 sample_counter = 0;
     bool div_raised = false;
     u8 apu_div = 0;
     bool ch3_tick = false;
     u8 ch4_tick = 0;
     u32 buffer_size = 0;
+    SDL_Mutex* buffer_lock = nullptr;
+    SDL_AudioStream* audio_stream = nullptr;
 public:
     APU(MMU& mem, SDL_Mutex* mutex) : mem(mem), buffer_lock(mutex) {};
     void period_clock();
@@ -78,7 +80,7 @@ public:
     void triggerCH1();
     void triggerCH3();
     void triggerCH4();
-    float getSample();
+    void putSample();
     u8 getNibble();
     void lfsrClock();
     void envelopeAdjust();
@@ -88,4 +90,5 @@ public:
     SDL_Mutex* getMutex() {
         return buffer_lock;
     }
+    void setAudioStream(SDL_AudioStream* new_stream);
 };

@@ -1,6 +1,10 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_video.h>
 #include <chrono>
+#include <cstdlib>
 #include <lib/types.h>
 #include <core/mmu.h>
 #include <core/timer.h>
@@ -10,13 +14,13 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <bit>
 #include <thread>
 
-GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_CreateMutex()) {
+GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_CreateMutex()),
+    window(SDL_CreateWindow("geebeemoo", 160, 144, 0)) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
-    window = SDL_CreateWindow("geebeemoo", 160, 144, 0);
+    
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
@@ -29,16 +33,40 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem, SDL_
     }
 
     ppu.setSurface(surface);
+
+    SDL_AudioSpec want;
+    SDL_zero(want);
+    want.freq = 48000;
+    want.format = SDL_AUDIO_F32;
+    want.channels = 1;
+
+    dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &want);
+
+    constexpr SDL_AudioSpec src = { SDL_AUDIO_F32, 1, 48000 };
+    constexpr SDL_AudioSpec dst = { SDL_AUDIO_F32, 1, 48000 };
+
+    audio_stream = SDL_CreateAudioStream(&src, &dst);
+    if (!audio_stream) {
+        std::cout << "error creating audio stream " << SDL_GetError() << "\n"; 
+        exit(-1);
+    }
+    if (!SDL_BindAudioStream(dev, audio_stream)) {
+        std::cout << "failed to bind audio stream\n";
+        exit(-1);
+    }
+    apu.setAudioStream(audio_stream);
 }
 
 GB::~GB() {
-    SDL_PauseAudioDevice(dev);
+    SDL_DestroyAudioStream(audio_stream);
+    SDL_CloseAudioDevice(dev);
     SDL_DestroyMutex(apu.getMutex());
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
 
 void callback(void* apu_ptr, u8* stream, int len) {
+    /*
     auto* float_stream{std::bit_cast<float*>(stream)};
     float sample = 0;
     APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
@@ -47,6 +75,7 @@ void callback(void* apu_ptr, u8* stream, int len) {
         sample = apu.getSample();
         float_stream[i] = 0.1f * sample;
     }
+    */
 
 }
 
@@ -79,17 +108,11 @@ void GB::runEmu(char* filename) {
     u32 frame = 1;
     std::chrono::duration<double, std::micro> frameavg{};
 
-    SDL_AudioSpec want;
-    SDL_zero(want);
-    want.freq = 48000;
-    want.format = SDL_AUDIO_F32LE;
-    want.channels = 1;
-
-    dev = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &want);
-    SDL_PauseAudioDevice(dev);
 
     core.bootup();
     apu.initAPU();
+
+    SDL_Event event;
 
     frameStart = std::chrono::high_resolution_clock::now();
     constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
@@ -149,8 +172,8 @@ void GB::runEmu(char* filename) {
         //assert(mem.read(0xFF44) >= 153);
         SDL_UpdateWindowSurface(window);
         frameStart = std::chrono::high_resolution_clock::now();
-
     } 
+    std::cout << SDL_GetError();
     std::cout << "\n" << frameavg.count() / 1000 / frame << " avg ms per frame\n";
     std::cout << 1000000 / frameavg.count() * frame << " avg fps\n";
     std::cout << "closing gbemu\n";

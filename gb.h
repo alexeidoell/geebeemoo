@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_audio.h>
 #include <core/mmu.h>
 #include <core/apu.h>
 #include <core/ppu.h>
@@ -13,9 +14,9 @@ class GB {
     Timer timer;
     PPU ppu;
     APU apu;
-    SDL_Window* window;
-    SDL_Surface* surface;
-    SDL_Event event;
+    SDL_Window* window = nullptr;
+    SDL_Surface* surface = nullptr;
+    SDL_AudioStream* audio_stream;
     SDL_AudioDeviceID dev;
 public:
     void runEmu(char* filename);
