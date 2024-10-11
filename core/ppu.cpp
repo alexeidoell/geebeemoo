@@ -4,13 +4,12 @@
 #include <SDL3/SDL_surface.h>
 #include <cassert>
 
-void PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object) {
+void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
     u16 line = 0;
     u16 mask = 0;
     line = 0;
 
-    bool flipCond = false;
-    if (tiletype == obj) flipCond = (object->flags & 0b100000) > 0;
+    bool flipCond = (object->flags & 0b100000) > 0;
 
     for (auto j = 0; j < 8; ++j) {
         mask = 0b1 << j;
@@ -34,36 +33,49 @@ void PPU::combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * objec
         mask >>= (i * 2);
         u16 color = line & mask;
         color >>= (14 - (i * 2));
-        u8 palette = 0;
-        u8 bgPriority = 0;
-        u8 xCoord = 0;
-        u8 objIndex = 0;
-        if (tiletype == obj)  {
-            xCoord = object->xPos;
-            palette = (object->flags & 0b10000) >> 4;
-            bgPriority = (object->flags & 0b10000000) >> 7;
-            objIndex = object->objIndex;
-        }
-        Pixel pixel(color, palette, 0, bgPriority, xCoord, objIndex);
-        if (tiletype == bg) {
-            if (bgQueue.size() < 8) bgQueue.push(pixel);
-            assert(bgQueue.size() <= 8);
-        } else if (tiletype == obj) {
-            if (i < objQueueSize) {
-                Pixel oldPixel = objQueue.front();
-                objQueue.pop();
-                if (oldPixel.color == 0 || oldPixel.xCoord > pixel.xCoord) objQueue.push(pixel);
-                else {
-                    if (oldPixel.xCoord == pixel.xCoord && pixel.xCoord < oldPixel.xCoord) {
-                        objQueue.push(pixel);
-                    } else {
-                        objQueue.push(oldPixel);
-                    }
+        Pixel pixel{ 0 };
+        pixel.xCoord = object->xPos;
+        pixel.palette = (object->flags & 0b10000) >> 4;
+        pixel.bgPriority = (object->flags & 0b10000000) >> 7;
+        pixel.objIndex = object->objIndex;
+        pixel.color = color;
+        if (i < objQueueSize) {
+            Pixel oldPixel = objQueue.front();
+            objQueue.pop();
+            if (oldPixel.color == 0 || oldPixel.xCoord > pixel.xCoord) objQueue.push(pixel);
+            else {
+                if (oldPixel.xCoord == pixel.xCoord && pixel.xCoord < oldPixel.xCoord) {
+                    objQueue.push(pixel);
+                } else {
+                    objQueue.push(oldPixel);
                 }
-            } else objQueue.push(pixel);
+            }
+        } else objQueue.push(pixel);
 
-        }
     }
+}
+
+void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
+    u16 line = 0;
+    u16 mask = 0;
+    line = 0;
+
+    for (auto j = 0; j < 8; ++j) {
+        mask = 0b1 << j;
+        line += (((u16)tileHigh & mask) << (j + 1)) + (((u16)tileLow & mask) << j);
+    }
+
+    for (auto i = 0; i < 8; ++i) {
+        u16 mask = 0b11 << 14;
+        mask >>= (i * 2);
+        u16 color = line & mask;
+        color >>= (14 - (i * 2));
+        Pixel pixel{ 0 };
+        pixel.color = color;
+        if (bgQueue.size() < 8) bgQueue.push(pixel);
+    }
+
+
 }
 
 u8 PPU::getTileByte(u16 index) { // 2 dots
@@ -154,7 +166,7 @@ void PPU::ppuLoop(u8 ticks) {
             }
             if (finishedLineDots == 92) { // first pixel push
                 if (fifoFlags.awaitingPush) {
-                    combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
+                    combineBGTile(fifoFlags.highByte, fifoFlags.lowByte);
                     newTile = true;
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
@@ -170,7 +182,7 @@ void PPU::ppuLoop(u8 ticks) {
                 }
                 if (!window.WX_cond && bgQueue.empty() && fifoFlags.awaitingPush) {
                     // push new tile row
-                    combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
+                    combineBGTile(fifoFlags.highByte, fifoFlags.lowByte);
                     newTile = true;
                     fifoFlags.awaitingPush = false;
                     fifoFlags.fetchLowByte = false;
@@ -213,7 +225,7 @@ void PPU::ppuLoop(u8 ticks) {
                         }
                         fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress + 1);
                         fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress);
-                        combineTile(fifoFlags.objHighByte, fifoFlags.objLowByte, obj, &objArr[i]);
+                        combineObjTile(fifoFlags.objHighByte, fifoFlags.objLowByte, &objArr[i]);
                     }
                 }
                 if (xCoord < 168 && ((mem.read(LCDC) & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == mem.read(WX) || window.WX_cond)) { // window time
@@ -223,7 +235,7 @@ void PPU::ppuLoop(u8 ticks) {
                         window.xCoord += 8;
                         fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
                         fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
-                        combineTile(fifoFlags.highByte, fifoFlags.lowByte, bg, nullptr);
+                        combineBGTile(fifoFlags.highByte, fifoFlags.lowByte);
                         fifoFlags.awaitingPush = true;
                     }
                     if (!window.WX_cond) {
@@ -294,14 +306,9 @@ std::array<u8, 23040>& PPU::getBuffer() {
 
 u8 PPU::pixelPicker() {
     if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem.read(LCDC) & 0b10) == 0 || objQueue.front().color == 0) {
-        if ((mem.read(LCDC) & 0b1) == 0) return 0;
-        else return (mem.hw_read(BGP) >> (2 * bgQueue.front().color)) & 0b11;
+        return (mem.read(LCDC) & 0b1) * ((mem.hw_read(BGP) >> (2 * bgQueue.front().color)) & 0b11);
     } else {
-        if (objQueue.front().palette == 0) {
-            return (mem.hw_read(OBP0) >> (2 * objQueue.front().color)) & 0b11;
-        } else {
-            return (mem.hw_read(OBP1) >> (2 * objQueue.front().color)) & 0b11;
-        }
+        return (mem.hw_read(OBP0 + objQueue.front().palette) >> (2 * objQueue.front().color)) & 0b11;
     }
 }
 
@@ -328,12 +335,9 @@ void PPU::oamScan(u16 address) { // 2 dots
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
-
     constexpr static std::array<u32,4> colors = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
-
     u32* pixelAddress = std::bit_cast<u32*>(surface->pixels);
     pixelAddress += surface->w * h + w;
-
     *pixelAddress = colors[pixel];
 }
 

@@ -6,7 +6,7 @@
 
 constexpr u16 SDL_BUFFER_SIZE = 1024;
 
-constexpr float duty_cycle[4][8] = { // NOLINT
+constexpr s8 duty_cycle[4][8] = { // NOLINT
     {1,1,1,1,1,1,1,-1},
     {-1,1,1,1,1,1,1,-1},
     {-1,1,1,1,1,-1,-1,-1},
@@ -69,6 +69,8 @@ private:
     u8 apu_div = 0;
     u8 ch4_tick = 0;
     SDL_AudioStream* audio_stream = nullptr;
+    constexpr static u16 buffer_len = 32768;
+    std::array<float, buffer_len> sample_buffer{};
 public:
     APU(MMU& mem) : mem(mem) {};
     void period_clock();

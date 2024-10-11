@@ -13,7 +13,7 @@ struct Pixel {
     u8 bgPriority = 0;
     u8 xCoord = 0;
     u8 objIndex = 0;
-    Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority, u8 xCoord, u8 objIndex) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority), xCoord(xCoord), objIndex(objIndex) {}
+    //Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority, u8 xCoord, u8 objIndex) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority), xCoord(xCoord), objIndex(objIndex) {}
 };
 
 struct Window {
@@ -54,7 +54,8 @@ class PPU {
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
-        void combineTile(u8 tileHigh, u8 tileLow, tileType tiletype, Object * object);
+        void combineObjTile(u8 tileHigh, u8 tileLow, Object * object);
+        void combineBGTile(u8 tileHigh, u8 tileLow);
         u8 pixelPicker();
         PPUState& ppu_state;
         std::array<Object, 10> objArr;
