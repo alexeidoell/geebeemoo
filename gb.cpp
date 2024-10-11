@@ -165,7 +165,7 @@ void GB::runEmu(char* filename) {
             SDL_FillSurfaceRect(surface, nullptr, 0xFFFFFFFF);
         }
         frameTime = SDL_GetTicksNS() - frameStart;
-        if (frameDelay > frameTime) SDL_DelayNS(frameDelay - frameTime);
+        if (frameDelay > frameTime) SDL_DelayPrecise(frameDelay - frameTime);
         frame += 1;
         frameavg += SDL_GetTicksNS() - frameStart;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
