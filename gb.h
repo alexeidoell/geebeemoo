@@ -1,6 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
+#include <SDL3/SDL_video.h>
 #include <core/mmu.h>
 #include <core/apu.h>
 #include <core/ppu.h>
@@ -15,6 +16,7 @@ class GB {
     PPU ppu;
     APU apu;
     SDL_Window* window = nullptr;
+    SDL_GLContext gl_context;
     SDL_Surface* surface = nullptr;
     SDL_AudioStream* audio_stream;
     SDL_AudioDeviceID dev;

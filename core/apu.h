@@ -69,7 +69,7 @@ private:
     u8 apu_div = 0;
     u8 ch4_tick = 0;
     SDL_AudioStream* audio_stream = nullptr;
-    constexpr static u16 buffer_len = 32768;
+    constexpr static u16 buffer_len = 8192;
     std::array<float, buffer_len> sample_buffer{};
 public:
     APU(MMU& mem) : mem(mem) {};

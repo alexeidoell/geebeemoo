@@ -2,6 +2,7 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_oldnames.h>
+#include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <chrono>
 #include <cstdlib>
@@ -17,7 +18,7 @@
 #include <thread>
 
 GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
-    window(SDL_CreateWindow("geebeemoo", 160, 144, 0)) {
+    window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_OPENGL)) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
 
     
@@ -25,7 +26,7 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
     }
-    //SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    gl_context = SDL_GL_CreateContext(window);
     surface = SDL_GetWindowSurface(window);
     if (!surface) {
         std::cout << "error creating surface " << SDL_GetError() << "\n"; 
@@ -80,12 +81,12 @@ void callback(void* apu_ptr, u8* stream, int len) {
 
 void GB::runEmu(char* filename) {
     // putting 60 instead of the actual value makes it slightly more accurate lol
-    const double FPS = 60;
-    std::chrono::duration<double, std::micro> frameDelay(1000000 / FPS);
+    constexpr double FPS = 59.7275;
+    constexpr u64 frameDelay = 1000000000 / FPS;
     const u32 maxTicks = 70224; // number of instuctions per frame
     u32 current_ticks = maxTicks;
-    std::chrono::time_point<std::chrono::high_resolution_clock> frameStart;
-    std::chrono::duration<double, std::micro> frameTime{};
+    u64 frameStart;
+    u64 frameTime;
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;
@@ -105,7 +106,7 @@ void GB::runEmu(char* filename) {
     std::ofstream log("newlog.txt", std::ofstream::trunc);
 #endif
     u32 frame = 1;
-    std::chrono::duration<double, std::micro> frameavg{};
+    u64 frameavg = 0;
 
 
     core.bootup();
@@ -113,7 +114,7 @@ void GB::runEmu(char* filename) {
 
     SDL_Event event;
 
-    frameStart = std::chrono::high_resolution_clock::now();
+    frameStart = SDL_GetTicksNS();
     constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
         current_ticks = current_ticks - maxTicks;
@@ -163,10 +164,10 @@ void GB::runEmu(char* filename) {
         } else if (white) {
             SDL_FillSurfaceRect(surface, nullptr, 0xFFFFFFFF);
         }
-        frameTime = std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();
-        if (frameDelay > frameTime) std::this_thread::sleep_for(std::chrono::duration(frameDelay - frameTime));
+        frameTime = SDL_GetTicksNS() - frameStart;
+        if (frameDelay > frameTime) SDL_DelayNS(frameDelay - frameTime);
         frame += 1;
-        frameavg += std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch();;
+        frameavg += SDL_GetTicksNS() - frameStart;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem.read(0xFF44) >= 153);
         SDL_UpdateWindowSurface(window);
@@ -182,11 +183,11 @@ void GB::runEmu(char* filename) {
         }
         */
         
-        frameStart = std::chrono::high_resolution_clock::now();
+        frameStart = SDL_GetTicksNS();
     } 
     std::cout << SDL_GetError();
-    std::cout << "\n" << frameavg.count() / 1000 / frame << " avg ms per frame\n";
-    std::cout << 1000000 / frameavg.count() * frame << " avg fps\n";
+    std::cout << "\n" << frameavg / 1000000.0 / frame << " avg ms per frame\n";
+    std::cout << 1000000000.0 / frameavg * frame << " avg fps\n";
     std::cout << "closing gbemu\n";
 }
 
