@@ -6,9 +6,9 @@ Gameboy emulator written in C++ using SDL3.
 
 # Screenshots
 
-<img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/pkmng.png" height="432" width="480"/><img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/lotz_title.png" height="432" width="480"/>
-<img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/enix_logo.png" height="432" width="480"/><img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/kirby_title.png" height="432" width="480"/>
-<img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/lotz_beach.png" height="432" width="480"/><img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/drmario.png" height="432" width="480"/>
+<img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/pkmng.png" height="360" width="400"/><img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/lotz_title.png" height="360" width="400"/>
+<img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/enix_logo.png" height="360" width="400"/><img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/kirby_title.png" height="360" width="400"/>
+<img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/lotz_beach.png" height="360" width="400"/><img src="https://raw.githubusercontent.com/alexeidoell/geebeemoo/refs/heads/main/images/drmario.png" height="360" width="400"/>
 
 # Features and Plans
 | Feature | Status |
