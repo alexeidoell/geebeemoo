@@ -32,13 +32,13 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
     }
     SDL_SetRenderLogicalPresentation(renderer, 160, 144, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA5551, SDL_TEXTUREACCESS_STREAMING, 160, 144);
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-
     if (!texture) {
         std::cout << "error creating texture " << SDL_GetError() << "\n"; 
         exit(-1);
     }
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
     ppu.setSurface(texture);
+    SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 
     SDL_AudioSpec want;
     SDL_zero(want);
@@ -97,7 +97,6 @@ void GB::runEmu(char* filename) {
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;
-    int w, h, midw, properw;
 
     // these should probably actually be member variables
     if (0 == mem.load_cart(filename)) {
@@ -121,13 +120,6 @@ void GB::runEmu(char* filename) {
     apu.initAPU();
 
     SDL_Event event;
-    SDL_GetWindowSizeInPixels(window, &w, &h);
-    midw = w / 2;
-    properw = h * 160 / 144;
-    window_rect.w = properw;
-    window_rect.h = h;
-    window_rect.x = midw - (properw / 2);
-    window_rect.y = 0;
 
     frameStart = SDL_GetTicksNS();
     constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
@@ -185,9 +177,9 @@ void GB::runEmu(char* filename) {
         }
         if (first_frame) {
             first_frame = false;
-            SDL_FillSurfaceRect(surface, nullptr, 0xFFFFFFFF);
+            SDL_RenderClear(renderer);
         } else if (white) {
-            SDL_FillSurfaceRect(surface, nullptr, 0xFFFFFFFF);
+            SDL_RenderClear(renderer);
         }
         frameTime = SDL_GetTicksNS() - frameStart;
         if (frameDelay > frameTime) SDL_DelayPrecise(frameDelay - frameTime);

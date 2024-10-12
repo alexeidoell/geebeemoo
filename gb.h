@@ -18,8 +18,6 @@ class GB {
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;
     SDL_Texture* texture = nullptr;
-    SDL_Rect window_rect;
-    SDL_Surface* surface = nullptr;
     SDL_AudioStream* audio_stream;
     SDL_AudioDeviceID dev;
 public:
