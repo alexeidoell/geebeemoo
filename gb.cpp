@@ -2,6 +2,9 @@
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_oldnames.h>
+#include <SDL3/SDL_pixels.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
 #include <chrono>
@@ -15,25 +18,27 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-#include <thread>
 
 GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
-    window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_OPENGL)) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
-
-    
+    window(SDL_CreateWindow("geebeemoo", 160, 144, 0)) {
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
     }
-    gl_context = SDL_GL_CreateContext(window);
-    surface = SDL_GetWindowSurface(window);
-    if (!surface) {
-        std::cout << "error creating surface " << SDL_GetError() << "\n"; 
+    renderer = SDL_CreateRenderer(window, nullptr);
+    if (!renderer) {
+        std::cout << "failed to create renderer " << SDL_GetError() << "\n";
         exit(-1);
     }
+    SDL_SetRenderLogicalPresentation(renderer, 160, 144, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA5551, SDL_TEXTUREACCESS_STREAMING, 160, 144);
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 
-    ppu.setSurface(surface);
+    if (!texture) {
+        std::cout << "error creating texture " << SDL_GetError() << "\n"; 
+        exit(-1);
+    }
+    ppu.setSurface(texture);
 
     SDL_AudioSpec want;
     SDL_zero(want);
@@ -62,7 +67,9 @@ GB::~GB() {
     SDL_DestroyAudioStream(audio_stream);
     SDL_CloseAudioDevice(dev);
     SDL_DestroyWindow(window);
-    SDL_Quit();
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+
 }
 
 void callback(void* apu_ptr, u8* stream, int len) {
@@ -90,6 +97,7 @@ void GB::runEmu(char* filename) {
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;
+    int w, h, midw, properw;
 
     // these should probably actually be member variables
     if (0 == mem.load_cart(filename)) {
@@ -113,16 +121,33 @@ void GB::runEmu(char* filename) {
     apu.initAPU();
 
     SDL_Event event;
+    SDL_GetWindowSizeInPixels(window, &w, &h);
+    midw = w / 2;
+    properw = h * 160 / 144;
+    window_rect.w = properw;
+    window_rect.h = h;
+    window_rect.x = midw - (properw / 2);
+    window_rect.y = 0;
 
     frameStart = SDL_GetTicksNS();
     constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
     while(running) {
         current_ticks = current_ticks - maxTicks;
         div_ticks = 0;
+        ppu.setSurface(texture);
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
-                running = false;
-            } else joypad.pollPresses(event);
+            switch (event.type) {
+                case SDL_EVENT_QUIT:
+                    running = false;
+                    break;
+                case SDL_EVENT_KEY_DOWN:
+                case SDL_EVENT_KEY_UP:
+                    joypad.pollPresses(event);
+                    break;
+                case SDL_EVENT_WINDOW_RESIZED:
+                    // handle window resize
+                    break;
+            }
         }
         white = false;
         while (current_ticks < maxTicks) {
@@ -166,23 +191,25 @@ void GB::runEmu(char* filename) {
         }
         frameTime = SDL_GetTicksNS() - frameStart;
         if (frameDelay > frameTime) SDL_DelayPrecise(frameDelay - frameTime);
+        SDL_UnlockTexture(texture);
+        SDL_RenderTexture(renderer, texture, nullptr, nullptr);
+        SDL_RenderPresent(renderer);
         frame += 1;
         frameavg += SDL_GetTicksNS() - frameStart;
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem.read(0xFF44) >= 153);
-        SDL_UpdateWindowSurface(window);
-        
+
         /*
-        if (SDL_GetAudioStreamAvailable(audio_stream) >= 4 * 48000) {
-            std::array<float, 48000> buffer{};
-            SDL_GetAudioStreamData(audio_stream, &buffer[0], 4 * 48000);
-            for (auto sample : buffer) {
-                std::cout << sample << "\n";
-            }
-            exit(0);
-        }
-        */
-        
+           if (SDL_GetAudioStreamAvailable(audio_stream) >= 4 * 48000) {
+           std::array<float, 48000> buffer{};
+           SDL_GetAudioStreamData(audio_stream, &buffer[0], 4 * 48000);
+           for (auto sample : buffer) {
+           std::cout << sample << "\n";
+           }
+           exit(0);
+           }
+           */
+
         frameStart = SDL_GetTicksNS();
     } 
     std::cout << SDL_GetError();

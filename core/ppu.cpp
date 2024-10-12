@@ -1,3 +1,4 @@
+#include <SDL3/SDL_render.h>
 #include <ppu.h>
 #include <mmu.h>
 #include <SDL3/SDL.h>
@@ -27,18 +28,21 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
 
     //std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)line << '\n';
     u8 objQueueSize = objQueue.size();
+    u8 xCoord = 0;
+    u8 palette = 0;
+    u8 bgPriority = 0;
+    u8 objIndex = 0;
 
     for (auto i = 0; i < 8; ++i) {
         u16 mask = 0b11 << 14;
         mask >>= (i * 2);
         u16 color = line & mask;
         color >>= (14 - (i * 2));
-        Pixel pixel{ 0 };
-        pixel.xCoord = object->xPos;
-        pixel.palette = (object->flags & 0b10000) >> 4;
-        pixel.bgPriority = (object->flags & 0b10000000) >> 7;
-        pixel.objIndex = object->objIndex;
-        pixel.color = color;
+        xCoord = object->xPos;
+        palette = (object->flags & 0b10000) >> 4;
+        bgPriority = (object->flags & 0b10000000) >> 7;
+        objIndex = object->objIndex;
+        Pixel pixel(color, palette, 0, bgPriority, xCoord, objIndex);
         if (i < objQueueSize) {
             Pixel oldPixel = objQueue.front();
             objQueue.pop();
@@ -70,7 +74,7 @@ void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
         mask >>= (i * 2);
         u16 color = line & mask;
         color >>= (14 - (i * 2));
-        Pixel pixel{ 0 };
+        Pixel pixel(color, 0, 0, 0, 0, 0);
         pixel.color = color;
         if (bgQueue.size() < 8) bgQueue.push(pixel);
     }
@@ -335,8 +339,8 @@ void PPU::oamScan(u16 address) { // 2 dots
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
-    constexpr static std::array<u32,4> colors = { 0xFFFFFF, 0xAAAAAA, 0x555555, 0x000000 };
-    u32* pixelAddress = std::bit_cast<u32*>(surface->pixels);
+    constexpr static std::array<u16,4> colors = { 0xFFFF, 0xAD6B, 0x5295, 0x0001 };
+    u16* pixelAddress = std::bit_cast<u16*>(surface->pixels);
     pixelAddress += surface->w * h + w;
     *pixelAddress = colors[pixel];
 }
@@ -369,6 +373,6 @@ void PPU::statInterruptHandler() {
     }
 }
 
-void PPU::setSurface(SDL_Surface* new_surface) {
-    surface = new_surface;
+void PPU::setSurface(SDL_Texture* texture) {
+    SDL_LockTextureToSurface(texture, nullptr, &surface);
 }

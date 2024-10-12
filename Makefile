@@ -1,6 +1,6 @@
-CC = clang
+CC = g++
 INCLUDES = -I. -Icore/ -Ilib/
-CFLAGS = -std=gnu++2b -Wall -pedantic -g -O3 -fno-exceptions
+CFLAGS = -std=gnu++2b -Wall -pedantic -g -Og -fno-exceptions
 CFLAGS += $(shell pkg-config sdl3 --cflags)
 # CFLAGS += -DDEBUG
 LDFLAGS = -flto=auto

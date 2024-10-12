@@ -9,8 +9,10 @@ int main(int argc, char* argv[]) {
         std::cout << "intended usage: ./geebeemoo /path/to/game\n";
         return -1;
     }
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
     GB testGB;
     testGB.runEmu(argv[1]);
+    SDL_Quit();
 
 
 }

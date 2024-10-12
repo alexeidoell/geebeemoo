@@ -13,7 +13,7 @@ struct Pixel {
     u8 bgPriority = 0;
     u8 xCoord = 0;
     u8 objIndex = 0;
-    //Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority, u8 xCoord, u8 objIndex) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority), xCoord(xCoord), objIndex(objIndex) {}
+    Pixel(u8 color, u8 palette, u8 spritePriority, u8 bgPriority, u8 xCoord, u8 objIndex) : color(color), palette(palette), spritePriority(spritePriority), bgPriority(bgPriority), xCoord(xCoord), objIndex(objIndex) {}
 };
 
 struct Window {
@@ -87,5 +87,5 @@ class PPU {
         } // this feels gross
         void ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer();
-        void setSurface(SDL_Surface* new_surface);
+        void setSurface(SDL_Texture* texture);
 };
