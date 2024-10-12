@@ -8,8 +8,8 @@ LDFLAGS += $(shell pkg-config sdl3 --libs)
 LDFLAGS += -lstdc++
 
 # Windows flags 
- INCLUDES += -I"C:\Program Files (x86)\SDL3\include"
- LDFLAGS += -L"C:\Program Files (x86)\SDL3\lib"
+# INCLUDES += -I"C:\Program Files (x86)\SDL3\include"
+# LDFLAGS += -L"C:\Program Files (x86)\SDL3\lib"
 
 EXECUTABLES = geebeemoo
 
