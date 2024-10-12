@@ -25,6 +25,7 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
     }
+    SDL_SetWindowResizable(window, true);
     renderer = SDL_CreateRenderer(window, nullptr);
     if (!renderer) {
         std::cout << "failed to create renderer " << SDL_GetError() << "\n";
@@ -181,13 +182,18 @@ void GB::runEmu(char* filename) {
         } else if (white) {
             SDL_RenderClear(renderer);
         }
-        frameTime = SDL_GetTicksNS() - frameStart;
-        if (frameDelay > frameTime) SDL_DelayPrecise(frameDelay - frameTime);
+
+
         SDL_UnlockTexture(texture);
         SDL_RenderTexture(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
+        
+        frameTime = SDL_GetTicksNS() - frameStart;
+        if (frameDelay > frameTime) SDL_DelayPrecise(frameDelay - frameTime);
         frame += 1;
         frameavg += SDL_GetTicksNS() - frameStart;
+        frameStart = SDL_GetTicksNS();
+        SDL_RenderPresent(renderer);
+        
         //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
         //assert(mem.read(0xFF44) >= 153);
 
@@ -202,7 +208,7 @@ void GB::runEmu(char* filename) {
            }
            */
 
-        frameStart = SDL_GetTicksNS();
+        
     } 
     std::cout << SDL_GetError();
     std::cout << "\n" << frameavg / 1000000.0 / frame << " avg ms per frame\n";

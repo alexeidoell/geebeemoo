@@ -193,12 +193,15 @@ void APU::putSample() {
 }
 
 void APU::initAPU() {
-    /*
+
     triggerCH1();
     triggerCH2();
     triggerCH3();
     triggerCH4();
-    */
+    ch1.enabled = false;
+    ch2.enabled = false;
+    ch3.enabled = false;
+    ch4.enabled = false;
 }
 
 void APU::triggerCH2() {
@@ -226,6 +229,7 @@ void APU::triggerCH3() {
     ch3.enabled = true;
     mem.hw_write(NR52, (u8)(mem.hw_read(NR52) | 0b100));
     ch3.internal_volume = mem.hw_read(NR32) >> 5;
+    ch3.internal_volume &= 0b11;
     ch3.length_timer = mem.hw_read(NR31);
     ch3.duty_step = 1;
 }
@@ -353,10 +357,11 @@ void APU::disableChannel(u8 channel) {
 u8 APU::getNibble() {
     u8 byte = mem.hw_read(WAVE_RAM_START + ch3.duty_step / 2);
     if (ch3.duty_step % 2 == 1) {
-        byte &= 0xF;
+
     } else {
         byte >>= 4;
     }
+    byte &= 0xF;
     return byte;
 }
 

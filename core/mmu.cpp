@@ -1,5 +1,3 @@
-#include <bit>
-#include <filesystem>
 #include <lib/types.h>
 #include <mmu.h>
 #include <array>
@@ -133,7 +131,7 @@ void MMU::write(u16 address, u8 word) {
                                                       // different mbc features with 1 mbc model
                 std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
                 temp_save.write(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
-                std::filesystem::rename(temp_file, save_file);
+                SDL_RenamePath(temp_file.c_str(), save_file.c_str());
             }
             return;
         case EXTERN_RAM:

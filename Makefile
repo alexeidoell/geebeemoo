@@ -1,11 +1,14 @@
-CC = g++
+CC = clang
 INCLUDES = -I. -Icore/ -Ilib/
-CFLAGS = -std=gnu++2b -Wall -pedantic -g -Og -fno-exceptions
+CFLAGS = -std=gnu++20 -Wall -pedantic -g -Og -fno-exceptions
 CFLAGS += $(shell pkg-config sdl3 --cflags)
 # CFLAGS += -DDEBUG
 LDFLAGS = -flto=auto
 LDFLAGS += $(shell pkg-config sdl3 --libs)
 LDFLAGS += -lstdc++
+
+# Windows flags 
+INCLUDES += -I"C:\Program Files (x86)\SDL3\include"
 
 EXECUTABLES = main
 
@@ -61,5 +64,5 @@ oldmain : $(CORE) build/oldcore.o build/main.o build/oldgb.o
 	$(CC) $(LDFLAGS) $(INCLUDES) $^ -o $@
 
 main : $(CORE) build/core.o build/main.o build/gb.o
-	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) -L"C:\Program Files (x86)\SDL3\lib" $(INCLUDES) $^ -o $@ $(LDFLAGS)
 
