@@ -27,6 +27,7 @@ u32 MMU::load_cart(std::string_view filename) {
     ram_file.seekg(0, std::ios_base::beg);
     ram_file.read(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
     if (!ram_file.fail()) {
+        std::cout << save_file << "\n";
         std::cout << "save loaded\n";
     } else {
         std::cout << "save not found\n";

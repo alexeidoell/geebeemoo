@@ -206,7 +206,7 @@ void GB::runEmu(char* filename) {
 
         
     } 
-    std::cout << "\nframe times below most likely inaccurate\n";
+    std::cout << "\nframe times below likely high\n";
     std::cout << frameavg / 1000000.0 / frame << " avg ms per frame\n";
     std::cout << 1000000000.0 / frameavg * frame << " avg fps\n";
     std::cout << "closing geebeemoo\n";

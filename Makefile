@@ -1,6 +1,6 @@
 CC = clang
-INCLUDES = -I. -Icore/ -Ilib/
-CFLAGS = -std=gnu++20 -Wall -pedantic -g -Og -fno-exceptions
+INCLUDES = -Isrc/ -Isrc/core/ -Isrc/lib/
+CFLAGS = -std=gnu++20 -Wall -pedantic -O3 -fno-exceptions
 CFLAGS += $(shell pkg-config sdl3 --cflags)
 # CFLAGS += -DDEBUG
 LDFLAGS = -flto=auto
@@ -8,9 +8,10 @@ LDFLAGS += $(shell pkg-config sdl3 --libs)
 LDFLAGS += -lstdc++
 
 # Windows flags 
-INCLUDES += -I"C:\Program Files (x86)\SDL3\include"
+ INCLUDES += -I"C:\Program Files (x86)\SDL3\include"
+ LDFLAGS += -L"C:\Program Files (x86)\SDL3\lib"
 
-EXECUTABLES = main
+EXECUTABLES = geebeemoo
 
 CORE_FILES = mmu.cpp timer.cpp ppu.cpp joypad.cpp mbc.cpp apu.cpp
 CORE = $(CORE_FILES:%.cpp=build/%.o)
@@ -27,42 +28,42 @@ $(BUILD_DIR) :
 	mkdir -p $@
 
 
-build/mmu.o : core/mmu.cpp core/mmu.h | $(BUILD_DIR)
+build/mmu.o : src/core/mmu.cpp src/core/mmu.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/core.o : core/core.cpp core/core.h | $(BUILD_DIR)
+build/core.o : src/core/core.cpp src/core/core.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/oldcore.o : core/oldcore.cpp core/core.h | $(BUILD_DIR)
+build/oldcore.o : src/core/oldcore.cpp src/core/core.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/timer.o : core/timer.cpp core/timer.h | $(BUILD_DIR)
+build/timer.o : src/core/timer.cpp src/core/timer.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/ppu.o : core/ppu.cpp core/ppu.h | $(BUILD_DIR)
+build/ppu.o : src/core/ppu.cpp src/core/ppu.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/joypad.o : core/joypad.cpp core/joypad.h | $(BUILD_DIR)
+build/joypad.o : src/core/joypad.cpp src/core/joypad.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/mbc.o : core/mbc.cpp core/mbc.h | $(BUILD_DIR)
+build/mbc.o : src/core/mbc.cpp src/core/mbc.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/apu.o : core/apu.cpp core/apu.h | $(BUILD_DIR)
+build/apu.o : src/core/apu.cpp src/core/apu.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/main.o : main.cpp | $(BUILD_DIR)
+build/main.o : src/main.cpp | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-build/oldgb.o : gb.cpp gb.h | $(BUILD_DIR)
+build/oldgb.o : src/gb.cpp src/gb.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) -DOLD $(INCLUDES) -c $< -o $@
 
-build/gb.o : gb.cpp gb.h | $(BUILD_DIR)
+build/gb.o : src/gb.cpp src/gb.h | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 oldmain : $(CORE) build/oldcore.o build/main.o build/oldgb.o
 	$(CC) $(LDFLAGS) $(INCLUDES) $^ -o $@
 
-main : $(CORE) build/core.o build/main.o build/gb.o
-	$(CC) $(CFLAGS) -L"C:\Program Files (x86)\SDL3\lib" $(INCLUDES) $^ -o $@ $(LDFLAGS)
+geebeemoo : $(CORE) build/core.o build/main.o build/gb.o
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $@ $(LDFLAGS)
 
