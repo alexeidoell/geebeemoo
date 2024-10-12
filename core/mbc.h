@@ -9,11 +9,10 @@ private:
     std::string temp_file;
     std::vector<u8>& ram;
 public:
-    Battery(std::string save_file, std::vector<u8>& ram) : ram(ram) {
+    Battery(std::string save_file, std::vector<u8>& ram) : save_file(save_file), ram(ram) {
         temp_file = save_file + ".tmp";
-        std::cout << save_file << "\n";
     }
-    void writeSave();
+    void writeSave() const;
 };
 
 class MBC {
