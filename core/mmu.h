@@ -91,8 +91,6 @@ private:
     u16 oam_address = 0;
     Joypad& joypad;
     std::unique_ptr<MBC> mbc;
-    std::string save_file;
-    std::string temp_file;
 public:
     u8 channel_trigger = 0;
     MMU(Joypad& joypad) : joypad(joypad) {};

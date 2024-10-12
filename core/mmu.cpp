@@ -9,6 +9,7 @@
 #include <vector>
 
 u32 MMU::load_cart(std::string_view filename) {
+    std::string save_file;
     std::ifstream cart_file(filename.data(), std::ios::binary);
     cart_file.seekg(0x100, std::ios_base::beg);
     cart_file.read(std::bit_cast<char*>(&cartridge.header[0]), 0x50); // lol ????
@@ -17,18 +18,11 @@ u32 MMU::load_cart(std::string_view filename) {
         return 0;
     }
     cartridge.rom_size = 0x8000 * (1 << cartridge.header[0x48]);
-    if (cartridge.header[0x47] == 0x0) {
-        mbc = std::make_unique<MBC0>();
-    } else if (cartridge.header[0x47] < 0x04) {
-        mbc = std::make_unique<MBC1>();
-    }
     const static std::array<u8,6> ram_sizes = {0, 0, 8, 32, 128, 64};
     cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
     cartridge.ram.resize(cartridge.ram_size);
     save_file  = std::string_view(filename).substr(0, filename.find_last_of(".") + 1);
-    temp_file = save_file + "tmp";
     save_file += "sav";
-    std::cout << save_file << "\n";
     std::ifstream ram_file(save_file, std::ios::binary);
     ram_file.seekg(0, std::ios_base::beg);
     ram_file.read(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
@@ -37,9 +31,19 @@ u32 MMU::load_cart(std::string_view filename) {
     } else {
         std::cout << "save not found\n";
     }
+    ram_file.close();
     cartridge.rom.resize(cartridge.rom_size);
     cart_file.seekg(0, std::ios_base::beg);
     cart_file.read(std::bit_cast<char*>(&cartridge.rom[0]), cartridge.rom_size);
+    if (cartridge.header[0x47] == 0x0) {
+        mbc = std::make_unique<MBC0, std::vector<u8>&>(cartridge.ram);
+    }
+    else if (cartridge.header[0x47] < 0x04) {
+        mbc = std::make_unique<MBC1, std::vector<u8>&>(cartridge.ram);
+        if (cartridge.header[0x47] == 0x3) {
+            mbc->battery.emplace(save_file, cartridge.ram);
+        }
+    }
     if (cart_file.fail()) {
         std::cout << "failed to read cartridge\n";
         return 0;
@@ -125,14 +129,7 @@ void MMU::write(u16 address, u8 word) {
         case ROM_BANK_N + 1:
         case ROM_BANK_N + 2:
         case ROM_BANK_N + 3:
-            if (1 == mbc->mbc_write(address, word)) { // ram disabled
-                                                      // this functionality should be moved into
-                                                      // the mbc so i can use composition for
-                                                      // different mbc features with 1 mbc model
-                std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
-                temp_save.write(std::bit_cast<char*>(&cartridge.ram[0]), cartridge.ram_size);
-                SDL_RenamePath(temp_file.c_str(), save_file.c_str());
-            }
+            mbc->mbc_write(address, word);
             return;
         case EXTERN_RAM:
             if (!mbc->ram_enable) {

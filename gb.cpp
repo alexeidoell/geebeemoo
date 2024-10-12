@@ -20,7 +20,7 @@
 #include <fstream>
 
 GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
-    window(SDL_CreateWindow("geebeemoo", 160, 144, 0)) {
+    window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED)) {
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
@@ -67,10 +67,9 @@ GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
 GB::~GB() {
     SDL_DestroyAudioStream(audio_stream);
     SDL_CloseAudioDevice(dev);
-    SDL_DestroyWindow(window);
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
-
+    SDL_DestroyWindow(window);
 }
 
 void callback(void* apu_ptr, u8* stream, int len) {
@@ -136,9 +135,6 @@ void GB::runEmu(char* filename) {
                 case SDL_EVENT_KEY_DOWN:
                 case SDL_EVENT_KEY_UP:
                     joypad.pollPresses(event);
-                    break;
-                case SDL_EVENT_WINDOW_RESIZED:
-                    // handle window resize
                     break;
             }
         }
@@ -210,10 +206,10 @@ void GB::runEmu(char* filename) {
 
         
     } 
-    std::cout << SDL_GetError();
-    std::cout << "\n" << frameavg / 1000000.0 / frame << " avg ms per frame\n";
+    std::cout << "\nframe times below most likely inaccurate\n";
+    std::cout << frameavg / 1000000.0 / frame << " avg ms per frame\n";
     std::cout << 1000000000.0 / frameavg * frame << " avg fps\n";
-    std::cout << "closing gbemu\n";
+    std::cout << "closing geebeemoo\n";
 }
 
 void GB::doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& mem) {

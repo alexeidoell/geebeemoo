@@ -1,3 +1,8 @@
+#include <iostream>
+#include <fstream>
+#include <optional>
+#include <vector>
+#include <SDL3/SDL.h>
 #include <lib/types.h>
 #include <mbc.h>
 
@@ -6,6 +11,9 @@ u8 MBC1::mbc_write(u16 address, u8 word) {
         if ((word & 0b1111) == 0xA) ram_enable = true;
         else {
             ram_enable = false;
+            if (battery.has_value()) {
+                battery.value().writeSave();
+            }
             return 1;
         }
     } else if (address < 0x4000) {
@@ -48,4 +56,11 @@ u8 MBC0::mbc_write(u16 address, u8 word) {
 
 u32 MBC0::mapper(u16 base_address) {
     return base_address;
+}
+
+void Battery::writeSave() {
+    std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
+    temp_save.write(std::bit_cast<char*>(&ram[0]), ram.capacity());
+    temp_save.close();
+    SDL_RenamePath(temp_file.c_str(), save_file.c_str());
 }
