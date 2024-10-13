@@ -4,5 +4,6 @@ compile_commands.json
 .cache/
 newlog.txt
 oldlog.txt
-main
+main*
+geebeemoo*
 *.dll
