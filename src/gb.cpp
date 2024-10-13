@@ -106,11 +106,12 @@ void GB::runEmu(char* filename) {
     bool running = true;
     bool first_frame = true;
     bool white = false;
-
+#ifdef DEBUG
 #ifdef OLD
     std::ofstream log("oldlog.txt", std::ofstream::trunc);
 #else
     std::ofstream log("newlog.txt", std::ofstream::trunc);
+#endif
 #endif
     u32 frame = 1;
     u64 frameavg = 0;
