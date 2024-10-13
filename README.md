@@ -25,7 +25,7 @@ Gameboy emulator written in C++ using SDL3.
 
 # Building and Running
 
-geebeemoo supports both Linux and Windows using a Makefile for compilation.
+Requires [Clang](https://clang.llvm.org/) and [SDL3](https://github.com/libsdl-org/SDL). geebeemoo supports both Linux and Windows using a Makefile for compilation.
 
 If you run `make`, the binary will be placed in the root directory.
 
