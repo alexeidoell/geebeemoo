@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <optional>
-#include <vector>
+#include <bit>
 #include <SDL3/SDL.h>
 #include <lib/types.h>
 #include <mbc.h>
