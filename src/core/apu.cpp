@@ -18,7 +18,7 @@ void APU::period_clock() {
     }
 
     if (div_raised == true) {
-        if ((mem.hw_read(0xFF04) & 0b10000) == 0) {
+        if ((mem.read(DIV) & 0b10000) == 0) {
             div_raised = false; // falling edge increment apu div
             apu_div += 1;
             if (apu_div % 8 == 0) { // envelope
@@ -32,7 +32,7 @@ void APU::period_clock() {
                 periodSweep();
             }
         }
-    } else if ((mem.hw_read(0xFF04) & 0b10000) > 0) {
+    } else if ((mem.read(DIV) & 0b10000) > 0) {
         div_raised = true;
     }
 

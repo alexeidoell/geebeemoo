@@ -18,7 +18,7 @@
 #include <iomanip>
 #include <fstream>
 
-GB::GB() : mem(joypad, ppu), core(mem), timer(mem), apu(mem),
+GB::GB() : mem(joypad, ppu, timer), core(mem), apu(mem),
     window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED)) {
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
