@@ -143,9 +143,11 @@ void PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 2;
             }
         }
-        if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 + mode3_delay &&
-                finishedLineDots < currentLineDots) {
+        if (finishedLineDots >= 76) {
             ppu_state = mode3;
+        }
+        if (finishedLineDots >= 80 && finishedLineDots < 174 + 80 + mode3_delay &&
+                finishedLineDots < currentLineDots) {
             if (finishedLineDots == 80) { // setting up mode3
                 while (!bgQueue.empty())
                     bgQueue.pop();
@@ -157,7 +159,7 @@ void PPU::ppuLoop(u8 ticks) {
                     currentLineDots) { // do nothing to simulate discarded tile
                 finishedLineDots += 2;
             }
-            while (finishedLineDots >= 86 && finishedLineDots < 92 &&
+            while (finishedLineDots >= 86 && finishedLineDots < 94 &&
                     finishedLineDots < currentLineDots) { // initial fetches
                 if (!fifoFlags.fetchTileID) {
                     fifoFlags.tileAddress = bgPixelFetcher();
@@ -172,9 +174,12 @@ void PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchLowByte = true;
                     fifoFlags.awaitingPush = true;
                     finishedLineDots += 2;
+                } else {
+                    finishedLineDots += 2;
+
                 }
             }
-            if (finishedLineDots == 92) { // first pixel push
+            if (finishedLineDots == 94) { // first pixel push
                 if (fifoFlags.awaitingPush) {
                     combineBGTile(fifoFlags.highByte, fifoFlags.lowByte);
                     newTile = true;
@@ -183,8 +188,8 @@ void PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchTileID = false;
                 }
             }
-            while (finishedLineDots >= 92 &&
-                    finishedLineDots < 172 + 80 + mode3_delay &&
+            while (finishedLineDots >= 94 &&
+                    finishedLineDots < 174 + 80 + mode3_delay &&
                     finishedLineDots < currentLineDots) { // normal mode3 cycle
                 if (!fifoFlags.awaitingPush) {             // get next push hw_ready
                     fifoFlags.tileAddress = bgPixelFetcher();
@@ -213,10 +218,14 @@ void PPU::ppuLoop(u8 ticks) {
                         mode3_delay += 6;
                         if (newTile) {
                             newTile = false;
-                            s8 objPenalty = bgQueue.size();
-                            objPenalty -= 2;
-                            objPenalty = (objPenalty < 0) ? 0 : objPenalty;
-                            mode3_delay += objPenalty;
+                            if (xCoord == 0) {
+                                mode3_delay += 5;
+                            } else {
+                                s8 objPenalty = bgQueue.size() - 1;
+                                objPenalty -= 2;
+                                objPenalty = (objPenalty < 0) ? 0 : objPenalty;
+                                mode3_delay += objPenalty;
+                            }
                         }
                         fifoFlags.objTileAddress = 0x8000;
                         fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex)
@@ -268,11 +277,10 @@ void PPU::ppuLoop(u8 ticks) {
                 }
                 if (xCoord > 7 && xCoord < 168) {
                     setPixel(xCoord - 8, currentLine, pixelPicker());
-                    finishedLineDots += 1;
                 }
-                if (xCoord < 168)
+                if (xCoord < 168) {
                     xCoord += 1;
-                else
+                }
                     finishedLineDots += 1;
                 if (firstTile)
                     firstTile = false;
@@ -282,9 +290,11 @@ void PPU::ppuLoop(u8 ticks) {
                     bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 &&
-                finishedLineDots < currentLineDots) { // hblank
+        if (finishedLineDots >= 168 + 80 + mode3_delay) {
             ppu_state = mode0;
+        }
+        if (finishedLineDots >= 174 + 80 + mode3_delay && finishedLineDots < 456 &&
+                finishedLineDots <= currentLineDots) { // hblank
             firstTile = true;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
@@ -330,19 +340,15 @@ void PPU::ppuLoop(u8 ticks) {
     // assert(finishedLineDots == currentLineDots);
 }
 
-std::array<u8, 23040> &PPU::getBuffer() { return frameBuffer; }
-
 u8 PPU::pixelPicker() {
     if (objQueue.empty() ||
             (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) ||
             (hw_registers.LCDC & 0b10) == 0 || objQueue.front().color == 0) {
-        return (hw_registers.LCDC & 0b1) *
-            ((hw_registers.BGP >> (2 * bgQueue.front().color)) & 0b11);
+        return (hw_registers.LCDC & 0b1) * ((hw_registers.BGP >> (2 * bgQueue.front().color)) & 0b11);
     } else {
         // there has got to be a better way to do struct member arithmetic
         return (*((&hw_registers.OBP0) + objQueue.front().palette) >>
-                (2 * objQueue.front().color)) &
-            0b11;
+                (2 * objQueue.front().color)) & 0b11;
     }
 }
 

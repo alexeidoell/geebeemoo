@@ -183,7 +183,6 @@ void MMU::write(u16 address, u8 word) {
         case VRAM:
         case VRAM + 1:
             if (ppu.ppu_state == mode3) {
-                std::cout << std::hex << (int) address << "\n";
                 return;
             } else {
                 ppu.getVram()[address - 0x8000] = word;
@@ -337,6 +336,10 @@ void MMU::statInterruptHandler() {
     if (ppu.ppu_state == mode0 && (ppu.hw_registers.STAT & 0b1000) > 0) {
             ppu.statIRQ = true;
     }
+    if ((ppu.hw_registers.STAT & 0b100000) > 0 && curr_mode != mode1 && ppu.ppu_state == mode1 && ppu.hw_registers.LY == 144) { // this shouldn't happen on cgb
+            ppu.statIRQ = true;
+    }
+    curr_mode = ppu.ppu_state;
     if (!prevIRQ && ppu.statIRQ) {
         hw_write(IF, (u8)(hw_read(IF) | 0b10));
     }

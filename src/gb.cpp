@@ -157,9 +157,6 @@ void GB::runEmu(char* filename) {
                 }
                 mem.statInterruptHandler();
             } else { // lcd disable
-                mem.hw_write(LY, (u8)0);
-                mem.write(STAT, (u8)((mem.read(0xFF41) & (u8)0b11111100) | (u8)mode0));
-                ppu.currentLineDots = 0;
                 white = true;
             }
             div_ticks += operation_ticks;

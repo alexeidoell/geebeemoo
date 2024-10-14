@@ -66,7 +66,6 @@ class PPU {
         u8 mode3_delay = 0;
         FIFO fifoFlags;
         Window window;
-        std::array<u8, 23040> frameBuffer = { 0 };
         void oamScan(u16 address);
         bool firstTile = true;
         void setPixel(u8 w, u8 h, u8 pixel);
@@ -101,6 +100,5 @@ class PPU {
         std::array<u8, 0x2000>& getVram() {
             return VRAM;
         }
-        std::array<u8, 23040>& getBuffer();
         void setSurface(SDL_Texture* texture);
 };

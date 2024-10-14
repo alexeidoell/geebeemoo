@@ -99,6 +99,7 @@ private:
     PPU& ppu;
     Timer& timer;
     std::unique_ptr<MBC> mbc;
+    PPUState curr_mode = mode2;
 public:
     u8 channel_trigger = 0;
     MMU(Joypad& joypad, PPU& ppu, Timer& timer) : joypad(joypad), ppu(ppu), timer(timer) {};
