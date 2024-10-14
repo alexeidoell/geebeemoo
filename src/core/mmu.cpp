@@ -45,6 +45,14 @@ u32 MMU::load_cart(std::string_view filename) {
             mbc->battery.emplace(save_file, cartridge.ram);
         }
     }
+    else if (cartridge.header[0x47] >= 0x0F && cartridge.header[0x47] < 0x14) {
+        mbc = std::make_unique<MBC3, std::vector<u8>&>(cartridge.ram);
+        if (cartridge.header[0x47] == 0x0F || cartridge.header[0x47] == 0x10 ||
+                cartridge.header[0x47] == 0x13) { // gross
+            mbc->battery.emplace(save_file, cartridge.ram);
+        }
+
+    }
     if (cart_file.fail()) {
         std::cout << "failed to read cartridge\n";
         return 0;
