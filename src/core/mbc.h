@@ -44,6 +44,7 @@ public:
     MBC1(std::vector<u8>& ram) : MBC(ram) {}; // WTF IS THIS??
 };
 
+/*
 enum RTC_SELECT {
     SECONDS = 0x08,
     MINUTES,
@@ -69,3 +70,4 @@ public:
     u32 mapper(u16 base_address) final;
     MBC3(std::vector<u8>& ram) : MBC(ram) {};
 };
+*/

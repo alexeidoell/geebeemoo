@@ -10,10 +10,10 @@
 
 class GB {
     Joypad joypad;
+    PPU ppu{};
     MMU mem;
     Core core;
     Timer timer;
-    PPU ppu;
     APU apu;
     SDL_Window* window = nullptr;
     SDL_Renderer* renderer = nullptr;

@@ -58,6 +58,7 @@ u32 MBC0::mapper(u16 base_address) {
     return base_address;
 }
 
+/*
 u8 MBC3::mbc_write(u16 address, u8 word) {
     switch (address >> 12) {
     case 0x0: // ram and timer enable
@@ -97,6 +98,7 @@ u8 MBC3::mbc_write(u16 address, u8 word) {
 
     return 0;
 }
+*/
 
 void Battery::writeSave() const {
     std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
