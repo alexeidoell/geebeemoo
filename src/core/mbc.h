@@ -18,7 +18,7 @@ public:
 
 class MBC {
 protected:
-    u8 rom_bank = 0;
+    u8 rom_bank = 1;
     u8 ram_bank = 0;
     u8 banking_mode = 0;
     std::vector<u8>& ram;
@@ -45,7 +45,6 @@ public:
     MBC1(std::vector<u8>& ram) : MBC(ram) {}; // WTF IS THIS??
 };
 
-/*
 enum RTC_SELECT {
     SECONDS = 0x08,
     MINUTES,
@@ -74,4 +73,4 @@ public:
         SDL_GetCurrentTime(&curr_time);
     };
 };
-*/
+

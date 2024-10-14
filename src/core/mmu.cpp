@@ -67,6 +67,7 @@ u32 MMU::load_cart(std::string_view filename) {
 }
 u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
     u8 word = 0;
+    if (address == DMA_TRIGGER) return ppu.hw_registers.DMA_TRIGGER;
     if (address < HRAM && oam_state) {
         return 0xFF;
     } else if (address >= OAM && address < UNUSABLE) {
@@ -124,6 +125,8 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             return timer.TIMA;
         case TMA:
             return timer.TMA;
+        case DIV_HIDDEN:
+            return timer.DIV & 0xFF;
         case DIV:
             return timer.DIV >> 8;
         case TAC:
@@ -180,6 +183,7 @@ void MMU::write(u16 address, u8 word) {
         case VRAM:
         case VRAM + 1:
             if (ppu.ppu_state == mode3) {
+                std::cout << std::hex << (int) address << "\n";
                 return;
             } else {
                 ppu.getVram()[address - 0x8000] = word;
@@ -235,7 +239,6 @@ void MMU::write(u16 address, u8 word) {
                 oam_state = true;
                 oam_address = word << 8;
             }
-            return;
         case LCDC:
         case STAT:
         case SCY:
@@ -258,7 +261,11 @@ void MMU::write(u16 address, u8 word) {
 void MMU::dwrite(u16 address, u16 dword) {
     if (address < HRAM && oam_state) {
         return;
-    } else if (address >= OAM && address < UNUSABLE && (ppu.ppu_state == mode2 || ppu.ppu_state == mode3)) { 
+    } else if (address >= OAM && address < UNUSABLE) {
+        if (!(ppu.ppu_state == mode2 || ppu.ppu_state == mode3)) {
+            ppu.oam_mem[address - 0xFE00] = dword & 0xFF;
+            ppu.oam_mem[address - 0xFE00 + 1] = dword >> 8;
+        }
         return;
     }
     if (address >= 0x8000 && address < 0xA000 && ppu.ppu_state == mode3) {
@@ -301,7 +308,7 @@ u8 MMU::oam_transfer(u8 ticks) {
             oam_offset = 0;
             break;
         }
-        ppu.oam_mem[oam_offset] = mem[oam_address + oam_offset];
+        ppu.oam_mem[oam_offset] = hw_read(oam_address + oam_offset);
         oam_offset += 1;
     }
     return 0;
@@ -309,26 +316,26 @@ u8 MMU::oam_transfer(u8 ticks) {
 
 void MMU::statInterruptHandler() {
     bool prevIRQ = ppu.statIRQ;
+    ppu.statIRQ = false;
+    if (ppu.hw_registers.LY != ppu.hw_registers.LYC) {
+        ppu.hw_registers.STAT &= 0b11111011;
+    }
     if (ppu.hw_registers.LYC == 0 && ppu.hw_registers.LY == 153 && ppu.currentLineDots > 4 && (ppu.hw_registers.STAT & 0b1000000) > 0) {
             ppu.statIRQ = true;
             ppu.hw_registers.STAT |= 0b100;
-    } else if ((ppu.hw_registers.LY == ppu.hw_registers.LYC) && (ppu.hw_registers.STAT & 0b1000000) > 0) {
+    }
+    if ((ppu.hw_registers.LY == ppu.hw_registers.LYC) && (ppu.hw_registers.STAT & 0b1000000) > 0) {
             ppu.statIRQ = true;
             ppu.hw_registers.STAT |= 0b100;
-    } else if (ppu_state == mode2 && (ppu.hw_registers.STAT & 0b100000) > 0) {
+    }
+    if (ppu.ppu_state == mode2 && (ppu.hw_registers.STAT & 0b100000) > 0) {
             ppu.statIRQ = true;
-            ppu.hw_registers.STAT = (ppu.hw_registers.STAT & 0b11111100) | mode2;
-    } else if (ppu_state == mode1 && (ppu.hw_registers.STAT & 0b10000) > 0) {
+    }
+    if (ppu.ppu_state == mode1 && (ppu.hw_registers.STAT & 0b10000) > 0) {
             ppu.statIRQ = true;
-            ppu.hw_registers.STAT = (ppu.hw_registers.STAT & 0b11111100) | mode1;
-    } else if (ppu_state == mode0 && (ppu.hw_registers.STAT & 0b1000) > 0) {
+    }
+    if (ppu.ppu_state == mode0 && (ppu.hw_registers.STAT & 0b1000) > 0) {
             ppu.statIRQ = true;
-            ppu.hw_registers.STAT = (ppu.hw_registers.STAT & 0b11111100) | mode0;
-    } else {
-        ppu.statIRQ = false;;
-        if (ppu.hw_registers.LY != ppu.hw_registers.LYC) {
-            ppu.hw_registers.STAT &= 0b11111011;
-        }
     }
     if (!prevIRQ && ppu.statIRQ) {
         hw_write(IF, (u8)(hw_read(IF) | 0b10));

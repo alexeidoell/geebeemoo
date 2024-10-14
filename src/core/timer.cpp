@@ -17,7 +17,8 @@ s8 Timer::tima_inc() {
         return -1;
     } else if ((TIMA == 0) && tima_flag) {
         tima_flag = false;
-        TIMA = tima_val | 0b100;
+        TIMA = tima_val;
+        timer_interrupt = true;
     } else {
         TIMA += 1;
     }

@@ -590,7 +590,7 @@ u8 Core::op_tree() {
         registers.gpr.n.b = registers.gpr.n.h;
         break;
     case 0x45: // LD B, L
-        registers.gpr.n.b = registers.gpr.n.h;
+        registers.gpr.n.b = registers.gpr.n.l;
         break;
     case 0x46: // LD B, [HL]
         registers.gpr.n.b = mem.read(hl);

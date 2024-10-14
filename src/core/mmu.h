@@ -102,7 +102,6 @@ private:
 public:
     u8 channel_trigger = 0;
     MMU(Joypad& joypad, PPU& ppu, Timer& timer) : joypad(joypad), ppu(ppu), timer(timer) {};
-    PPUState ppu_state = mode2;
     u32 load_cart(std::string_view filename);
     u8 read(u16 address);
     void write(u16 address, u8 word);
@@ -115,10 +114,16 @@ public:
         if (address < 0x8000) {
             return cartridge.rom[mbc->mapper(address) % cartridge.rom_size];
         }
+        if (address < 0xC000) {
+            return ppu.getVram()[address - 0x8000];
+        }
         if (address < 0xC000 && address >= 0xA000) {
             if (!mbc->ram_enable) {
                 return 0xFF;
             } else return cartridge.ram[mbc->mapper(address)];
+        }
+        if (address >= OAM && address < UNUSABLE) {
+            return ppu.oam_mem[address - 0xFE00];
         }
         return mem[address];
     }

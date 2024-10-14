@@ -140,8 +140,8 @@ void GB::runEmu(char* filename) {
         }
         white = false;
         while (current_ticks < maxTicks) {
-            u16 div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
-            u8 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
+            u16 div = (mem.read(DIV) << 8) + mem.read(DIV_HIDDEN);
+            u8 tima_bit = (div >> tima_freq[mem.read(TAC) & 0b11]) & 0b1;
 #ifdef DEBUG
             doctor_log(frame, current_ticks, log, core, mem);
 #endif
@@ -158,7 +158,7 @@ void GB::runEmu(char* filename) {
                 mem.statInterruptHandler();
             } else { // lcd disable
                 mem.hw_write(LY, (u8)0);
-                mem.hw_write(STAT, (u8)((mem.hw_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
+                mem.write(STAT, (u8)((mem.read(0xFF41) & (u8)0b11111100) | (u8)mode0));
                 ppu.currentLineDots = 0;
                 white = true;
             }
@@ -166,14 +166,18 @@ void GB::runEmu(char* filename) {
             while (div_ticks >= 4) {
                 timer.div_inc();
                 apu.period_clock();
-                div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
-                u8 after_tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1; 
-                if ((mem.read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem.read(0xFF07) > 3)) { // falling edge
+                div = (mem.read(DIV) << 8) + mem.read(DIV_HIDDEN);
+                u8 after_tima_bit = (div >> tima_freq[mem.read(TAC) & 0b11]) & 0b1; 
+                if ((mem.read(TAC) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem.read(TAC) > 3)) { // falling edge
                     tima_flag = (timer.tima_inc() == -1);
+                    if (timer.timer_interrupt) {
+                        mem.hw_write(0xFF0F, (mem.hw_read(0xFF0F) | 0b100));
+                        timer.timer_interrupt = false;
+                    }
                 }
                 div_ticks -= 4;
-                div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
-                tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
+                div = (mem.read(DIV) << 8) + mem.read(DIV_HIDDEN);
+                tima_bit = (div >> tima_freq[mem.read(TAC) & 0b11]) & 0b1;
             }
         }
         if (first_frame) {

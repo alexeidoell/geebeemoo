@@ -6,6 +6,7 @@ class Timer {
         bool tima_flag = false;
         u8 tima_val = 0;
     public:
+        bool timer_interrupt = false;
         u16 DIV = 0;
         u8 TIMA = 0;
         u8 TMA = 0;

@@ -1,10 +1,11 @@
-#include <SDL3/SDL_render.h>
-#include <ppu.h>
-#include <mmu.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_render.h>
 #include <SDL3/SDL_surface.h>
+#include <iostream>
+#include <mmu.h>
+#include <ppu.h>
 
-void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
+void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object *object) {
     u16 line = 0;
     u16 mask = 0;
     line = 0;
@@ -15,7 +16,7 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
         mask = 0b1 << j;
         line += (((u16)tileHigh & mask) << (j + 1)) + (((u16)tileLow & mask) << j);
     }
-    
+
     if (flipCond) {
         u16 tempLine = line;
         line = 0;
@@ -25,7 +26,8 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
         }
     }
 
-    //std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)line << '\n';
+    // std::cout << std::setw(4) << std::setfill('0') << std::hex << (int)line <<
+    // '\n';
     u8 objQueueSize = objQueue.size();
     u8 xCoord = 0;
     u8 palette = 0;
@@ -45,7 +47,8 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
         if (i < objQueueSize) {
             Pixel oldPixel = objQueue.front();
             objQueue.pop();
-            if (oldPixel.color == 0 || oldPixel.xCoord > pixel.xCoord) objQueue.push(pixel);
+            if (oldPixel.color == 0 || oldPixel.xCoord > pixel.xCoord)
+                objQueue.push(pixel);
             else {
                 if (oldPixel.xCoord == pixel.xCoord && pixel.xCoord < oldPixel.xCoord) {
                     objQueue.push(pixel);
@@ -53,8 +56,8 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
                     objQueue.push(oldPixel);
                 }
             }
-        } else objQueue.push(pixel);
-
+        } else
+            objQueue.push(pixel);
     }
 }
 
@@ -75,19 +78,18 @@ void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
         color >>= (14 - (i * 2));
         Pixel pixel(color, 0, 0, 0, 0, 0);
         pixel.color = color;
-        if (bgQueue.size() < 8) bgQueue.push(pixel);
+        if (bgQueue.size() < 8)
+            bgQueue.push(pixel);
     }
-
-
 }
 
 u8 PPU::getTileByte(u16 index) { // 2 dots
-    return VRAM[index - 0x8000]; 
+    return VRAM[index - 0x8000];
 }
 
 u16 PPU::bgPixelFetcher() { //  2 dots
-    u16 tileMap = 0x9800; 
-    if ((hw_registers.LCDC & 0b1000) > 0) { 
+    u16 tileMap = 0x9800;
+    if ((hw_registers.LCDC & 0b1000) > 0) {
         tileMap = 0x9C00;
     }
     u16 offset = 0xFF & ((u8)(hw_registers.LY + hw_registers.SCY) / 8);
@@ -105,9 +107,9 @@ u16 PPU::bgPixelFetcher() { //  2 dots
     return tileAddress;
 }
 
-u16 PPU::winPixelFetcher() { 
-    u16 tileMap = 0x9800; 
-    if ((hw_registers.LCDC & 0b1000000) > 0) { 
+u16 PPU::winPixelFetcher() {
+    u16 tileMap = 0x9800;
+    if ((hw_registers.LCDC & 0b1000000) > 0) {
         tileMap = 0x9C00;
     }
     u16 offset = 0xFF & (window.yCoord / 8);
@@ -126,7 +128,7 @@ u16 PPU::winPixelFetcher() {
 
 void PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
-    u8 currentLine = hw_registers.LY; // ly register 
+    u8 currentLine = hw_registers.LY; // ly register
     while (currentLine < 144 && finishedLineDots < currentLineDots) {
         if (finishedLineDots >= 456) {
             break;
@@ -140,17 +142,23 @@ void PPU::ppuLoop(u8 ticks) {
                 oamScan(address);
                 finishedLineDots += 2;
             }
-        } 
-        if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 + mode3_delay && finishedLineDots < currentLineDots) {
+        }
+        if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 + mode3_delay &&
+                finishedLineDots < currentLineDots) {
             ppu_state = mode3;
             if (finishedLineDots == 80) { // setting up mode3
-                while(!bgQueue.empty()) bgQueue.pop();
-                while(!objQueue.empty()) objQueue.pop();
+                while (!bgQueue.empty())
+                    bgQueue.pop();
+                while (!objQueue.empty())
+                    objQueue.pop();
             }
-            while (finishedLineDots < 86 && finishedLineDots < currentLineDots) { // do nothing to simulate discarded tile
+            while (finishedLineDots < 86 &&
+                    finishedLineDots <
+                    currentLineDots) { // do nothing to simulate discarded tile
                 finishedLineDots += 2;
             }
-            while (finishedLineDots >= 86 && finishedLineDots < 92 && finishedLineDots < currentLineDots) { // initial fetches
+            while (finishedLineDots >= 86 && finishedLineDots < 92 &&
+                    finishedLineDots < currentLineDots) { // initial fetches
                 if (!fifoFlags.fetchTileID) {
                     fifoFlags.tileAddress = bgPixelFetcher();
                     fifoFlags.fetchTileID = true;
@@ -175,8 +183,10 @@ void PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchTileID = false;
                 }
             }
-            while (finishedLineDots >= 92 && finishedLineDots < 172 + 80 + mode3_delay && finishedLineDots < currentLineDots) { // normal mode3 cycle
-                if (!fifoFlags.awaitingPush) { // get next push hw_ready
+            while (finishedLineDots >= 92 &&
+                    finishedLineDots < 172 + 80 + mode3_delay &&
+                    finishedLineDots < currentLineDots) { // normal mode3 cycle
+                if (!fifoFlags.awaitingPush) {             // get next push hw_ready
                     fifoFlags.tileAddress = bgPixelFetcher();
                     fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
                     fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
@@ -194,7 +204,7 @@ void PPU::ppuLoop(u8 ticks) {
                 if (firstTile) {
                     for (auto i = 0; i < (hw_registers.SCX % 8); ++i) {
                         bgQueue.pop();
-                        //xCoord += 1;
+                        // xCoord += 1;
                         mode3_delay += 1;
                     }
                 }
@@ -208,31 +218,42 @@ void PPU::ppuLoop(u8 ticks) {
                             objPenalty = (objPenalty < 0) ? 0 : objPenalty;
                             mode3_delay += objPenalty;
                         }
-                        fifoFlags.objTileAddress = 0x8000;                       
-                        fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex) << 4; // assumes tile is not flipped
+                        fifoFlags.objTileAddress = 0x8000;
+                        fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex)
+                            << 4; // assumes tile is not flipped
                         bool flipCond = (objArr[i].flags & 0b1000000) > 0;
                         if (flipCond) {
-                            fifoFlags.objTileAddress += (~(((currentLine - (objArr[i].yPos - 16)) % 8) << 1)) & 0b1110;
-                        } else fifoFlags.objTileAddress += ((currentLine - (objArr[i].yPos - 16)) % 8) << 1;
+                            fifoFlags.objTileAddress +=
+                                (~(((currentLine - (objArr[i].yPos - 16)) % 8) << 1)) &
+                                0b1110;
+                        } else
+                            fifoFlags.objTileAddress +=
+                                ((currentLine - (objArr[i].yPos - 16)) % 8) << 1;
                         if ((hw_registers.LCDC & 0b100) > 0) { // 8x16 tiles
                             if ((objArr[i].yPos - currentLine) > 8) {
                                 if (!flipCond) {
                                     fifoFlags.objTileAddress &= ~((u16)0b10000);
-                                } else fifoFlags.objTileAddress |= ((u16)0b10000);
+                                } else
+                                    fifoFlags.objTileAddress |= ((u16)0b10000);
                             } else {
                                 if (flipCond) {
                                     fifoFlags.objTileAddress &= ~((u16)0b10000);
-                                } else fifoFlags.objTileAddress |= ((u16)0b10000);
+                                } else
+                                    fifoFlags.objTileAddress |= ((u16)0b10000);
                             }
                         }
                         fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress + 1);
                         fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress);
-                        combineObjTile(fifoFlags.objHighByte, fifoFlags.objLowByte, &objArr[i]);
+                        combineObjTile(fifoFlags.objHighByte, fifoFlags.objLowByte,
+                                &objArr[i]);
                     }
                 }
-                if (xCoord < 168 && ((hw_registers.LCDC & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == hw_registers.WX || window.WX_cond)) { // window time
+                if (xCoord < 168 && ((hw_registers.LCDC & 0b100000) > 0) &&
+                        window.WY_cond &&
+                        (xCoord - 1 == hw_registers.WX || window.WX_cond)) { // window time
                     if (bgQueue.empty() || window.WX_cond == false) {
-                        while (!bgQueue.empty()) bgQueue.pop();
+                        while (!bgQueue.empty())
+                            bgQueue.pop();
                         fifoFlags.tileAddress = winPixelFetcher();
                         window.xCoord += 8;
                         fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
@@ -249,14 +270,20 @@ void PPU::ppuLoop(u8 ticks) {
                     setPixel(xCoord - 8, currentLine, pixelPicker());
                     finishedLineDots += 1;
                 }
-                if (xCoord < 168) xCoord += 1;
-                else finishedLineDots += 1;
-                if (firstTile) firstTile = false;
-                if (!objQueue.empty()) objQueue.pop();
-                if (!bgQueue.empty()) bgQueue.pop();
+                if (xCoord < 168)
+                    xCoord += 1;
+                else
+                    finishedLineDots += 1;
+                if (firstTile)
+                    firstTile = false;
+                if (!objQueue.empty())
+                    objQueue.pop();
+                if (!bgQueue.empty())
+                    bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
+        if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 &&
+                finishedLineDots < currentLineDots) { // hblank
             ppu_state = mode0;
             firstTile = true;
             while (finishedLineDots < currentLineDots) {
@@ -273,51 +300,58 @@ void PPU::ppuLoop(u8 ticks) {
         if (currentLine == 153) {
             currentLine = 0;
             ppu_state = mode2;
-        }
-        else currentLine += 1;
+        } else
+            currentLine += 1;
         hw_registers.LY = currentLine;
         if (currentLine == hw_registers.LYC) { // ly = lyc
             hw_registers.STAT |= 0b100;
-        } else hw_registers.STAT &= 0b11111011;
+        } else
+            hw_registers.STAT &= 0b11111011;
         window.xCoord = 0;
         xCoord = 0;
         mode3_delay = 0;
         objArr = {};
         objFetchIdx = 0;
         currentLineDots -= 456;
-        finishedLineDots = 0; // idk tbh?
+        finishedLineDots = 0;     // idk tbh?
         if (currentLine == 144) { // vblank
             ppu_state = mode1;
             window.yCoord = 0;
         }
-        if (ppu_state != mode1) { 
+        if (ppu_state != mode1) {
             ppu_state = mode2;
-        } 
+        }
     }
-    //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem.hw_read(LY) << "\n";
-    //std::cout << (int)currentLineDots << " " << (int)mem.hw_read(LY) << " " << ppu_state << '\n';
+    // std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " <<
+    // (int)ticks << " " << (int)mem.hw_read(LY) << "\n"; std::cout <<
+    // (int)currentLineDots << " " << (int)mem.hw_read(LY) << " " << ppu_state <<
+    // '\n';
     hw_registers.STAT = (hw_registers.STAT & 0b11111100) | ppu_state;
-    //assert(finishedLineDots == currentLineDots);
+    // assert(finishedLineDots == currentLineDots);
 }
 
-std::array<u8, 23040>& PPU::getBuffer() {
-    return frameBuffer;
-}
+std::array<u8, 23040> &PPU::getBuffer() { return frameBuffer; }
 
 u8 PPU::pixelPicker() {
-    if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (hw_registers.LCDC & 0b10) == 0 || objQueue.front().color == 0) {
-        return (hw_registers.LCDC & 0b1) * ((hw_registers.BGP >> (2 * bgQueue.front().color)) & 0b11);
+    if (objQueue.empty() ||
+            (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) ||
+            (hw_registers.LCDC & 0b10) == 0 || objQueue.front().color == 0) {
+        return (hw_registers.LCDC & 0b1) *
+            ((hw_registers.BGP >> (2 * bgQueue.front().color)) & 0b11);
     } else {
         // there has got to be a better way to do struct member arithmetic
-        return (*((&hw_registers.OBP0) + objQueue.front().palette) >> (2 * objQueue.front().color)) & 0b11;
+        return (*((&hw_registers.OBP0) + objQueue.front().palette) >>
+                (2 * objQueue.front().color)) &
+            0b11;
     }
 }
 
-void PPU::oamScan(u16 address) { // 2 dots
-    u8 currentLine = hw_registers.LY; // ly register    
+void PPU::oamScan(u16 address) {    // 2 dots
+    u8 currentLine = hw_registers.LY; // ly register
     address -= 0xFE00;
     u8 objY_pos = oam_mem[address];
-    Object obj(objY_pos, oam_mem[address + 1], oam_mem[address + 2], oam_mem[address + 3], address);
+    Object obj(objY_pos, oam_mem[address + 1], oam_mem[address + 2],
+            oam_mem[address + 3], address);
     if ((hw_registers.LCDC & 0b100) > 0) { // 8x16 tiles
         if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
             if (objFetchIdx < 10) {
@@ -326,9 +360,12 @@ void PPU::oamScan(u16 address) { // 2 dots
             }
         }
     } else { // 8x8 tiles
-        if (((objY_pos - 8) - currentLine) > 0 && ((objY_pos - 8) - currentLine) < 9) {
+        if (((objY_pos - 8) - currentLine) > 0 &&
+                ((objY_pos - 8) - currentLine) < 9) {
             if (objFetchIdx < 10) {
-                //std::cout << std::hex << (int)address << " " << std::dec << (int)objFetchIdx << " " << (int)objY_pos << " " << (int)currentLine << "\n";
+                // std::cout << std::hex << (int)address << " " << std::dec <<
+                // (int)objFetchIdx << " " << (int)objY_pos << " " << (int)currentLine
+                // << "\n";
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
@@ -337,12 +374,12 @@ void PPU::oamScan(u16 address) { // 2 dots
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
-    constexpr static std::array<u16,4> colors = { 0xFFFF, 0xAD6B, 0x5295, 0x0001 };
-    u16* pixelAddress = std::bit_cast<u16*>(surface->pixels);
+    constexpr static std::array<u16, 4> colors = {0xFFFF, 0xAD6B, 0x5295, 0x0001};
+    u16 *pixelAddress = std::bit_cast<u16 *>(surface->pixels);
     pixelAddress += surface->w * h + w;
     *pixelAddress = colors[pixel];
 }
 
-void PPU::setSurface(SDL_Texture* texture) {
+void PPU::setSurface(SDL_Texture *texture) {
     SDL_LockTextureToSurface(texture, nullptr, &surface);
 }
