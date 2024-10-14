@@ -1,6 +1,5 @@
 #pragma once
 #include <lib/types.h>
-#include <mmu.h>
 #include <array>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_surface.h>
@@ -48,16 +47,17 @@ struct FIFO {
 
 enum tileType { bg, win, obj };
 
+enum PPUState { mode0 = 0, mode1, mode2, mode3 };
+
 class PPU {
     private:
-        MMU& mem;
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
         void combineObjTile(u8 tileHigh, u8 tileLow, Object * object);
         void combineBGTile(u8 tileHigh, u8 tileLow);
         u8 pixelPicker();
-        PPUState& ppu_state;
+        std::array<u8, 0x2000> VRAM{};
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
@@ -73,19 +73,34 @@ class PPU {
         SDL_Surface* surface = nullptr;
         bool newTile = true;
         s16 finishedLineDots = 0;
-        void statInterruptHandler();
-        bool statIRQ = false;
     public:
+        struct {
+            u8 LCDC;
+            u8 STAT;
+            u8 SCY;
+            u8 SCX;
+            u8 LY;
+            u8 LYC;
+            u8 DMA_TRIGGER;
+            u8 BGP;
+            u8 OBP0;
+            u8 OBP1;
+            u8 WY;
+            u8 WX;
+        } hw_registers{};
+        std::array<u8, 0x100> oam_mem{};
+        bool statIRQ = false;
+        PPUState ppu_state = mode2;
         s16 currentLineDots = 0; // need to keep track of state between
                              // calls so that the ppu can tell the
                              // memory or cpu what not to do before
                              // the next call of the ppu loop that will
                              // resume the state it was at in the current
                              // line
-        PPU(MMU& mem) 
-        :mem(mem), ppu_state(mem.ppu_state) {
-        } // this feels gross
         void ppuLoop(u8 ticks);
+        std::array<u8, 0x2000>& getVram() {
+            return VRAM;
+        }
         std::array<u8, 23040>& getBuffer();
         void setSurface(SDL_Texture* texture);
 };

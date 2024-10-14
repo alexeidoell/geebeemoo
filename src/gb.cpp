@@ -7,7 +7,6 @@
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
-#include <chrono>
 #include <cstdlib>
 #include <lib/types.h>
 #include <core/mmu.h>
@@ -19,7 +18,7 @@
 #include <iomanip>
 #include <fstream>
 
-GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
+GB::GB() : mem(joypad, ppu), core(mem), timer(mem), apu(mem),
     window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED)) {
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
@@ -92,8 +91,8 @@ void GB::runEmu(char* filename) {
     constexpr u64 frameDelay = 1000000000 / FPS;
     const u32 maxTicks = 70224; // number of instuctions per frame
     u32 current_ticks = maxTicks;
-    u64 frameStart;
-    u64 frameTime;
+    u64 frameStart = 0;
+    u64 frameTime = 0;
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;
@@ -151,11 +150,15 @@ void GB::runEmu(char* filename) {
             if (mem.get_oam()) {
                 mem.oam_transfer(current_ticks);
             }
-            if ((mem.hw_read(0xFF40) & 0x80) == 0x80) {
+            if ((ppu.hw_registers.LCDC & 0x80) == 0x80) {
                 ppu.ppuLoop(operation_ticks);
+                if (ppu.hw_registers.LY == 144) {
+                    mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b1));
+                }
+                mem.statInterruptHandler();
             } else { // lcd disable
-                mem.hw_write(0xFF44, (u8)0);
-                mem.hw_write(0xFF41, (u8)((mem.hw_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
+                mem.hw_write(LY, (u8)0);
+                mem.hw_write(STAT, (u8)((mem.hw_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
                 ppu.currentLineDots = 0;
                 white = true;
             }

@@ -22,7 +22,8 @@ void Core::bootup() {
     mem.write(0xFF41, 0x81);
     mem.write(0xFF07, 0xF8);
     mem.write(0xFF47, 0xFC);
-    mem.dwrite(0xFF48, 0x0000);
+    mem.write(0xFF48, 0x00);
+    mem.write(0xFF49, 0x00);
 
     // need to add the rest of the boot up process
     // maybe memmove a static const array based on

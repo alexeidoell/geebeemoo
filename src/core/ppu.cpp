@@ -3,7 +3,6 @@
 #include <mmu.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_surface.h>
-#include <cassert>
 
 void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
     u16 line = 0;
@@ -83,23 +82,23 @@ void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
 }
 
 u8 PPU::getTileByte(u16 index) { // 2 dots
-    return mem.hw_read(index); 
+    return VRAM[index - 0x8000]; 
 }
 
 u16 PPU::bgPixelFetcher() { //  2 dots
     u16 tileMap = 0x9800; 
-    if ((mem.hw_read(LCDC) & 0b1000) > 0) { 
+    if ((hw_registers.LCDC & 0b1000) > 0) { 
         tileMap = 0x9C00;
     }
-    u16 offset = 0xFF & ((u8)(mem.hw_read(LY) + mem.hw_read(SCY)) / 8);
+    u16 offset = 0xFF & ((u8)(hw_registers.LY + hw_registers.SCY) / 8);
     offset <<= 5;
-    offset |= 0x1F & ((u8)(xCoord + mem.hw_read(SCX)) / 8);
+    offset |= 0x1F & ((u8)(xCoord + hw_registers.SCX) / 8);
     offset &= 0x3FF;
-    u16 tileID = mem.hw_read(tileMap + offset);
+    u16 tileID = VRAM[tileMap + offset - 0x8000];
     u16 tileAddress = (tileID) << 4;
-    tileAddress += (((u16)mem.hw_read(LY) + (u16)mem.read(SCY)) % 8) << 1;
+    tileAddress += (((u16)hw_registers.LY + (u16)hw_registers.SCY) % 8) << 1;
     tileAddress += 0b1 << 15;
-    bool addressing_method = (mem.hw_read(LCDC) & 0b10000) == 0b10000;
+    bool addressing_method = (hw_registers.LCDC & 0b10000) == 0b10000;
     if (!addressing_method && (tileID & 0x80) == 0) {
         tileAddress += (0b1 << 12);
     }
@@ -108,17 +107,17 @@ u16 PPU::bgPixelFetcher() { //  2 dots
 
 u16 PPU::winPixelFetcher() { 
     u16 tileMap = 0x9800; 
-    if ((mem.hw_read(LCDC) & 0b1000000) > 0) { 
+    if ((hw_registers.LCDC & 0b1000000) > 0) { 
         tileMap = 0x9C00;
     }
     u16 offset = 0xFF & (window.yCoord / 8);
     offset <<= 5;
     offset += 0x1F & (window.xCoord / 8);
-    u8 tileID = mem.hw_read(tileMap + offset);
+    u16 tileID = VRAM[tileMap + offset - 0x8000];
     u16 tileAddress = ((u16)tileID) << 4;
     tileAddress += (window.yCoord % 8) << 1;
     tileAddress += 0b1 << 15;
-    bool addressing_method = (mem.hw_read(LCDC) & 0b10000) == 0b10000;
+    bool addressing_method = (hw_registers.LCDC & 0b10000) == 0b10000;
     if (!addressing_method && (tileID & 0x80) == 0) {
         tileAddress += (0b1 << 12);
     }
@@ -127,14 +126,13 @@ u16 PPU::winPixelFetcher() {
 
 void PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
-    statInterruptHandler();
-    u8 currentLine = mem.hw_read(LY); // ly register 
-    while (mem.hw_read(LY) < 144 && finishedLineDots < currentLineDots) {
+    u8 currentLine = hw_registers.LY; // ly register 
+    while (currentLine < 144 && finishedLineDots < currentLineDots) {
         if (finishedLineDots >= 456) {
             break;
         }
         if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
-            if (mem.read(WY) <= currentLine) {
+            if (hw_registers.WY <= currentLine) {
                 window.WY_cond = true;
             }
             while (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
@@ -194,7 +192,7 @@ void PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchTileID = false;
                 }
                 if (firstTile) {
-                    for (auto i = 0; i < (mem.hw_read(SCX) % 8); ++i) {
+                    for (auto i = 0; i < (hw_registers.SCX % 8); ++i) {
                         bgQueue.pop();
                         //xCoord += 1;
                         mode3_delay += 1;
@@ -216,7 +214,7 @@ void PPU::ppuLoop(u8 ticks) {
                         if (flipCond) {
                             fifoFlags.objTileAddress += (~(((currentLine - (objArr[i].yPos - 16)) % 8) << 1)) & 0b1110;
                         } else fifoFlags.objTileAddress += ((currentLine - (objArr[i].yPos - 16)) % 8) << 1;
-                        if ((mem.hw_read(LCDC) & 0b100) > 0) { // 8x16 tiles
+                        if ((hw_registers.LCDC & 0b100) > 0) { // 8x16 tiles
                             if ((objArr[i].yPos - currentLine) > 8) {
                                 if (!flipCond) {
                                     fifoFlags.objTileAddress &= ~((u16)0b10000);
@@ -232,7 +230,7 @@ void PPU::ppuLoop(u8 ticks) {
                         combineObjTile(fifoFlags.objHighByte, fifoFlags.objLowByte, &objArr[i]);
                     }
                 }
-                if (xCoord < 168 && ((mem.read(LCDC) & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == mem.read(WX) || window.WX_cond)) { // window time
+                if (xCoord < 168 && ((hw_registers.LCDC & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == hw_registers.WX || window.WX_cond)) { // window time
                     if (bgQueue.empty() || window.WX_cond == false) {
                         while (!bgQueue.empty()) bgQueue.pop();
                         fifoFlags.tileAddress = winPixelFetcher();
@@ -277,10 +275,10 @@ void PPU::ppuLoop(u8 ticks) {
             ppu_state = mode2;
         }
         else currentLine += 1;
-        mem.hw_write(LY, (u8)(currentLine));
-        if (currentLine == mem.hw_read(LYC)) { // ly = lyc
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) | 0b100));
-        } else mem.hw_write(STAT, (u8)(mem.hw_read(STAT) & 0b11111011));
+        hw_registers.LY = currentLine;
+        if (currentLine == hw_registers.LYC) { // ly = lyc
+            hw_registers.STAT |= 0b100;
+        } else hw_registers.STAT &= 0b11111011;
         window.xCoord = 0;
         xCoord = 0;
         mode3_delay = 0;
@@ -291,16 +289,14 @@ void PPU::ppuLoop(u8 ticks) {
         if (currentLine == 144) { // vblank
             ppu_state = mode1;
             window.yCoord = 0;
-            mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b1));
         }
         if (ppu_state != mode1) { 
             ppu_state = mode2;
         } 
-        statInterruptHandler();
     }
     //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem.hw_read(LY) << "\n";
     //std::cout << (int)currentLineDots << " " << (int)mem.hw_read(LY) << " " << ppu_state << '\n';
-    mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & (u8)0b11111100) | (u8)ppu_state));
+    hw_registers.STAT = (hw_registers.STAT & 0b11111100) | ppu_state;
     //assert(finishedLineDots == currentLineDots);
 }
 
@@ -309,18 +305,20 @@ std::array<u8, 23040>& PPU::getBuffer() {
 }
 
 u8 PPU::pixelPicker() {
-    if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem.read(LCDC) & 0b10) == 0 || objQueue.front().color == 0) {
-        return (mem.read(LCDC) & 0b1) * ((mem.hw_read(BGP) >> (2 * bgQueue.front().color)) & 0b11);
+    if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (hw_registers.LCDC & 0b10) == 0 || objQueue.front().color == 0) {
+        return (hw_registers.LCDC & 0b1) * ((hw_registers.BGP >> (2 * bgQueue.front().color)) & 0b11);
     } else {
-        return (mem.hw_read(OBP0 + objQueue.front().palette) >> (2 * objQueue.front().color)) & 0b11;
+        // there has got to be a better way to do struct member arithmetic
+        return (*((&hw_registers.OBP0) + objQueue.front().palette) >> (2 * objQueue.front().color)) & 0b11;
     }
 }
 
 void PPU::oamScan(u16 address) { // 2 dots
-    u8 currentLine = mem.hw_read(LY); // ly register    
-    u8 objY_pos = mem.hw_read(address);
-    Object obj(objY_pos, mem.hw_read(address + 1), mem.hw_read(address + 2), mem.hw_read(address + 3), address - 0xFE00);
-    if ((mem.hw_read(LCDC) & 0b100) > 0) { // 8x16 tiles
+    u8 currentLine = hw_registers.LY; // ly register    
+    address -= 0xFE00;
+    u8 objY_pos = oam_mem[address];
+    Object obj(objY_pos, oam_mem[address + 1], oam_mem[address + 2], oam_mem[address + 3], address);
+    if ((hw_registers.LCDC & 0b100) > 0) { // 8x16 tiles
         if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
@@ -343,34 +341,6 @@ void PPU::setPixel(u8 w, u8 h, u8 pixel) {
     u16* pixelAddress = std::bit_cast<u16*>(surface->pixels);
     pixelAddress += surface->w * h + w;
     *pixelAddress = colors[pixel];
-}
-
-void PPU::statInterruptHandler() {
-    bool prevIRQ = statIRQ;
-    if (mem.hw_read(LYC) == 0 && mem.hw_read(LY) == 153 && currentLineDots > 4 && (mem.hw_read(STAT) & 0b1000000) > 0) {
-            statIRQ = true;
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) | 0b100));
-    } else if ((mem.hw_read(LY) == mem.hw_read(LYC) && (mem.hw_read(STAT) & 0b1000000) > 0)) {
-            statIRQ = true;
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) | 0b100));
-    } else if (ppu_state == mode2 && (mem.hw_read(STAT) & 0b100000) > 0) {
-            statIRQ = true;
-            mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & 0b11111100) | mode2));
-    } else if (ppu_state == mode1 && (mem.hw_read(STAT) & 0b10000) > 0) {
-            statIRQ = true;
-            mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & 0b11111100) | mode1));
-    } else if (ppu_state == mode0 && (mem.hw_read(STAT) & 0b1000) > 0) {
-            statIRQ = true;
-            mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & 0b11111100) | mode0));
-    } else {
-        statIRQ = false;
-        if (mem.hw_read(LY) != mem.hw_read(LYC)) {
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) & 0b11111011));
-        }
-    }
-    if (!prevIRQ && statIRQ) {
-        mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b10));
-    }
 }
 
 void PPU::setSurface(SDL_Texture* texture) {

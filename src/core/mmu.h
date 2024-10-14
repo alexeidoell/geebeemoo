@@ -1,4 +1,5 @@
 #pragma once
+#include "ppu.h"
 #include <array>
 #include <memory>
 #include <string_view>
@@ -71,8 +72,6 @@ enum DMG_HW_REGISTERS {
     IE = 0xFFFF
 };
 
-enum PPUState { mode0 = 0, mode1, mode2, mode3 };
-
 struct Cartridge {
     std::array<u8, 0x50> header = {0};
     u32 rom_size = 0; 
@@ -96,10 +95,11 @@ private:
     u8 oam_offset = 0;
     u16 oam_address = 0;
     Joypad& joypad;
+    PPU& ppu;
     std::unique_ptr<MBC> mbc;
 public:
     u8 channel_trigger = 0;
-    MMU(Joypad& joypad) : joypad(joypad) {};
+    MMU(Joypad& joypad, PPU& ppu) : joypad(joypad), ppu(ppu) {};
     PPUState ppu_state = mode2;
     u32 load_cart(std::string_view filename);
     u8 read(u16 address);
@@ -107,6 +107,7 @@ public:
     void dwrite(u16 address, u16 dword);
     bool tima_tick = false;
     u8 oam_transfer(u8 ticks);
+    void statInterruptHandler();
     // inlines
     u8 hw_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
         if (address < 0x8000) {

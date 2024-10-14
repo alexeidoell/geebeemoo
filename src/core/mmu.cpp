@@ -1,3 +1,4 @@
+#include <bits/fs_fwd.h>
 #include <lib/types.h>
 #include <mmu.h>
 #include <array>
@@ -45,6 +46,7 @@ u32 MMU::load_cart(std::string_view filename) {
             mbc->battery.emplace(save_file, cartridge.ram);
         }
     }
+    /*
     else if (cartridge.header[0x47] >= 0x0F && cartridge.header[0x47] < 0x14) {
         mbc = std::make_unique<MBC3, std::vector<u8>&>(cartridge.ram);
         if (cartridge.header[0x47] == 0x0F || cartridge.header[0x47] == 0x10 ||
@@ -53,6 +55,7 @@ u32 MMU::load_cart(std::string_view filename) {
         }
 
     }
+    */
     if (cart_file.fail()) {
         std::cout << "failed to read cartridge\n";
         return 0;
@@ -66,8 +69,10 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
     u8 word = 0;
     if (address < HRAM && oam_state) {
         return 0xFF;
-    }
-    if (address >= OAM && address < UNUSABLE && (ppu_state == mode2 || ppu_state == mode3)) {
+    } else if (address >= OAM && address < UNUSABLE) {
+        if (!(ppu.ppu_state == mode2 || ppu.ppu_state == mode3)) {
+            return ppu.oam_mem[address - 0xFE00];
+        }
         return 0xFF;
     }
     switch (address >> 12) {
@@ -86,10 +91,10 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             } else return cartridge.ram[mbc->mapper(address)];
         case VRAM:
         case VRAM + 1:
-            if (ppu_state == mode3) {
+            if (ppu.ppu_state == mode3) {
                 return 0xFF;
             } else {
-                return mem[address];
+                return ppu.getVram()[address - 0x8000];
             }
         case WRAM_BANK_0:
         case WRAM_BANK_N:
@@ -119,6 +124,30 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             return 0xFF;
         case NR44:
             return mem[NR44] | 0xBF;
+        case LCDC:
+            return ppu.hw_registers.LCDC;
+        case STAT:
+            return ppu.hw_registers.STAT;
+        case SCY:
+            return ppu.hw_registers.SCY;
+        case SCX:
+            return ppu.hw_registers.SCX;
+        case LY:
+            return ppu.hw_registers.LY;
+        case LYC:
+            return ppu.hw_registers.LYC;
+        case DMA_TRIGGER:
+            return ppu.hw_registers.DMA_TRIGGER;
+        case BGP:
+            return ppu.hw_registers.BGP;
+        case OBP0:
+            return ppu.hw_registers.OBP0;
+        case OBP1:
+            return ppu.hw_registers.OBP1;
+        case WY:
+            return ppu.hw_registers.WY;
+        case WX:
+            return ppu.hw_registers.WX;
         default:
             return mem[address];
     }
@@ -126,7 +155,10 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
 void MMU::write(u16 address, u8 word) {
     if (address < HRAM && oam_state) {
         return;
-    } else if (address >= OAM && address < UNUSABLE && (ppu_state == mode2 || ppu_state == mode3)) { 
+    } else if (address >= OAM && address < UNUSABLE) {
+        if (!(ppu.ppu_state == mode2 || ppu.ppu_state == mode3)) {
+            ppu.oam_mem[address - 0xFE00] = word;
+        }
         return;
     }
     switch (address >> 12) {
@@ -150,8 +182,10 @@ void MMU::write(u16 address, u8 word) {
             }
         case VRAM:
         case VRAM + 1:
-            if (ppu_state == mode3) {
+            if (ppu.ppu_state == mode3) {
                 return;
+            } else {
+                ppu.getVram()[address - 0x8000] = word;
             }
         case WRAM_BANK_0:
         case WRAM_BANK_N:
@@ -191,11 +225,44 @@ void MMU::write(u16 address, u8 word) {
         case DIV:
             dwrite(DIV_HIDDEN, 0x00);
             return;
+        case LCDC:
+            ppu.hw_registers.LCDC = word;
+            return;
+        case STAT:
+            ppu.hw_registers.STAT = word;
+            return;
+        case SCY:
+            ppu.hw_registers.SCY = word;
+            return;
+        case SCX:
+            ppu.hw_registers.SCX = word;
+            return;
+        case LY:
+            ppu.hw_registers.LY = word;
+            return;
+        case LYC:
+            ppu.hw_registers.LYC = word;
+            return;
         case DMA_TRIGGER:
             if (!oam_state) {
                 oam_state = true;
                 oam_address = word << 8;
             }
+            return;
+        case BGP:
+            ppu.hw_registers.BGP = word;
+            return;
+        case OBP0:
+            ppu.hw_registers.OBP0 = word;
+            return;
+        case OBP1:
+            ppu.hw_registers.OBP1 = word;
+            return;
+        case WY:
+            ppu.hw_registers.WY = word;
+            return;
+        case WX:
+            ppu.hw_registers.WX = word;
             return;
         default:
             mem[address] = word;
@@ -206,10 +273,10 @@ void MMU::write(u16 address, u8 word) {
 void MMU::dwrite(u16 address, u16 dword) {
     if (address < HRAM && oam_state) {
         return;
-    } else if (address >= OAM && address < UNUSABLE && (ppu_state == mode2 || ppu_state == mode3)) { 
+    } else if (address >= OAM && address < UNUSABLE && (ppu.ppu_state == mode2 || ppu.ppu_state == mode3)) { 
         return;
     }
-    if (address >= 0x8000 && address < 0xA000 && ppu_state == mode3) {
+    if (address >= 0x8000 && address < 0xA000 && ppu.ppu_state == mode3) {
         return;
     }
     switch (address >> 12) {
@@ -221,6 +288,11 @@ void MMU::dwrite(u16 address, u16 dword) {
         case ROM_BANK_N + 1:
         case ROM_BANK_N + 2:
         case ROM_BANK_N + 3:
+            return;
+        case VRAM:
+        case VRAM + 1:
+            ppu.getVram()[address - 0x8000] = (u8) (dword & 0xFF);
+            ppu.getVram()[address + 1 - 0x8000] = (u8) (dword >> 8);
             return;
         case EXTERN_RAM:
             if (!mbc->ram_enable) {
@@ -244,8 +316,37 @@ u8 MMU::oam_transfer(u8 ticks) {
             oam_offset = 0;
             break;
         }
-        mem[0xFE00 + oam_offset] = mem[oam_address + oam_offset];
+        ppu.oam_mem[oam_offset] = mem[oam_address + oam_offset];
         oam_offset += 1;
     }
     return 0;
 }
+
+void MMU::statInterruptHandler() {
+    bool prevIRQ = ppu.statIRQ;
+    if (ppu.hw_registers.LYC == 0 && ppu.hw_registers.LY == 153 && ppu.currentLineDots > 4 && (ppu.hw_registers.STAT & 0b1000000) > 0) {
+            ppu.statIRQ = true;
+            ppu.hw_registers.STAT |= 0b100;
+    } else if ((ppu.hw_registers.LY == ppu.hw_registers.LYC) && (ppu.hw_registers.STAT & 0b1000000) > 0) {
+            ppu.statIRQ = true;
+            ppu.hw_registers.STAT |= 0b100;
+    } else if (ppu_state == mode2 && (ppu.hw_registers.STAT & 0b100000) > 0) {
+            ppu.statIRQ = true;
+            ppu.hw_registers.STAT = (ppu.hw_registers.STAT & 0b11111100) | mode2;
+    } else if (ppu_state == mode1 && (ppu.hw_registers.STAT & 0b10000) > 0) {
+            ppu.statIRQ = true;
+            ppu.hw_registers.STAT = (ppu.hw_registers.STAT & 0b11111100) | mode1;
+    } else if (ppu_state == mode0 && (ppu.hw_registers.STAT & 0b1000) > 0) {
+            ppu.statIRQ = true;
+            ppu.hw_registers.STAT = (ppu.hw_registers.STAT & 0b11111100) | mode0;
+    } else {
+        ppu.statIRQ = false;;
+        if (ppu.hw_registers.LY != ppu.hw_registers.LYC) {
+            ppu.hw_registers.STAT &= 0b11111011;
+        }
+    }
+    if (!prevIRQ && ppu.statIRQ) {
+        hw_write(IF, (u8)(hw_read(IF) | 0b10));
+    }
+}
+
