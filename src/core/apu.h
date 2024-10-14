@@ -1,10 +1,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_audio.h>
-#include <queue>
 #include <types.h>
 #include <mmu.h>
-
-constexpr u16 SDL_BUFFER_SIZE = 1024;
 
 constexpr s8 duty_cycle[4][8] = { // NOLINT
     {1,1,1,1,1,1,1,-1},
