@@ -1,17 +1,15 @@
 #pragma once
-#include <mmu.h>
-#include <memory>
+#include <lib/types.h>
 
 class Timer {
     private:
-        MMU& mem;
-        u16 div = 0;
-        u8 tima = 0;
         bool tima_flag = false;
         u8 tima_val = 0;
     public:
-        Timer(MMU& mem) 
-            : mem(mem) {}
+        u16 DIV = 0;
+        u8 TIMA = 0;
+        u8 TMA = 0;
+        u8 TAC = 0;
         void div_inc();
         s8 tima_inc();
 };

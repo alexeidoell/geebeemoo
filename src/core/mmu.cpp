@@ -120,34 +120,31 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             }
             return word | 0xC0;
         case SB:
+        case TIMA:
+            return timer.TIMA;
+        case TMA:
+            return timer.TMA;
+        case DIV:
+            return timer.DIV >> 8;
+        case TAC:
+            return timer.TAC;
         case 0xFF4D: // CGB speed switch
             return 0xFF;
         case NR44:
             return mem[NR44] | 0xBF;
         case LCDC:
-            return ppu.hw_registers.LCDC;
         case STAT:
-            return ppu.hw_registers.STAT;
         case SCY:
-            return ppu.hw_registers.SCY;
         case SCX:
-            return ppu.hw_registers.SCX;
         case LY:
-            return ppu.hw_registers.LY;
         case LYC:
-            return ppu.hw_registers.LYC;
         case DMA_TRIGGER:
-            return ppu.hw_registers.DMA_TRIGGER;
         case BGP:
-            return ppu.hw_registers.BGP;
         case OBP0:
-            return ppu.hw_registers.OBP0;
         case OBP1:
-            return ppu.hw_registers.OBP1;
         case WY:
-            return ppu.hw_registers.WY;
         case WX:
-            return ppu.hw_registers.WX;
+            return *((&ppu.hw_registers.LCDC) + (address & 0b1111));
         default:
             return mem[address];
     }
@@ -221,27 +218,17 @@ void MMU::write(u16 address, u8 word) {
             return;
         case SC:
             //std::cout << (char) mem[0xFF01];
+        case TIMA:
+            timer.TIMA = word;
+            return;
+        case TMA:
+            timer.TMA = word;
             return;
         case DIV:
-            dwrite(DIV_HIDDEN, 0x00);
+            timer.DIV = 0;
             return;
-        case LCDC:
-            ppu.hw_registers.LCDC = word;
-            return;
-        case STAT:
-            ppu.hw_registers.STAT = word;
-            return;
-        case SCY:
-            ppu.hw_registers.SCY = word;
-            return;
-        case SCX:
-            ppu.hw_registers.SCX = word;
-            return;
-        case LY:
-            ppu.hw_registers.LY = word;
-            return;
-        case LYC:
-            ppu.hw_registers.LYC = word;
+        case TAC:
+            timer.TAC = word;
             return;
         case DMA_TRIGGER:
             if (!oam_state) {
@@ -249,20 +236,18 @@ void MMU::write(u16 address, u8 word) {
                 oam_address = word << 8;
             }
             return;
+        case LCDC:
+        case STAT:
+        case SCY:
+        case SCX:
+        case LY:
+        case LYC:
         case BGP:
-            ppu.hw_registers.BGP = word;
-            return;
         case OBP0:
-            ppu.hw_registers.OBP0 = word;
-            return;
         case OBP1:
-            ppu.hw_registers.OBP1 = word;
-            return;
         case WY:
-            ppu.hw_registers.WY = word;
-            return;
         case WX:
-            ppu.hw_registers.WX = word;
+            *((&ppu.hw_registers.LCDC) + (address & 0b1111)) = word;
             return;
         default:
             mem[address] = word;

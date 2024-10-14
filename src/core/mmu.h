@@ -1,5 +1,6 @@
 #pragma once
-#include "ppu.h"
+#include <ppu.h>
+#include <timer.h>
 #include <array>
 #include <memory>
 #include <string_view>
@@ -96,10 +97,11 @@ private:
     u16 oam_address = 0;
     Joypad& joypad;
     PPU& ppu;
+    Timer& timer;
     std::unique_ptr<MBC> mbc;
 public:
     u8 channel_trigger = 0;
-    MMU(Joypad& joypad, PPU& ppu) : joypad(joypad), ppu(ppu) {};
+    MMU(Joypad& joypad, PPU& ppu, Timer& timer) : joypad(joypad), ppu(ppu), timer(timer) {};
     PPUState ppu_state = mode2;
     u32 load_cart(std::string_view filename);
     u8 read(u16 address);
