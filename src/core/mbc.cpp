@@ -1,3 +1,4 @@
+#include <SDL3/SDL_time.h>
 #include <iostream>
 #include <fstream>
 #include <optional>
@@ -86,11 +87,57 @@ u8 MBC3::mbc_write(u16 address, u8 word) {
         if (latch_status && word == 0x0) {
             latch_status = false;
         } else if (!latch_status && word == 0x1) { // put date into rtc registers
-
+            // this is actually insane lmao
+            // need to implement halting the clock too
+            u64 old_time = curr_time / 1000;           
+            SDL_GetCurrentTime(&curr_time);
+            u64 new_time = curr_time / 1000;
+            u64 time_diff = new_time - old_time;
+            u64 days = clock_registers.flags & 0b1;
+            days <<= 8;
+            days += clock_registers.day_counter;
+            while (time_diff >= 86400) {
+                days += 1;
+                time_diff -= 86400;
+            }
+            u64 hours = clock_registers.hours;
+            while (time_diff >= 3600) {
+                hours += 1;
+                time_diff -= 3600;
+            }
+            u64 minutes = clock_registers.minutes;
+            while (time_diff >= 60) {
+                minutes += 1;
+                time_diff -= 60;
+            }
+            u64 seconds = clock_registers.seconds;
+            while (time_diff >= 60) {
+                seconds += 1;
+                time_diff -= 60;
+            }
+            while (seconds >= 60) {
+                minutes += 1;
+                seconds -= 60;
+            }
+            clock_registers.seconds = seconds;
+            while (minutes >= 60) {
+                hours += 1;
+                minutes -= 60;
+            }
+            clock_registers.minutes = minutes;
+            while (hours >= 24) {
+                days += 1;
+                hours -= 24;
+            }
+            clock_registers.hours = hours;
+            if (days > 0x1FF) {
+                clock_registers.flags |= 0b10000000;
+            }
+            days &= 0x1FF;
+            clock_registers.day_counter = days & 0xFF;
+            days >>= 8;
+            clock_registers.flags = (clock_registers.flags & 0b11111110) | (days & 0b1);
         }
-        break;
-    case 0xA: // ram/rtc write
-    case 0xB:
         break;
     default:
         break;
@@ -99,6 +146,11 @@ u8 MBC3::mbc_write(u16 address, u8 word) {
     return 0;
 }
 */
+
+u32 MBC3::mapper(u16 address) { // stub
+
+    return 0;
+}
 
 void Battery::writeSave() const {
     std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);

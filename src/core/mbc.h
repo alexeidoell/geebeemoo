@@ -1,5 +1,6 @@
+#include <SDL3/SDL.h>
+#include <string>
 #include <vector>
-#include <iostream>
 #include <optional>
 #include <lib/types.h>
 
@@ -62,12 +63,15 @@ private:
         u8 day_counter;
         u8 flags;
     } clock_registers{};
+    SDL_Time curr_time = 0;
     bool latch_status = true;
 public:
     u8 mbc_write(u16 address, u8 word) final;
     u8 rtc_write(u8 word); // might move ram writes into the mbc
                            // to avoid making this function
     u32 mapper(u16 base_address) final;
-    MBC3(std::vector<u8>& ram) : MBC(ram) {};
+    MBC3(std::vector<u8>& ram) : MBC(ram) {
+        SDL_GetCurrentTime(&curr_time);
+    };
 };
 */
