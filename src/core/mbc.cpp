@@ -58,6 +58,46 @@ u32 MBC0::mapper(u16 base_address) {
     return base_address;
 }
 
+u8 MBC3::mbc_write(u16 address, u8 word) {
+    switch (address >> 12) {
+    case 0x0: // ram and timer enable
+    case 0x1:
+        if ((word & 0b1111) == 0xA) ram_enable = true;
+        else {
+            ram_enable = false;
+            if (battery.has_value()) {
+                battery.value().writeSave();
+            }
+            return 1;
+        }
+        break;
+    case 0x2: // rom bank number
+    case 0x3:
+        rom_bank = word & 0b1111111;       
+        if (rom_bank == 0x0) rom_bank = 0x1;
+        break;
+    case 0x4: // ram bank/rtc register select
+    case 0x5:
+        ram_bank = word & 0b1111;
+        break;
+    case 0x6: // latch clock data
+    case 0x7:
+        if (latch_status && word == 0x0) {
+            latch_status = false;
+        } else if (!latch_status && word == 0x1) { // put date into rtc registers
+
+        }
+        break;
+    case 0xA: // ram/rtc write
+    case 0xB:
+        break;
+    default:
+        break;
+    }
+
+    return 0;
+}
+
 void Battery::writeSave() const {
     std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
     temp_save.write(std::bit_cast<char*>(&ram[0]), ram.capacity());

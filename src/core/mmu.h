@@ -82,7 +82,13 @@ struct Cartridge {
     std::vector<u8> ram;
 };
 
-class MMU {
+class MMU { // if i wanted to refactor everything to use hw registers,
+            // i would want to make the mmu have references to each piece 
+            // of hw, with then only the core needing access to the mmu 
+            // instead of everything needing access to the mmu which
+            // would work similarly to the way mbcs are currently handled
+            // maybe something to think about for the future to reduce
+            // calls from hw to the mmu
 private:
     Cartridge cartridge;
     std::array<u8, 0x10000> mem = {0};
@@ -101,7 +107,6 @@ public:
     void dwrite(u16 address, u16 dword);
     bool tima_tick = false;
     u8 oam_transfer(u8 ticks);
-
     // inlines
     u8 hw_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
         if (address < 0x8000) {

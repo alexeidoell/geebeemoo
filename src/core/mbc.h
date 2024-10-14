@@ -43,3 +43,29 @@ public:
     u32 mapper(u16 base_address) final;
     MBC1(std::vector<u8>& ram) : MBC(ram) {}; // WTF IS THIS??
 };
+
+enum RTC_SELECT {
+    SECONDS = 0x08,
+    MINUTES,
+    HOURS,
+    DAYS,
+    FLAGS
+};
+
+class MBC3 final : public MBC {
+private:
+    struct {
+        u8 seconds;
+        u8 minutes;
+        u8 hours;
+        u8 day_counter;
+        u8 flags;
+    } clock_registers{};
+    bool latch_status = true;
+public:
+    u8 mbc_write(u16 address, u8 word) final;
+    u8 rtc_write(u8 word); // might move ram writes into the mbc
+                           // to avoid making this function
+    u32 mapper(u16 base_address) final;
+    MBC3(std::vector<u8>& ram) : MBC(ram) {};
+};
