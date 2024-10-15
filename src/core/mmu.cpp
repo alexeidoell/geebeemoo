@@ -135,8 +135,13 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             return 0xFF;
         case NR44:
             return mem[NR44] | 0xBF;
-        case LCDC:
         case STAT:
+            word = ppu.hw_registers.STAT;
+            if (ppu.finishedLineDots >= 152 + 80 + ppu.mode3_delay) {
+                word = (word & 0b11111100);
+            }
+            return word;
+        case LCDC:
         case SCY:
         case SCX:
         case LY:
