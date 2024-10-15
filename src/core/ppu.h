@@ -61,7 +61,6 @@ class PPU {
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
-        u8 objFetchIdx = 0;
         u8 xCoord = 0;
         FIFO fifoFlags;
         Window window;
@@ -95,6 +94,8 @@ class PPU {
                              // resume the state it was at in the current
                              // line
         s16 finishedLineDots = 0;
+        u8 handled_objs = 0;
+        u8 objFetchIdx = 0;
         u8 mode3_delay = 14;
         void ppuLoop(u8 ticks);
         std::array<u8, 0x2000>& getVram() {

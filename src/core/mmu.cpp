@@ -137,7 +137,8 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             return mem[NR44] | 0xBF;
         case STAT:
             word = ppu.hw_registers.STAT;
-            if (ppu.finishedLineDots >= 152 + 80 + ppu.mode3_delay) {
+            if (ppu.finishedLineDots >= 152 + 80 + ppu.mode3_delay
+                    && ppu.handled_objs == ppu.objFetchIdx) {
                 word = (word & 0b11111100);
             }
             return word;

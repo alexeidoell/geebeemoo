@@ -179,17 +179,14 @@ void PPU::ppuLoop(u8 ticks) {
                 }
                 for (auto i = 0; i < objFetchIdx; ++i) {
                     if (xCoord == objArr[i].xPos) {
+                        handled_objs += 1;
                         mode3_delay += 6;
                         if (newTile) {
                             newTile = false;
-                            if (xCoord == 0) {
-                                mode3_delay += 5;
-                            } else {
-                                s8 objPenalty = bgQueue.size() - 1;
-                                objPenalty -= 2;
-                                objPenalty = (objPenalty < 0) ? 0 : objPenalty;
-                                mode3_delay += objPenalty;
-                            }
+                            s8 objPenalty = bgQueue.size() - 1;
+                            objPenalty -= 3;
+                            objPenalty = (objPenalty < 0) ? 0 : objPenalty;
+                            mode3_delay += objPenalty;
                         }
                         fifoFlags.objTileAddress = 0x8000;
                         fifoFlags.objTileAddress += ((u16)objArr[i].tileIndex)
@@ -215,10 +212,10 @@ void PPU::ppuLoop(u8 ticks) {
                                     fifoFlags.objTileAddress |= ((u16)0b10000);
                             }
                         }
-                        fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress + 1);
-                        fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress);
+                        fifoFlags.objHighByte = getTileByte(fifoFlags.objTileAddress + 1); // 2 dots
+                        fifoFlags.objLowByte = getTileByte(fifoFlags.objTileAddress); // 2 dots
                         combineObjTile(fifoFlags.objHighByte, fifoFlags.objLowByte,
-                                &objArr[i]);
+                                &objArr[i]); // 2 dots
                     }
                 }
                 if (firstTile) {
@@ -266,7 +263,6 @@ void PPU::ppuLoop(u8 ticks) {
         }
         if (finishedLineDots >= 160 + 80 + mode3_delay && finishedLineDots < 456 &&
                 finishedLineDots <= currentLineDots) { // hblank
-            firstTile = true;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
             }
@@ -291,8 +287,10 @@ void PPU::ppuLoop(u8 ticks) {
         window.xCoord = 0;
         xCoord = 0;
         mode3_delay = 14;
+        handled_objs = 0;
         objArr = {};
         objFetchIdx = 0;
+        firstTile = true;
         currentLineDots -= 456;
         finishedLineDots = 0;     // idk tbh?
         if (currentLine == 144) { // vblank
