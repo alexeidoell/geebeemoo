@@ -176,7 +176,7 @@ void PPU::ppuLoop(u8 ticks) {
                     finishedLineDots += 2;
                 } else {
                     finishedLineDots += 2;
-                    mode3_delay += 14;
+
                 }
             }
             if (finishedLineDots == 94) { // first pixel push
@@ -319,7 +319,7 @@ void PPU::ppuLoop(u8 ticks) {
             hw_registers.STAT &= 0b11111011;
         window.xCoord = 0;
         xCoord = 0;
-        mode3_delay = 0;
+        mode3_delay = 14;
         objArr = {};
         objFetchIdx = 0;
         currentLineDots -= 456;

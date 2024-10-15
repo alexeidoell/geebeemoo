@@ -95,7 +95,7 @@ class PPU {
                              // resume the state it was at in the current
                              // line
         s16 finishedLineDots = 0;
-        u8 mode3_delay = 0;
+        u8 mode3_delay = 14;
         void ppuLoop(u8 ticks);
         std::array<u8, 0x2000>& getVram() {
             return VRAM;

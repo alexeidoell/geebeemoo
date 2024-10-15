@@ -1,8 +1,8 @@
 CC = clang
 INCLUDES = -Isrc/ -Isrc/core/ -Isrc/lib/
-CFLAGS = -std=gnu++20 -Wall -pedantic -O3 -fno-exceptions
+CFLAGS = -std=gnu++20 -g -Wall -pedantic -O3 -fno-exceptions
 CFLAGS += $(shell pkg-config sdl3 --cflags)
-# CFLAGS += -DDEBUG
+CFLAGS += -DDEBUG
 LDFLAGS = -flto=auto
 LDFLAGS += $(shell pkg-config sdl3 --libs)
 LDFLAGS += -lstdc++
