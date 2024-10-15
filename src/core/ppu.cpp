@@ -183,8 +183,11 @@ void PPU::ppuLoop(u8 ticks) {
                         mode3_delay += 6;
                         if (newTile) {
                             newTile = false;
-                            s8 objPenalty = bgQueue.size() - 1;
-                            objPenalty -= 3;
+                            s8 objPenalty = bgQueue.size() - 2;
+                            if (handled_objs > 1) { // ????
+                                objPenalty += 1;
+                            }
+                            objPenalty -= 2;
                             objPenalty = (objPenalty < 0) ? 0 : objPenalty;
                             mode3_delay += objPenalty;
                         }
@@ -328,7 +331,7 @@ void PPU::oamScan(u16 address) {    // 2 dots
     Object obj(objY_pos, oam_mem[address + 1], oam_mem[address + 2],
             oam_mem[address + 3], address);
     if ((hw_registers.LCDC & 0b100) > 0) { // 8x16 tiles
-        if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
+        if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17 && obj.xPos < 168) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
@@ -336,7 +339,7 @@ void PPU::oamScan(u16 address) {    // 2 dots
         }
     } else { // 8x8 tiles
         if (((objY_pos - 8) - currentLine) > 0 &&
-                ((objY_pos - 8) - currentLine) < 9) {
+                ((objY_pos - 8) - currentLine) < 9 && obj.xPos < 168) {
             if (objFetchIdx < 10) {
                 // std::cout << std::hex << (int)address << " " << std::dec <<
                 // (int)objFetchIdx << " " << (int)objY_pos << " " << (int)currentLine
