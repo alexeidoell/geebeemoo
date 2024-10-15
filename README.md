@@ -18,6 +18,7 @@ Gameboy emulator written in C++ using SDL3.
 | Cycle (mostly) accurate PPU emulation | :white_check_mark: |
 | Support for battery backed SRAM | :white_check_mark: |
 | Audio support | :white_check_mark: |
+| Pass Mooneye PPU tests | :white_square_button: |
 | CGB emulation | :white_square_button: |
 | CMake build system | :white_square_button: |
 | MBC1M, MBC2, MBC3, and MBC5 support | :white_square_button: |
