@@ -159,59 +159,23 @@ void PPU::ppuLoop(u8 ticks) {
                     currentLineDots) { // do nothing to simulate discarded tile
                 finishedLineDots += 2;
             }
-            while (finishedLineDots >= 86 && finishedLineDots < 94 &&
-                    finishedLineDots < currentLineDots) { // initial fetches
-                if (!fifoFlags.fetchTileID) {
-                    fifoFlags.tileAddress = bgPixelFetcher();
-                    fifoFlags.fetchTileID = true;
-                    finishedLineDots += 2;
-                } else if (!fifoFlags.fetchHighByte) {
-                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
-                    fifoFlags.fetchHighByte = true;
-                    finishedLineDots += 2;
-                } else if (!fifoFlags.fetchLowByte) {
-                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
-                    fifoFlags.fetchLowByte = true;
-                    fifoFlags.awaitingPush = true;
-                    finishedLineDots += 2;
-                } else {
-                    finishedLineDots += 2;
-
-                }
-            }
-            if (finishedLineDots == 94) { // first pixel push
-                if (fifoFlags.awaitingPush) {
-                    combineBGTile(fifoFlags.highByte, fifoFlags.lowByte);
-                    newTile = true;
-                    fifoFlags.fetchLowByte = false;
-                    fifoFlags.fetchHighByte = false;
-                    fifoFlags.fetchTileID = false;
-                }
-            }
-            while (finishedLineDots >= 94 &&
+            while (finishedLineDots >= 86 &&
                     finishedLineDots < 160 + 80 + mode3_delay &&
-                    finishedLineDots < currentLineDots) { // normal mode3 cycle
-                if (!fifoFlags.awaitingPush) {             // get next push hw_ready
-                    fifoFlags.tileAddress = bgPixelFetcher();
-                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1);
-                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress);
+                    finishedLineDots < currentLineDots) {
+                if (!fifoFlags.awaitingPush) {
+                    fifoFlags.tileAddress = bgPixelFetcher(); // 2 dots
+                    fifoFlags.highByte = getTileByte(fifoFlags.tileAddress + 1); // 2 dots
+                    fifoFlags.lowByte = getTileByte(fifoFlags.tileAddress); // 2 dots
                     fifoFlags.awaitingPush = true;
                 }
                 if (!window.WX_cond && bgQueue.empty() && fifoFlags.awaitingPush) {
                     // push new tile row
-                    combineBGTile(fifoFlags.highByte, fifoFlags.lowByte);
+                    combineBGTile(fifoFlags.highByte, fifoFlags.lowByte); // 2 dots
                     newTile = true;
                     fifoFlags.awaitingPush = false;
                     fifoFlags.fetchLowByte = false;
                     fifoFlags.fetchHighByte = false;
                     fifoFlags.fetchTileID = false;
-                }
-                if (firstTile) {
-                    for (auto i = 0; i < (hw_registers.SCX % 8); ++i) {
-                        bgQueue.pop();
-                        // xCoord += 1;
-                        mode3_delay += 1;
-                    }
                 }
                 for (auto i = 0; i < objFetchIdx; ++i) {
                     if (xCoord == objArr[i].xPos) {
@@ -257,6 +221,13 @@ void PPU::ppuLoop(u8 ticks) {
                                 &objArr[i]);
                     }
                 }
+                if (firstTile) {
+                    for (auto i = 0; i < (hw_registers.SCX % 8); ++i) {
+                        bgQueue.pop();
+                        // xCoord += 1;
+                        mode3_delay += 1;
+                    }
+                }
                 if (xCoord < 168 && ((hw_registers.LCDC & 0b100000) > 0) &&
                         window.WY_cond &&
                         (xCoord - 1 == hw_registers.WX || window.WX_cond)) { // window time
@@ -281,7 +252,7 @@ void PPU::ppuLoop(u8 ticks) {
                 if (xCoord < 168) {
                     xCoord += 1;
                 }
-                    finishedLineDots += 1;
+                finishedLineDots += 1;
                 if (firstTile)
                     firstTile = false;
                 if (!objQueue.empty())
@@ -290,7 +261,7 @@ void PPU::ppuLoop(u8 ticks) {
                     bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 160 + 80 + mode3_delay) {
+        if (finishedLineDots >= 156 + 80 + mode3_delay) {
             ppu_state = mode0;
         }
         if (finishedLineDots >= 160 + 80 + mode3_delay && finishedLineDots < 456 &&
