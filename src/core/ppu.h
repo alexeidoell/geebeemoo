@@ -63,7 +63,6 @@ class PPU {
         std::queue<Pixel> bgQueue;
         u8 objFetchIdx = 0;
         u8 xCoord = 0;
-        u8 mode3_delay = 0;
         FIFO fifoFlags;
         Window window;
         void oamScan(u16 address);
@@ -71,7 +70,6 @@ class PPU {
         void setPixel(u8 w, u8 h, u8 pixel);
         SDL_Surface* surface = nullptr;
         bool newTile = true;
-        s16 finishedLineDots = 0;
     public:
         struct {
             u8 LCDC;
@@ -96,6 +94,8 @@ class PPU {
                              // the next call of the ppu loop that will
                              // resume the state it was at in the current
                              // line
+        s16 finishedLineDots = 0;
+        u8 mode3_delay = 0;
         void ppuLoop(u8 ticks);
         std::array<u8, 0x2000>& getVram() {
             return VRAM;

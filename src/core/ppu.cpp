@@ -146,7 +146,7 @@ void PPU::ppuLoop(u8 ticks) {
         if (finishedLineDots >= 76) {
             ppu_state = mode3;
         }
-        if (finishedLineDots >= 80 && finishedLineDots < 174 + 80 + mode3_delay &&
+        if (finishedLineDots >= 80 && finishedLineDots < 160 + 80 + mode3_delay &&
                 finishedLineDots < currentLineDots) {
             if (finishedLineDots == 80) { // setting up mode3
                 while (!bgQueue.empty())
@@ -176,7 +176,7 @@ void PPU::ppuLoop(u8 ticks) {
                     finishedLineDots += 2;
                 } else {
                     finishedLineDots += 2;
-
+                    mode3_delay += 14;
                 }
             }
             if (finishedLineDots == 94) { // first pixel push
@@ -189,7 +189,7 @@ void PPU::ppuLoop(u8 ticks) {
                 }
             }
             while (finishedLineDots >= 94 &&
-                    finishedLineDots < 174 + 80 + mode3_delay &&
+                    finishedLineDots < 160 + 80 + mode3_delay &&
                     finishedLineDots < currentLineDots) { // normal mode3 cycle
                 if (!fifoFlags.awaitingPush) {             // get next push hw_ready
                     fifoFlags.tileAddress = bgPixelFetcher();
@@ -290,10 +290,10 @@ void PPU::ppuLoop(u8 ticks) {
                     bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 168 + 80 + mode3_delay) {
+        if (finishedLineDots >= 160 + 80 + mode3_delay) {
             ppu_state = mode0;
         }
-        if (finishedLineDots >= 174 + 80 + mode3_delay && finishedLineDots < 456 &&
+        if (finishedLineDots >= 160 + 80 + mode3_delay && finishedLineDots < 456 &&
                 finishedLineDots <= currentLineDots) { // hblank
             firstTile = true;
             while (finishedLineDots < currentLineDots) {

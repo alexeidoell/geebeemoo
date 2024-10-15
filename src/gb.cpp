@@ -157,6 +157,11 @@ void GB::runEmu(char* filename) {
                 }
                 mem.statInterruptHandler();
             } else { // lcd disable
+                ppu.hw_registers.LY = 0;
+                ppu.currentLineDots = 0;
+                ppu.finishedLineDots = 0;
+                ppu.ppu_state = mode0;
+                ppu.hw_registers.STAT &= 0b11111100;
                 white = true;
             }
             div_ticks += operation_ticks;
