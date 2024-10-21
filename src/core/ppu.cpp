@@ -143,7 +143,7 @@ void PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 2;
             }
         }
-        if (finishedLineDots >= 76) {
+        if (finishedLineDots >= 80) {
             ppu_state = mode3;
         }
         if (finishedLineDots >= 80 && finishedLineDots < 160 + 80 + mode3_delay &&
@@ -261,7 +261,7 @@ void PPU::ppuLoop(u8 ticks) {
                     bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 156 + 80 + mode3_delay) {
+        if (finishedLineDots >= 160 + 80 + mode3_delay) {
             ppu_state = mode0;
         }
         if (finishedLineDots >= 160 + 80 + mode3_delay && finishedLineDots < 456 &&
