@@ -151,7 +151,12 @@ void GB::runEmu(char* filename) {
                 mem.oam_transfer(current_ticks);
             }
             if ((ppu.hw_registers.LCDC & 0x80) == 0x80) {
+                PPUState last_mode = ppu.ppu_state;
                 ppu.ppuLoop(operation_ticks);
+                if (ppu.ppu_state == last_mode) {
+                    ppu.hw_registers.STAT &= 0b11111100;
+                    ppu.hw_registers.STAT |= ppu.ppu_state;
+                }
                 if (ppu.hw_registers.LY == 144) {
                     mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b1));
                 }
