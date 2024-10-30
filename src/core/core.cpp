@@ -139,6 +139,7 @@ u8 Core::op_tree() {
     // interrupt handling
     byte1 = mem.read(registers.pc++);
     ticks = tick_chart[byte1] * 4;
+    mem.update_ppu(ticks);
 
     switch (byte1) { // is this even worth it...
     case 0x00: // NOP

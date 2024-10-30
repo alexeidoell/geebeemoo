@@ -86,6 +86,7 @@ class PPU {
         std::array<u8, 0x100> oam_mem{};
         bool statIRQ = false;
         PPUState ppu_state = mode2;
+        PPUState mode_intr = mode3;
         s16 currentLineDots = 0; // need to keep track of state between
                              // calls so that the ppu can tell the
                              // memory or cpu what not to do before

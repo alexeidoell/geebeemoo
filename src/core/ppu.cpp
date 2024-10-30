@@ -127,7 +127,7 @@ u16 PPU::winPixelFetcher() {
 }
 
 void PPU::ppuLoop(u8 ticks) {
-    currentLineDots += ticks;
+    //currentLineDots += ticks;
     u8 currentLine = hw_registers.LY; // ly register
     while (currentLine < 144 && finishedLineDots < currentLineDots) {
         if (finishedLineDots >= 456) {
@@ -143,8 +143,8 @@ void PPU::ppuLoop(u8 ticks) {
                 finishedLineDots += 2;
             }
         }
-        if (finishedLineDots >= 80) {
-            ppu_state = mode3;
+        if (finishedLineDots > 80) {
+ //           ppu_state = mode3;
         }
         if (finishedLineDots >= 80 && finishedLineDots < 160 + 80 + mode3_delay &&
                 finishedLineDots < currentLineDots) {
@@ -261,8 +261,11 @@ void PPU::ppuLoop(u8 ticks) {
                     bgQueue.pop();
             }
         }
-        if (finishedLineDots >= 156 + 80 + mode3_delay) {
-            ppu_state = mode0;
+        if (finishedLineDots >= 152 + 80 + mode3_delay && handled_objs == objFetchIdx) {
+            //ppu_state = mode0;
+        }
+        if (finishedLineDots >= 156 + 80 + mode3_delay && handled_objs == objFetchIdx) {
+            mode_intr = mode0;
         }
         if (finishedLineDots >= 160 + 80 + mode3_delay && finishedLineDots < 456 &&
                 finishedLineDots <= currentLineDots) { // hblank
@@ -301,7 +304,7 @@ void PPU::ppuLoop(u8 ticks) {
             window.yCoord = 0;
         }
         if (ppu_state != mode1) {
-            ppu_state = mode2;
+            //ppu_state = mode2;
         }
     }
     // std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " <<

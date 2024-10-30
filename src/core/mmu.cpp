@@ -334,8 +334,9 @@ void MMU::statInterruptHandler() {
     if (ppu.ppu_state == mode1 && (ppu.hw_registers.STAT & 0b10000) > 0) {
             ppu.statIRQ = true;
     }
-    if (ppu.ppu_state == mode0 && (ppu.hw_registers.STAT & 0b1000) > 0) {
+    if (ppu.mode_intr == mode0 && (ppu.hw_registers.STAT & 0b1000) > 0) {
             ppu.statIRQ = true;
+            ppu.mode_intr = mode3;
     }
     if ((ppu.hw_registers.STAT & 0b100000) > 0 && curr_mode != mode1 && ppu.ppu_state == mode1 && ppu.hw_registers.LY == 144) { // this shouldn't happen on cgb
             ppu.statIRQ = true;
@@ -346,3 +347,18 @@ void MMU::statInterruptHandler() {
     }
 }
 
+
+void MMU::update_ppu(u8 ticks) {
+    ppu.currentLineDots += ticks;
+    if (ppu.currentLineDots > 88) {
+        ppu.ppu_state = mode3;
+    }
+    if (ppu.currentLineDots > 248 + ppu.mode3_delay && ppu.handled_objs == ppu.objFetchIdx) {
+        ppu.ppu_state = mode0;
+    }
+    if (ppu.currentLineDots > 456 && ppu.hw_registers.LY < 144) {
+        ppu.ppu_state = mode2;
+    }
+
+
+}

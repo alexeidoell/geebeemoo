@@ -110,6 +110,7 @@ public:
     bool tima_tick = false;
     u8 oam_transfer(u8 ticks);
     void statInterruptHandler();
+    void update_ppu(u8 ticks);
     // inlines
     u8 hw_read(u16 address) { // honestly the linker is probably gonna call me stupid for this one
         if (address < 0x8000) {
