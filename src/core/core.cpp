@@ -18,6 +18,7 @@ void Core::bootup() {
     registers.sp  = 0xFFFE;
     mem->write(0xFF00, 0xCF);
     mem->dwrite(0xFF03, 0xABCC);
+    mem->dwrite(0xFF05, 0x0000);
     mem->write(0xFF0F, 0xE1);
     mem->write(0xFF40, 0x91);
     mem->write(0xFF41, 0x81);

@@ -73,25 +73,18 @@ GB::~GB() {
 }
 
 void GB::runEmu(char* filename) {
-    // putting 60 instead of the actual value makes it slightly more accurate lol
-    constexpr double FPS = 59.7275;
-    constexpr u64 frameDelay = 1000000000 / FPS;
-    const u32 maxTicks = 70224; // number of instuctions per frame
-    u32 current_ticks = maxTicks;
     u64 frameStart = 0;
     u64 frameTime = 0;
-    u32 div_ticks = 0;
-    u32 operation_ticks = 0;
-    bool tima_flag = false;
 
-    // these should probably actually be member variables
+    // initializing hardware
     if (0 == mem.load_cart(filename)) {
         std::cout << "emu quitting due to rom not existing\n";
         return;
     }
-    bool running = true;
+    core.bootup();
+    apu.initAPU();
+
     bool first_frame = true;
-    bool white = false;
 #ifdef DEBUG
 #ifdef OLD
     std::ofstream log("oldlog.txt", std::ofstream::trunc);
@@ -103,73 +96,31 @@ void GB::runEmu(char* filename) {
     u64 frameavg = 0;
 
 
-    core.bootup();
-    apu.initAPU();
+    frameStart = SDL_GetTicksNS();
 
     SDL_Event event;
 
-    frameStart = SDL_GetTicksNS();
-    constexpr static std::array<u8,4> tima_freq = { 9, 3, 5, 7 };
-    while(running) {
+    while(running) { // basic event loop, performs management of SDL textures and timing
+                     // while run_instr() does the hardware emulation
         current_ticks = current_ticks - maxTicks;
-        div_ticks = 0;
-        ppu.setSurface(texture);
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_EVENT_QUIT:
-                    running = false;
-                    break;
-                case SDL_EVENT_KEY_DOWN:
-                case SDL_EVENT_KEY_UP:
-                    joypad.pollPresses(event);
-                    break;
-            }
-        }
+
+        poll_SDL_event(event);
+
         white = false;
+        ppu.setSurface(texture);
         while (current_ticks < maxTicks) {
-            u16 div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
-            u8 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
-#ifdef DEBUG
-            doctor_log(frame, current_ticks, log, core, mem);
-#endif
-            operation_ticks = core.op_tree();
-            current_ticks += operation_ticks;
-            if (mem.get_oam()) {
-                mem.oam_transfer(current_ticks);
-            }
-            if ((mem.hw_read(0xFF40) & 0x80) == 0x80) {
-                ppu.ppuLoop(operation_ticks);
-            } else { // lcd disable
-                mem.hw_write(0xFF44, (u8)0);
-                mem.hw_write(0xFF41, (u8)((mem.hw_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
-                ppu.currentLineDots = 0;
-                white = true;
-            }
-            div_ticks += operation_ticks;
-            while (div_ticks >= 4) {
-                timer.div_inc();
-                apu.period_clock();
-                div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
-                u8 after_tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1; 
-                if ((mem.read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem.read(0xFF07) > 3)) { // falling edge
-                    tima_flag = (timer.tima_inc() == -1);
-                }
-                div_ticks -= 4;
-                div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
-                tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
-            }
+            current_ticks += run_instr();
         }
+
         if (first_frame) {
             first_frame = false;
             SDL_RenderClear(renderer);
         } else if (white) {
             SDL_RenderClear(renderer);
         }
-
-
         SDL_UnlockTexture(texture);
         SDL_RenderTexture(renderer, texture, nullptr, nullptr);
-        
+
         frameTime = SDL_GetTicksNS() - frameStart;
         if (frameDelay > frameTime) SDL_DelayPrecise(frameDelay - frameTime);
         frame += 1;
@@ -181,6 +132,67 @@ void GB::runEmu(char* filename) {
     std::cout << frameavg / 1000000.0 / frame << " avg ms per frame\n";
     std::cout << 1000000000.0 / frameavg * frame << " avg fps\n";
     std::cout << "closing geebeemoo\n";
+}
+
+u8 GB::tima_loop(u16 div, u8 tima_bit) {
+    timer.div_inc();
+    apu.period_clock();
+    div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
+    u8 after_tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1; 
+    if ((mem.read(0xFF07) > 3 && tima_flag) || ((tima_bit == 1) && (after_tima_bit == 0) && mem.read(0xFF07) > 3)) { // falling edge
+        tima_flag = (timer.tima_inc() == -1);
+    }
+    div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
+    return (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
+}
+
+void GB::poll_SDL_event(SDL_Event& event) {
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+            case SDL_EVENT_QUIT:
+                running = false;
+                break;
+            case SDL_EVENT_KEY_DOWN:
+            case SDL_EVENT_KEY_UP:
+                joypad.pollPresses(event);
+        }
+    }
+}
+
+// performs all the emulated hardware operations for a single instruction
+u8 GB::run_instr() {
+    u16 div = (mem.read(0xFF04) << 8) + mem.read(0xFF03);
+    u8 tima_bit = (div >> tima_freq[mem.read(0xFF07) & 0b11]) & 0b1;
+    u8 div_ticks = 0;
+
+#ifdef DEBUG
+    doctor_log(frame, current_ticks, log, core, mem);
+#endif
+
+    u8 operation_ticks = core.op_tree();
+    update_non_core_hw(operation_ticks);
+
+    div_ticks += operation_ticks;
+    while (div_ticks >= 4) {
+        tima_bit = tima_loop(div, tima_bit);
+        div_ticks -= 4;
+    }
+    return operation_ticks;
+}
+
+// after each instruction, updates mmu and ppu based on length of previous instruction
+void GB::update_non_core_hw(u8 operation_ticks) {
+    if (mem.get_oam()) {
+        mem.oam_transfer(operation_ticks);
+    }
+    if ((mem.hw_read(0xFF40) & 0x80) == 0x80) {
+        ppu.ppuLoop(operation_ticks);
+    } else { // lcd disable
+        mem.hw_write(0xFF44, (u8)0);
+        mem.hw_write(0xFF41, (u8)((mem.hw_read(0xFF41) & (u8)0b11111100) | (u8)mode0));
+        ppu.currentLineDots = 0;
+        white = true;
+    }
 }
 
 // logging function for gameboy doctor (a useful community tool for gameboy emulator development)
