@@ -5,6 +5,8 @@
 #include <SDL3/SDL_surface.h>
 #include <cassert>
 
+// gameboy tiles (8px x 8px) are made from 2 bytes per row
+// this function combines those 2 bytes to make the current tile row for a sprite (i.e. object)
 void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
     u16 line = 0;
     u16 mask = 0;
@@ -59,6 +61,8 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
     }
 }
 
+// this function combines 2 tile bytes to make the current tile row for a background tile
+// which uses different memory addresses than when combining sprite tiles
 void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
     u16 line = 0;
     u16 mask = 0;
@@ -82,10 +86,12 @@ void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
 
 }
 
+// gets one of two bytes for a tile row
 u8 PPU::getTileByte(u16 index) { // 2 dots
     return mem.hw_read(index); 
 }
 
+// finds the current address of the next background tile to render
 u16 PPU::bgPixelFetcher() { //  2 dots
     u16 tileMap = 0x9800; 
     if ((mem.hw_read(LCDC) & 0b1000) > 0) { 
@@ -106,6 +112,7 @@ u16 PPU::bgPixelFetcher() { //  2 dots
     return tileAddress;
 }
 
+// finds the current address of the next window tile to render
 u16 PPU::winPixelFetcher() { 
     u16 tileMap = 0x9800; 
     if ((mem.hw_read(LCDC) & 0b1000000) > 0) { 
@@ -125,6 +132,8 @@ u16 PPU::winPixelFetcher() {
     return tileAddress;
 }
 
+// runs after each main cpu loop, the ticks argument is the time taken for the previous cpu operation
+// so that the ppu knows how many ticks to run for in order to catch up before the next cpu operation
 void PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
     statInterruptHandler();
@@ -298,16 +307,14 @@ void PPU::ppuLoop(u8 ticks) {
         } 
         statInterruptHandler();
     }
-    //std::cout << (int)finishedLineDots << " " << (int)currentLineDots << " " << (int)ticks << " " << (int)mem.hw_read(LY) << "\n";
-    //std::cout << (int)currentLineDots << " " << (int)mem.hw_read(LY) << " " << ppu_state << '\n';
     mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & (u8)0b11111100) | (u8)ppu_state));
-    //assert(finishedLineDots == currentLineDots);
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {
     return frameBuffer;
 }
 
+// returns the proper pixel color for a given tile pixel based on gpu registers
 u8 PPU::pixelPicker() {
     if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem.read(LCDC) & 0b10) == 0 || objQueue.front().color == 0) {
         return (mem.read(LCDC) & 0b1) * ((mem.hw_read(BGP) >> (2 * bgQueue.front().color)) & 0b11);
@@ -316,6 +323,7 @@ u8 PPU::pixelPicker() {
     }
 }
 
+// scans oam for objects that must be rendered on this scanline
 void PPU::oamScan(u16 address) { // 2 dots
     u8 currentLine = mem.hw_read(LY); // ly register    
     u8 objY_pos = mem.hw_read(address);
@@ -330,7 +338,6 @@ void PPU::oamScan(u16 address) { // 2 dots
     } else { // 8x8 tiles
         if (((objY_pos - 8) - currentLine) > 0 && ((objY_pos - 8) - currentLine) < 9) {
             if (objFetchIdx < 10) {
-                //std::cout << std::hex << (int)address << " " << std::dec << (int)objFetchIdx << " " << (int)objY_pos << " " << (int)currentLine << "\n";
                 objArr[objFetchIdx] = obj;
                 objFetchIdx += 1;
             }
@@ -339,7 +346,7 @@ void PPU::oamScan(u16 address) { // 2 dots
 }
 
 void PPU::setPixel(u8 w, u8 h, u8 pixel) {
-    constexpr static std::array<u16,4> colors = { 0xFFFF, 0xAD6B, 0x5295, 0x0001 };
+    constexpr static std::array<u16,4> colors = { 0xFFFF, 0xAD6B, 0x5295, 0x0001 }; // greyscale
     u16* pixelAddress = std::bit_cast<u16*>(surface->pixels);
     pixelAddress += surface->w * h + w;
     *pixelAddress = colors[pixel];

@@ -6,7 +6,7 @@
 #include <mmu.h>
 #include <types.h>
 
-// digusting code
+// audio "loop" clocked at each tick
 void APU::period_clock() {
     float sample = 0;
     float volume = mem.hw_read(NR50) & 0b111; // currently only taking right ear volume into account
@@ -251,6 +251,7 @@ void APU::triggerCH4() {
     ch4.output = 0;
 }
 
+// clock ch1, 2, and 4 envelopes
 void APU::envelopeAdjust() {
     apu_div = 0;
     ch4.env_sweep_tick += 1;
@@ -283,6 +284,7 @@ void APU::envelopeAdjust() {
 
 }
 
+// clock audio disable timers
 void APU::lengthAdjust() {
     if ((mem.hw_read(NR14) & 0b1000000) > 0) {
         ch1.length_timer -= 1;
@@ -311,6 +313,7 @@ void APU::lengthAdjust() {
 
 }
 
+// clock ch1 sweep
 void APU::periodSweep() {
     ch1.pulse_timer += 1;
     if (ch1.pulse_timer != 0 && ch1.pulse_timer == ch1.pulse_pace) {
@@ -354,17 +357,17 @@ void APU::disableChannel(u8 channel) {
     }
 }
 
+// get current audio nibble for channel 3
 u8 APU::getNibble() {
     u8 byte = mem.hw_read(WAVE_RAM_START + ch3.duty_step / 2);
-    if (ch3.duty_step % 2 == 1) {
-
-    } else {
+    if (ch3.duty_step % 2 != 1) {
         byte >>= 4;
     }
     byte &= 0xF;
     return byte;
 }
 
+// clock and cycle through lsfr for random noise channel (channel 4)
 void APU::lfsrClock() {
     u8 bit0 = 0, bit1 = 0, new_bit = 0;
     bit0 = ch4.lfsr & 0b1;

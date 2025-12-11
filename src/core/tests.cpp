@@ -7,6 +7,7 @@
 
 using json = nlohmann::json;
 
+// initial cpu tests, obselete at this point
 int main(int argc, char** argv) {
     json initial;
     json final;

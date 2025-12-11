@@ -1,6 +1,7 @@
 #include <timer.h>
 #include <mmu.h>
 
+// increment div register
 void Timer::div_inc() {
     u16 div = mem.hw_read(0xFF03);
     div = (mem.hw_read(0xFF04) << 8) + div;
@@ -8,6 +9,7 @@ void Timer::div_inc() {
     mem.hw_dwrite(0xFF03, div);
 }
 
+// increment tima register
 s8 Timer::tima_inc() {
     /*
     u16 div = mem.hw_read(0xFF03);

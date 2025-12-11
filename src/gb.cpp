@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_error.h>
 #include <SDL3/SDL_oldnames.h>
@@ -7,8 +8,6 @@
 #include <SDL3/SDL_surface.h>
 #include <SDL3/SDL_timer.h>
 #include <SDL3/SDL_video.h>
-#include <chrono>
-#include <cstdlib>
 #include <lib/types.h>
 #include <core/mmu.h>
 #include <core/timer.h>
@@ -19,8 +18,10 @@
 #include <iomanip>
 #include <fstream>
 
-GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
-    window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED)) {
+// mostly just sets up SDL and maps necessary SDL buffers to parts of emulator
+GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem) {
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
+    window = SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED); 
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
@@ -70,20 +71,7 @@ GB::~GB() {
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-}
-
-void callback(void* apu_ptr, u8* stream, int len) {
-    /*
-    auto* float_stream{std::bit_cast<float*>(stream)};
-    float sample = 0;
-    APU& apu = *(std::bit_cast<APU*>(apu_ptr)); // lol???? ????? ???
-    len /= sizeof(float); // LOL!!
-    for (auto i = 0; i < len; ++i) {
-        sample = apu.getSample();
-        float_stream[i] = 0.1f * sample;
-    }
-    */
-
+    SDL_Quit();
 }
 
 void GB::runEmu(char* filename) {
@@ -190,22 +178,6 @@ void GB::runEmu(char* filename) {
         frameavg += SDL_GetTicksNS() - frameStart;
         frameStart = SDL_GetTicksNS();
         SDL_RenderPresent(renderer);
-        
-        //std::cout << std::dec << (double)(std::chrono::high_resolution_clock::now().time_since_epoch() - frameStart.time_since_epoch()).count() / 1000000 << " ms for frame " << (int) frame << "\n";
-        //assert(mem.read(0xFF44) >= 153);
-
-        /*
-           if (SDL_GetAudioStreamAvailable(audio_stream) >= 4 * 48000) {
-           std::array<float, 48000> buffer{};
-           SDL_GetAudioStreamData(audio_stream, &buffer[0], 4 * 48000);
-           for (auto sample : buffer) {
-           std::cout << sample << "\n";
-           }
-           exit(0);
-           }
-           */
-
-        
     } 
     std::cout << "\nframe times below likely high\n";
     std::cout << frameavg / 1000000.0 / frame << " avg ms per frame\n";
@@ -213,6 +185,7 @@ void GB::runEmu(char* filename) {
     std::cout << "closing geebeemoo\n";
 }
 
+// logging function for gameboy doctor (a useful community tool for gameboy emulator development)
 void GB::doctor_log(u32 frame, u32 ticks, std::ofstream& log, Core& core, MMU& mem) {
     log << "Frame: " << std::dec << (int)frame;
     log << " Ticks: " << std::dec << (int)ticks;

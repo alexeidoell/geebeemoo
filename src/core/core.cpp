@@ -2,7 +2,9 @@
 #include <lib/types.h>
 #include <mmu.h>
 #include <core.h>
+#include <ostream>
 
+// initialize all registers and memory based on post gameboy splashscreen state
 void Core::bootup() {
     // set registers and memory to 0x100 state
     registers.gpr.n.a = 0x01;
@@ -22,7 +24,8 @@ void Core::bootup() {
     mem.write(0xFF41, 0x81);
     mem.write(0xFF07, 0xF8);
     mem.write(0xFF47, 0xFC);
-    mem.dwrite(0xFF48, 0x0000);
+    mem.write(0xFF48, 0x00);
+    mem.write(0xFF49, 0x00);
 
     // need to add the rest of the boot up process
     // maybe memmove a static const array based on
@@ -51,6 +54,7 @@ void Core::bootup() {
     mem.write(0xFF26, 0xF1);
 }
 
+// cpu operations
 u8 Core::op_tree() {
 
     constexpr static std::array<u8,0x100> tick_chart = {
@@ -589,7 +593,7 @@ u8 Core::op_tree() {
         registers.gpr.n.b = registers.gpr.n.h;
         break;
     case 0x45: // LD B, L
-        registers.gpr.n.b = registers.gpr.n.h;
+        registers.gpr.n.b = registers.gpr.n.l;
         break;
     case 0x46: // LD B, [HL]
         registers.gpr.n.b = mem.read(hl);
@@ -1863,6 +1867,7 @@ u8 Core::op_tree() {
     return ticks;
 }
 
+// cb operations (byte after 0xCB opcode)
 u8 Core::cb_op() {
     u8 byte2 = mem.read(registers.pc++);
     u8 dst = byte2 & 0b111;

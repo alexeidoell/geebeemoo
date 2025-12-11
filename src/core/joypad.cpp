@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <joypad.h>
 
+// poll for presses based on sdl event
 void Joypad::pollPresses(SDL_Event& event) {
     if (event.type == SDL_EVENT_KEY_DOWN) {
         switch (event.key.key) {
