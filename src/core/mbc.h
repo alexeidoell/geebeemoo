@@ -41,5 +41,5 @@ class MBC1 final : public MBC {
 public:
     u8 mbc_write(u16 address, u8 word) final;
     u32 mapper(u16 base_address) final;
-    MBC1(std::vector<u8>& ram) : MBC(ram) {}; // WTF IS THIS??
+    MBC1(std::vector<u8>& ram) : MBC(ram) {}; // wtf
 };

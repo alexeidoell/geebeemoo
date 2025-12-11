@@ -18,7 +18,6 @@ u8 MBC1::mbc_write(u16 address, u8 word) {
         }
     } else if (address < 0x4000) {
         rom_bank = word & 0b11111;       
-        if (rom_bank == 0x0) rom_bank = 0x1;
     } else if (address < 0x6000) {
         ram_bank = word & 0b11;
     } else if (address < 0x8000) {
@@ -39,7 +38,11 @@ u32 MBC1::mapper(u16 base_address)  {
         base_address = base_address & ~(((u32)0b11) << 14); 
         mapped_address += ((u32)ram_bank << 19);
         mapped_address += base_address;
-        mapped_address += ((u32)rom_bank << 14);
+        if (rom_bank == 0x0) {
+            mapped_address += ((u32)1u << 14);
+        } else {
+            mapped_address += ((u32)rom_bank << 14);
+        }
     } else if (base_address < 0xC000) {
         if (banking_mode == 1) {
             mapped_address += ((u32)ram_bank << 13);
