@@ -50,14 +50,14 @@ enum tileType { bg, win, obj };
 
 class PPU {
     private:
-        MMU& mem;
+        MMU* mem;
         u16 bgPixelFetcher();
         u16 winPixelFetcher();
         u8 getTileByte(u16 index);
         void combineObjTile(u8 tileHigh, u8 tileLow, Object * object);
         void combineBGTile(u8 tileHigh, u8 tileLow);
         u8 pixelPicker();
-        PPUState& ppu_state;
+        PPUState* ppu_state;
         std::array<Object, 10> objArr;
         std::queue<Pixel> objQueue;
         std::queue<Pixel> bgQueue;
@@ -83,7 +83,7 @@ class PPU {
                              // resume the state it was at in the current
                              // line
         PPU(MMU& mem) 
-        :mem(mem), ppu_state(mem.ppu_state) {
+        :mem(&mem), ppu_state(&mem.ppu_state) {
         } // this feels gross
         void ppuLoop(u8 ticks);
         std::array<u8, 23040>& getBuffer();

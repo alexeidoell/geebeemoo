@@ -18,7 +18,7 @@ u32 MMU::load_cart(std::string_view filename) {
         return 0;
     }
     cartridge.rom_size = 0x8000 * (1 << cartridge.header[0x48]);
-    const static std::array<u8,6> ram_sizes = {0, 0, 8, 32, 128, 64};
+    constexpr static std::array<u8,6> ram_sizes = {0, 0, 8, 32, 128, 64};
     cartridge.ram_size = ram_sizes[cartridge.header[0x49]] * 0x400;
     cartridge.ram.resize(cartridge.ram_size);
     save_file  = std::string_view(filename).substr(0, filename.find_last_of(".") + 1);
@@ -94,10 +94,10 @@ u8 MMU::read(u16 address) { // TODO: clean up all read and write functions
             word = mem[address];
             if ((word & 0x30) == 0x10) { // buttons
                 word &= 0xF0;
-                word += joypad.getButton();
+                word += joypad->getButton();
             } else { // dpad
                 word &= 0xF0;
-                word += joypad.getDpad();
+                word += joypad->getDpad();
                 if ((word & 0b11) == 0) {
                     word += 0b11;
                 }
@@ -230,7 +230,7 @@ void MMU::dwrite(u16 address, u16 dword) {
     }
 }
 u8 MMU::oam_transfer(u8 ticks) {
-    for (auto i = 0; i < ticks; i += 4) {
+    for (auto i = 0u; i < ticks; i += 4) {
         if (oam_offset == 160){
             oam_state = false;
             oam_offset = 0;

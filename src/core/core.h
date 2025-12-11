@@ -11,7 +11,7 @@ union GPRRegs {
 };
 
 struct gbRegisters {
-    GPRRegs gpr = { {0} };
+    GPRRegs gpr = { .r={0} };
     u8 flags = 0;
     u16 sp = 0;
     u16 pc = 0;
@@ -24,10 +24,10 @@ public: // need to change a lot of these to private
     bool halt_flag = false;
     bool halt_bug = false;
     gbRegisters registers; 
-    MMU& mem;
+    MMU* mem;
     void bootup();
     u8 op_tree();
     u8 cb_op();
-    Core(MMU& mem) : mem(mem) {};
+    Core(MMU& mem) : mem(&mem) {};
 };
 

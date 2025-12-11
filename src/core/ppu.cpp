@@ -35,7 +35,7 @@ void PPU::combineObjTile(u8 tileHigh, u8 tileLow, Object * object) {
     u8 bgPriority = 0;
     u8 objIndex = 0;
 
-    for (auto i = 0; i < 8; ++i) {
+    for (auto i = 0u; i < 8; ++i) {
         u16 mask = 0b11 << 14;
         mask >>= (i * 2);
         u16 color = line & mask;
@@ -88,24 +88,24 @@ void PPU::combineBGTile(u8 tileHigh, u8 tileLow) {
 
 // gets one of two bytes for a tile row
 u8 PPU::getTileByte(u16 index) { // 2 dots
-    return mem.hw_read(index); 
+    return mem->hw_read(index); 
 }
 
 // finds the current address of the next background tile to render
 u16 PPU::bgPixelFetcher() { //  2 dots
     u16 tileMap = 0x9800; 
-    if ((mem.hw_read(LCDC) & 0b1000) > 0) { 
+    if ((mem->hw_read(LCDC) & 0b1000) > 0) { 
         tileMap = 0x9C00;
     }
-    u16 offset = 0xFF & ((u8)(mem.hw_read(LY) + mem.hw_read(SCY)) / 8);
+    u16 offset = 0xFF & ((u8)(mem->hw_read(LY) + mem->hw_read(SCY)) / 8);
     offset <<= 5;
-    offset |= 0x1F & ((u8)(xCoord + mem.hw_read(SCX)) / 8);
+    offset |= 0x1F & ((u8)(xCoord + mem->hw_read(SCX)) / 8);
     offset &= 0x3FF;
-    u16 tileID = mem.hw_read(tileMap + offset);
+    u16 tileID = mem->hw_read(tileMap + offset);
     u16 tileAddress = (tileID) << 4;
-    tileAddress += (((u16)mem.hw_read(LY) + (u16)mem.read(SCY)) % 8) << 1;
+    tileAddress += (((u16)mem->hw_read(LY) + (u16)mem->read(SCY)) % 8) << 1;
     tileAddress += 0b1 << 15;
-    bool addressing_method = (mem.hw_read(LCDC) & 0b10000) == 0b10000;
+    bool addressing_method = (mem->hw_read(LCDC) & 0b10000) == 0b10000;
     if (!addressing_method && (tileID & 0x80) == 0) {
         tileAddress += (0b1 << 12);
     }
@@ -115,17 +115,17 @@ u16 PPU::bgPixelFetcher() { //  2 dots
 // finds the current address of the next window tile to render
 u16 PPU::winPixelFetcher() { 
     u16 tileMap = 0x9800; 
-    if ((mem.hw_read(LCDC) & 0b1000000) > 0) { 
+    if ((mem->hw_read(LCDC) & 0b1000000) > 0) { 
         tileMap = 0x9C00;
     }
     u16 offset = 0xFF & (window.yCoord / 8);
     offset <<= 5;
     offset += 0x1F & (window.xCoord / 8);
-    u8 tileID = mem.hw_read(tileMap + offset);
+    u8 tileID = mem->hw_read(tileMap + offset);
     u16 tileAddress = ((u16)tileID) << 4;
     tileAddress += (window.yCoord % 8) << 1;
     tileAddress += 0b1 << 15;
-    bool addressing_method = (mem.hw_read(LCDC) & 0b10000) == 0b10000;
+    bool addressing_method = (mem->hw_read(LCDC) & 0b10000) == 0b10000;
     if (!addressing_method && (tileID & 0x80) == 0) {
         tileAddress += (0b1 << 12);
     }
@@ -137,13 +137,13 @@ u16 PPU::winPixelFetcher() {
 void PPU::ppuLoop(u8 ticks) {
     currentLineDots += ticks;
     statInterruptHandler();
-    u8 currentLine = mem.hw_read(LY); // ly register 
-    while (mem.hw_read(LY) < 144 && finishedLineDots < currentLineDots) {
+    u8 currentLine = mem->hw_read(LY); // ly register 
+    while (mem->hw_read(LY) < 144 && finishedLineDots < currentLineDots) {
         if (finishedLineDots >= 456) {
             break;
         }
         if (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
-            if (mem.read(WY) <= currentLine) {
+            if (mem->read(WY) <= currentLine) {
                 window.WY_cond = true;
             }
             while (finishedLineDots < 80 && finishedLineDots < currentLineDots) {
@@ -153,7 +153,7 @@ void PPU::ppuLoop(u8 ticks) {
             }
         } 
         if (finishedLineDots >= 80 && finishedLineDots < 172 + 80 + mode3_delay && finishedLineDots < currentLineDots) {
-            ppu_state = mode3;
+            *ppu_state = mode3;
             if (finishedLineDots == 80) { // setting up mode3
                 while(!bgQueue.empty()) bgQueue.pop();
                 while(!objQueue.empty()) objQueue.pop();
@@ -203,13 +203,13 @@ void PPU::ppuLoop(u8 ticks) {
                     fifoFlags.fetchTileID = false;
                 }
                 if (firstTile) {
-                    for (auto i = 0; i < (mem.hw_read(SCX) % 8); ++i) {
+                    for (auto i = 0; i < (mem->hw_read(SCX) % 8); ++i) {
                         bgQueue.pop();
                         //xCoord += 1;
                         mode3_delay += 1;
                     }
                 }
-                for (auto i = 0; i < objFetchIdx; ++i) {
+                for (auto i = 0u; i < objFetchIdx; ++i) {
                     if (xCoord == objArr[i].xPos) {
                         mode3_delay += 6;
                         if (newTile) {
@@ -225,7 +225,7 @@ void PPU::ppuLoop(u8 ticks) {
                         if (flipCond) {
                             fifoFlags.objTileAddress += (~(((currentLine - (objArr[i].yPos - 16)) % 8) << 1)) & 0b1110;
                         } else fifoFlags.objTileAddress += ((currentLine - (objArr[i].yPos - 16)) % 8) << 1;
-                        if ((mem.hw_read(LCDC) & 0b100) > 0) { // 8x16 tiles
+                        if ((mem->hw_read(LCDC) & 0b100) > 0) { // 8x16 tiles
                             if ((objArr[i].yPos - currentLine) > 8) {
                                 if (!flipCond) {
                                     fifoFlags.objTileAddress &= ~((u16)0b10000);
@@ -241,7 +241,7 @@ void PPU::ppuLoop(u8 ticks) {
                         combineObjTile(fifoFlags.objHighByte, fifoFlags.objLowByte, &objArr[i]);
                     }
                 }
-                if (xCoord < 168 && ((mem.read(LCDC) & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == mem.read(WX) || window.WX_cond)) { // window time
+                if (xCoord < 168 && ((mem->read(LCDC) & 0b100000) > 0) && window.WY_cond && (xCoord - 1 == mem->read(WX) || window.WX_cond)) { // window time
                     if (bgQueue.empty() || window.WX_cond == false) {
                         while (!bgQueue.empty()) bgQueue.pop();
                         fifoFlags.tileAddress = winPixelFetcher();
@@ -268,7 +268,7 @@ void PPU::ppuLoop(u8 ticks) {
             }
         }
         if (finishedLineDots >= 172 + 80 + mode3_delay && finishedLineDots < 456 && finishedLineDots < currentLineDots) { // hblank
-            ppu_state = mode0;
+            *ppu_state = mode0;
             firstTile = true;
             while (finishedLineDots < currentLineDots) {
                 finishedLineDots += 2;
@@ -283,13 +283,13 @@ void PPU::ppuLoop(u8 ticks) {
         window.WX_cond = false;
         if (currentLine == 153) {
             currentLine = 0;
-            ppu_state = mode2;
+            *ppu_state = mode2;
         }
         else currentLine += 1;
-        mem.hw_write(LY, (u8)(currentLine));
-        if (currentLine == mem.hw_read(LYC)) { // ly = lyc
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) | 0b100));
-        } else mem.hw_write(STAT, (u8)(mem.hw_read(STAT) & 0b11111011));
+        mem->hw_write(LY, (u8)(currentLine));
+        if (currentLine == mem->hw_read(LYC)) { // ly = lyc
+            mem->hw_write(STAT, (u8)(mem->hw_read(STAT) | 0b100));
+        } else mem->hw_write(STAT, (u8)(mem->hw_read(STAT) & 0b11111011));
         window.xCoord = 0;
         xCoord = 0;
         mode3_delay = 0;
@@ -298,16 +298,16 @@ void PPU::ppuLoop(u8 ticks) {
         currentLineDots -= 456;
         finishedLineDots = 0; // idk tbh?
         if (currentLine == 144) { // vblank
-            ppu_state = mode1;
+            *ppu_state = mode1;
             window.yCoord = 0;
-            mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b1));
+            mem->hw_write(IF, (u8)(mem->hw_read(IF) | 0b1));
         }
-        if (ppu_state != mode1) { 
-            ppu_state = mode2;
+        if (*ppu_state != mode1) { 
+            *ppu_state = mode2;
         } 
         statInterruptHandler();
     }
-    mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & (u8)0b11111100) | (u8)ppu_state));
+    mem->hw_write(STAT, (u8)((mem->hw_read(STAT) & (u8)0b11111100) | (u8)*ppu_state));
 }
 
 std::array<u8, 23040>& PPU::getBuffer() {
@@ -316,19 +316,19 @@ std::array<u8, 23040>& PPU::getBuffer() {
 
 // returns the proper pixel color for a given tile pixel based on gpu registers
 u8 PPU::pixelPicker() {
-    if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem.read(LCDC) & 0b10) == 0 || objQueue.front().color == 0) {
-        return (mem.read(LCDC) & 0b1) * ((mem.hw_read(BGP) >> (2 * bgQueue.front().color)) & 0b11);
+    if (objQueue.empty() || (objQueue.front().bgPriority == 1 && bgQueue.front().color != 0) || (mem->read(LCDC) & 0b10) == 0 || objQueue.front().color == 0) {
+        return (mem->read(LCDC) & 0b1) * ((mem->hw_read(BGP) >> (2 * bgQueue.front().color)) & 0b11);
     } else {
-        return (mem.hw_read(OBP0 + objQueue.front().palette) >> (2 * objQueue.front().color)) & 0b11;
+        return (mem->hw_read(OBP0 + objQueue.front().palette) >> (2 * objQueue.front().color)) & 0b11;
     }
 }
 
 // scans oam for objects that must be rendered on this scanline
 void PPU::oamScan(u16 address) { // 2 dots
-    u8 currentLine = mem.hw_read(LY); // ly register    
-    u8 objY_pos = mem.hw_read(address);
-    Object obj(objY_pos, mem.hw_read(address + 1), mem.hw_read(address + 2), mem.hw_read(address + 3), address - 0xFE00);
-    if ((mem.hw_read(LCDC) & 0b100) > 0) { // 8x16 tiles
+    u8 currentLine = mem->hw_read(LY); // ly register    
+    u8 objY_pos = mem->hw_read(address);
+    Object obj(objY_pos, mem->hw_read(address + 1), mem->hw_read(address + 2), mem->hw_read(address + 3), address - 0xFE00);
+    if ((mem->hw_read(LCDC) & 0b100) > 0) { // 8x16 tiles
         if ((objY_pos - currentLine) > 0 && (objY_pos - currentLine) < 17) {
             if (objFetchIdx < 10) {
                 objArr[objFetchIdx] = obj;
@@ -354,29 +354,29 @@ void PPU::setPixel(u8 w, u8 h, u8 pixel) {
 
 void PPU::statInterruptHandler() {
     bool prevIRQ = statIRQ;
-    if (mem.hw_read(LYC) == 0 && mem.hw_read(LY) == 153 && currentLineDots > 4 && (mem.hw_read(STAT) & 0b1000000) > 0) {
+    if (mem->hw_read(LYC) == 0 && mem->hw_read(LY) == 153 && currentLineDots > 4 && (mem->hw_read(STAT) & 0b1000000) > 0) {
             statIRQ = true;
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) | 0b100));
-    } else if ((mem.hw_read(LY) == mem.hw_read(LYC) && (mem.hw_read(STAT) & 0b1000000) > 0)) {
+            mem->hw_write(STAT, (u8)(mem->hw_read(STAT) | 0b100));
+    } else if ((mem->hw_read(LY) == mem->hw_read(LYC) && (mem->hw_read(STAT) & 0b1000000) > 0)) {
             statIRQ = true;
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) | 0b100));
-    } else if (ppu_state == mode2 && (mem.hw_read(STAT) & 0b100000) > 0) {
+            mem->hw_write(STAT, (u8)(mem->hw_read(STAT) | 0b100));
+    } else if (*ppu_state == mode2 && (mem->hw_read(STAT) & 0b100000) > 0) {
             statIRQ = true;
-            mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & 0b11111100) | mode2));
-    } else if (ppu_state == mode1 && (mem.hw_read(STAT) & 0b10000) > 0) {
+            mem->hw_write(STAT, (u8)((mem->hw_read(STAT) & 0b11111100) | mode2));
+    } else if (*ppu_state == mode1 && (mem->hw_read(STAT) & 0b10000) > 0) {
             statIRQ = true;
-            mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & 0b11111100) | mode1));
-    } else if (ppu_state == mode0 && (mem.hw_read(STAT) & 0b1000) > 0) {
+            mem->hw_write(STAT, (u8)((mem->hw_read(STAT) & 0b11111100) | mode1));
+    } else if (*ppu_state == mode0 && (mem->hw_read(STAT) & 0b1000) > 0) {
             statIRQ = true;
-            mem.hw_write(STAT, (u8)((mem.hw_read(STAT) & 0b11111100) | mode0));
+            mem->hw_write(STAT, (u8)((mem->hw_read(STAT) & 0b11111100) | mode0));
     } else {
         statIRQ = false;
-        if (mem.hw_read(LY) != mem.hw_read(LYC)) {
-            mem.hw_write(STAT, (u8)(mem.hw_read(STAT) & 0b11111011));
+        if (mem->hw_read(LY) != mem->hw_read(LYC)) {
+            mem->hw_write(STAT, (u8)(mem->hw_read(STAT) & 0b11111011));
         }
     }
     if (!prevIRQ && statIRQ) {
-        mem.hw_write(IF, (u8)(mem.hw_read(IF) | 0b10));
+        mem->hw_write(IF, (u8)(mem->hw_read(IF) | 0b10));
     }
 }
 

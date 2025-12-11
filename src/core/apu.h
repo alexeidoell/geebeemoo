@@ -3,17 +3,20 @@
 #include <types.h>
 #include <mmu.h>
 
-constexpr s8 duty_cycle[4][8] = { // NOLINT
-    {1,1,1,1,1,1,1,-1},
-    {-1,1,1,1,1,1,1,-1},
-    {-1,1,1,1,1,-1,-1,-1},
-    {1,-1,-1,-1,-1,-1,-1,1}
+constexpr std::array<std::array<s8,8>,4> duty_cycle = {
+    {
+        {1,1,1,1,1,1,1,-1},
+        {-1,1,1,1,1,1,1,-1},
+        {-1,1,1,1,1,-1,-1,-1},
+        {1,-1,-1,-1,-1,-1,-1,1}
+    }
 };
 
 class APU {
 private:
-    MMU& mem;
-    // THERE HAS GOT TO BE A BETTER WAY TO DO THIS
+    MMU* mem;
+    // I wonder if there's a better way to do this, other than nested structs.
+    // there's not a lot of room for reusing (non nested struct) but this makes it more clear
     struct {
         bool enabled = true;
         bool dac = true;
@@ -69,7 +72,7 @@ private:
     constexpr static u16 buffer_len = 16384;
     std::array<float, buffer_len> sample_buffer{};
 public:
-    APU(MMU& mem) : mem(mem) {};
+    APU(MMU& mem) : mem(&mem) {};
     void period_clock();
     void initAPU();
     void triggerCH2();

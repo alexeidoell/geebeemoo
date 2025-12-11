@@ -19,9 +19,8 @@
 #include <fstream>
 
 // mostly just sets up SDL and maps necessary SDL buffers to parts of emulator
-GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
-    window = SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED); 
+GB::GB() : joypad(), mem(joypad), core(mem), timer(mem), ppu(mem), apu(mem),
+    window(SDL_CreateWindow("geebeemoo", 160, 144, SDL_WINDOW_MAXIMIZED)) { 
     if (!window) {
         std::cout << "error creating window " << SDL_GetError() << "\n"; 
         exit(-1);
@@ -71,7 +70,6 @@ GB::~GB() {
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    SDL_Quit();
 }
 
 void GB::runEmu(char* filename) {
@@ -80,8 +78,8 @@ void GB::runEmu(char* filename) {
     constexpr u64 frameDelay = 1000000000 / FPS;
     const u32 maxTicks = 70224; // number of instuctions per frame
     u32 current_ticks = maxTicks;
-    u64 frameStart;
-    u64 frameTime;
+    u64 frameStart = 0;
+    u64 frameTime = 0;
     u32 div_ticks = 0;
     u32 operation_ticks = 0;
     bool tima_flag = false;

@@ -63,7 +63,7 @@ u32 MBC0::mapper(u16 base_address) {
 
 void Battery::writeSave() const {
     std::ofstream temp_save(temp_file, std::ios::binary | std::ios::trunc);
-    temp_save.write(std::bit_cast<char*>(&ram[0]), ram.capacity());
+    temp_save.write(std::bit_cast<char*>(&ram[0]), ram->capacity());
     temp_save.close();
     SDL_RenamePath(temp_file.c_str(), save_file.c_str());
 }

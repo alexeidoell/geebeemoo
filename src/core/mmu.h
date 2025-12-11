@@ -89,11 +89,11 @@ private:
     bool oam_state = false;
     u8 oam_offset = 0;
     u16 oam_address = 0;
-    Joypad& joypad;
+    Joypad* joypad;
     std::unique_ptr<MBC> mbc;
 public:
     u8 channel_trigger = 0;
-    MMU(Joypad& joypad) : joypad(joypad) {};
+    MMU(Joypad& joypad) : joypad(&joypad) {};
     PPUState ppu_state = mode2;
     u32 load_cart(std::string_view filename);
     u8 read(u16 address);
